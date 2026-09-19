@@ -1,0 +1,486 @@
+{
+  "features": [
+    {
+      "id": "feat-001",
+      "name": "Product scope and architecture decisions",
+      "description": "Use docs/PRODUCT_PLAN.md as the planning reference. Define the first shopping-record workflow, acceptance criteria, data ownership, and choose the web stack, backend stack, database, authentication model, and deployment target. Document the resulting architecture and API conventions.",
+      "dependencies": [],
+      "status": "done",
+      "evidence": "Approved stack and first product scope documented in docs/ARCHITECTURE.md and docs/API_CONTRACT.md; delivery sequence retained in docs/PRODUCT_PLAN.md."
+    },
+    {
+      "id": "feat-002",
+      "name": "Repository and local environment setup",
+      "description": "Create exactly one web root and one backend root, add safe environment examples, dependency manifests, local start commands, and update init.sh to install the selected tooling reproducibly.",
+      "dependencies": [
+        "feat-001"
+      ],
+      "status": "done",
+      "evidence": "Created web/ (React + TypeScript + Vite) and backend/ (Fastify + TypeScript), safe .env.example files, package manifests and lockfiles. Verified with ./init.sh, web typecheck/build, backend typecheck/build, and backend npm run start listening on 127.0.0.1:3000."
+    },
+    {
+      "id": "feat-003",
+      "name": "Backend platform foundation",
+      "description": "Implement the backend application entry point, configuration validation, health endpoint, structured error handling, logging baseline, API contract documentation, and versioned database migration workflow.",
+      "dependencies": [
+        "feat-002"
+      ],
+      "status": "done",
+      "evidence": "Implemented validated backend configuration, Fastify logging/CORS/error handling, GET /api/v1/health, documented API contract, and versioned PostgreSQL SQL migration runner. Verified with ./init.sh, backend npm run test (4 passing), typecheck, build, and npm run start listening on 127.0.0.1:3001. Migration execution is documented but not run because no PostgreSQL DATABASE_URL is provisioned locally."
+    },
+    {
+      "id": "feat-004",
+      "name": "Web application foundation",
+      "description": "Implement the application shell, routing, environment configuration, API client, loading and error states, and a responsive visual baseline against the documented backend contract.",
+      "dependencies": [
+        "feat-002",
+        "feat-003"
+      ],
+      "status": "done",
+      "evidence": "Implemented the React application shell, responsive navigation and 404 route, validated VITE_API_BASE_URL configuration, API client for GET /api/v1/health, and loading/online/error/retry states. Verified with ./init.sh, web npm run test (4 passing), typecheck, and production build."
+    },
+    {
+      "id": "feat-005",
+      "name": "Shopping record data model and API",
+      "description": "Add versioned persistence and validated API operations for a shopping record, including required fields, monetary values, purchase date, notes, and the agreed category or store references.",
+      "dependencies": [
+        "feat-003"
+      ],
+      "status": "done",
+      "evidence": "Added migration 0002_create_shopping_records.sql, validated domain model, PostgreSQL repository, and POST /api/v1/shopping-records with documented request/response contract. Verified with ./init.sh, backend typecheck/build, and npm run test (8 passing). Migration was not applied because no local PostgreSQL DATABASE_URL is provisioned; API persistence was exercised with a repository boundary fake."
+    },
+    {
+      "id": "feat-006",
+      "name": "Create shopping records",
+      "description": "Build the end-to-end record-creation flow in the web app, submit it through the API, persist it safely, and present clear field validation and success or failure feedback.",
+      "dependencies": [
+        "feat-004",
+        "feat-005"
+      ],
+      "status": "done",
+      "evidence": "Added the responsive create-purchase form on the web home page, browser-side required-field and monetary validation, POST /api/v1/shopping-records integration, and saving/success/failure feedback. Verified with ./init.sh; web npm run test (7 passing), typecheck, and build; backend npm run test (8 passing), typecheck, and build."
+    },
+    {
+      "id": "feat-007",
+      "name": "Browse and filter shopping history",
+      "description": "Provide API and UI support to list records with pagination and the agreed filters and sorting, including empty, loading, and error states.",
+      "dependencies": [
+        "feat-005",
+        "feat-006"
+      ],
+      "status": "done",
+      "evidence": "Added GET /api/v1/shopping-records with validated pagination, category/store/date-range filters, and deterministic purchase-date/created-date sorting; PostgreSQL repository pagination; API documentation; and a responsive web history with filters, loading, empty, error/retry, and page navigation states. Verified with ./init.sh; web npm run test (11 passing), typecheck, and build; backend npm run test (12 passing), typecheck, and build."
+    },
+    {
+      "id": "feat-008",
+      "name": "Edit and delete shopping records",
+      "description": "Allow users to update and delete existing records with validation, confirmation where appropriate, consistent API behavior, and immediate UI refresh.",
+      "dependencies": [
+        "feat-007"
+      ],
+      "status": "done",
+      "evidence": "Added validated PATCH /api/v1/shopping-records/{id} and DELETE /api/v1/shopping-records/{id}, 404 missing-record handling, PostgreSQL update/delete operations, API documentation, inline web editing with validation and error feedback, confirmed deletion, and history refresh after either action. Verified with ./init.sh; web npm run test (14 passing), typecheck, and build; backend npm run test (15 passing), typecheck, and build."
+    },
+    {
+      "id": "feat-009",
+      "name": "Recorder scope correction and contract reset",
+      "description": "Replace the retired shopping-expense product plan with the packing/unpacking evidence-recorder scope; document S3 and linked-Google-Drive storage options, product boundaries, legacy implementation status, API direction, and decisions that require user approval. This is documentation-only and must not implement or remove product functionality.",
+      "dependencies": [],
+      "status": "done",
+      "evidence": "Updated docs/PRODUCT_PLAN.md, docs/ARCHITECTURE.md, and docs/API_CONTRACT.md on 2026-09-02. Verified with ./init.sh; no application source, migrations, environment files, or endpoints were changed."
+    },
+    {
+      "id": "feat-010",
+      "name": "Identity and Google-account-linking decisions",
+      "description": "Obtain and document approval for the primary authentication/session model, whether Google is login, storage linking, or both, OAuth scopes, token encryption/rotation/revocation, account-link lifecycle, Drive folder policy, and ownership/access rules. Do not implement identity or Google integration until these decisions are accepted.",
+      "dependencies": [
+        "feat-009"
+      ],
+      "status": "done",
+      "evidence": "User approved the complete identity and Google-linking decision bundle on 2026-09-03: username/password self-registration, optional recovery email, Argon2id and abuse controls, persistent backend cookie sessions with 30-day idle/90-day absolute expiry, optional Drive-only Google linking with drive.file and encrypted/revocable credentials, one app-managed folder/account, one provider per activity, and owner-only access. Documented in docs/PRODUCT_PLAN.md, docs/ARCHITECTURE.md, and docs/API_CONTRACT.md. ./init.sh passed after finalization. Documentation-only; no application code, endpoint, migration, or environment contract changed."
+    },
+    {
+      "id": "feat-011",
+      "name": "Recorder data model and API contract",
+      "description": "Define versioned persistence and validated API schemas for packing/unpacking activities, media assets, ownership, provider-neutral storage references, upload/finalization states, and authorized retrieval. Plan migrations without changing or deleting the legacy shopping-record contract.",
+      "dependencies": [
+        "feat-010"
+      ],
+      "status": "done",
+      "evidence": "Defined the normalized recorder persistence model, ownership/provider constraints, activity/asset/upload-attempt lifecycles, server-only provider references, additive 0003-0006 migration plan, validated request/resource schemas, authorized list/detail/create/retry/finalize/complete/retrieval behavior, pagination, and stable errors in docs/RECORDER_DATA_MODEL.md, docs/ARCHITECTURE.md, and docs/API_CONTRACT.md. Preserved legacy migration and endpoint contracts; no runtime endpoint or migration was added. Verified 8 JSON contract examples, web tests (14 passing)/typecheck/build, backend tests (15 passing outside sandbox)/typecheck/build, and ./init.sh on 2026-09-03."
+    },
+    {
+      "id": "feat-012",
+      "name": "S3 media-storage foundation",
+      "description": "Implement a server-side provider-neutral storage abstraction and secure S3 upload, verification/finalization, and authorized retrieval flow for image/video assets. Keep provider credentials server-side and test failed or incomplete uploads.",
+      "dependencies": [
+        "feat-011"
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-05: added additive recorder migrations 0003-0005; PostgreSQL session ownership; provider-neutral storage/service/repository boundaries; Cloudflare R2 presigned non-overwriting PUT and short-lived GET capabilities; server-side size, metadata binding, byte-signature media type, and streamed SHA-256 verification; retry object-reference rotation; failure cleanup and stable API errors. ./init.sh passed; backend tests 30 passed/1 opt-in integration skipped plus typecheck/build passed; the opt-in PostgreSQL repository lifecycle integration test passed separately; web regression tests 14 passed plus typecheck/build; migrations 0001-0005 are applied locally. A live R2 smoke test was unavailable because no local R2 credentials/bucket are configured."
+    },
+    {
+      "id": "feat-013",
+      "name": "Google Drive connection and storage adapter",
+      "description": "Implement Google connection management and the Drive storage adapter after the mobile experience. Include protected credential lifecycle, approved folders, verified upload/retrieval, existing cancellation/deletion/cleanup behavior, and provider failure recovery. Provider selection/default UI belongs to feat-031. See docs/MOBILE_LOCALIZATION_DRIVE_PLAN.md.",
+      "dependencies": [
+        "feat-010",
+        "feat-011",
+        "feat-030"
+      ],
+      "acceptance_criteria": [
+        "Authenticated users can connect, inspect, reconnect/replace, and unlink one Google Drive account with the accepted drive.file scope and server-only credentials.",
+        "Drive evidence completes only after verification and supports owner-authorized review/download and approved lifecycle cleanup, including changed/missing files and lost permission.",
+        "Unlink preserves Drive files and existing record/provider references; replacing accounts neither migrates evidence nor changes application ownership.",
+        "Focused OAuth/storage/API/integration checks and an authorized live smoke are recorded, with unavailable external configuration explicitly documented."
+      ],
+      "status": "done",
+      "evidence": "Continued on 2026-09-16: implemented authenticated Drive server upload streaming with encrypted resumable sessions and one-use guard, SHA-256/signature/size verification of retained binary revisions, pinned revision retrieval and original filename download, account-bound lifecycle cleanup, Google profile connection UI (VI/EN), owner-bound OAuth callback, safe reconnect/replace/unlink, status probing and credential-safe logging. Recovered migration 0006 to the exact applied checksum; applied additive 0009 and 0010 without resetting data. Verification: backend 69 passed/3 opt-in skipped plus typecheck/build; web 23/23 plus typecheck/build; PostgreSQL auth/recorder/Drive integrations 3/3 passed with fixture cleanup. Startup and final ./init.sh passed; sole-active-feature and 9 API JSON example checks passed. Remains in-progress pending authorized real Google consent/upload/review/download/lifecycle smoke and device/browser QA: no Google connection is stored and Browser discovery is empty. Provider selection/default UI remains separate feat-031. Completed after user-confirmed Google consent and authorized live smoke on 2026-09-16: PNG upload/finalize/download byte equality, original revision after head edit, missing-file denial, cancellation/deletion cleanup all passed; disposable files/folders/rows cleaned and existing connection preserved. Backend 69 passed/4 opt-in skipped plus typecheck/build. Physical mobile/video QA remains unavailable and documented."
+    },
+    {
+      "id": "feat-014",
+      "name": "Create packing and unpacking records",
+      "description": "Build the browser and API workflow to start a packing/unpacking activity, select or capture image/video evidence, choose an available approved storage target, show per-file upload progress, and recover safely from failures.",
+      "dependencies": [
+        "feat-011",
+        "feat-012"
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-05 for the first S3/R2-backed release: added Argon2id self-registration/login, persistent cookie session restore/logout, route-level rate limits and origin checks; explicit activity completion with PostgreSQL lifecycle locking; and a responsive browser workflow for packing/unpacking metadata, multi-file selection, sequential SHA-256 hashing/upload, per-file progress, finalize, interrupted-response reconciliation, retry under the same asset, and completion feedback. Backend verification: 34 passed/2 opt-in integration skipped plus typecheck/build; both PostgreSQL auth and recorder lifecycle integration tests passed separately. Web verification: 19/19 tests plus typecheck/build. HTTP smoke: register 201, session 200, logout 204, and correctly bounded 409 when R2 is not configured. ./init.sh passed; harness validation scored 100/100 and all 9 API JSON examples parsed. Regression fixed on 2026-09-05: recent failures were confirmed as OBJECT_NOT_FOUND after B2 blocked browser upload preflight; bucket CORS now allows GET/HEAD/PUT and the required upload headers, a live preflight returned 200, and a temporary JPEG upload/verification/version-pin/cleanup smoke passed. The web now preserves the original upload error when reconciliation also fails. Web tests 19/19, typecheck/build, and backend tests 36 passed/2 integration skipped plus typecheck/build; final ./init.sh passed and harness validation scored 100/100."
+    },
+    {
+      "id": "feat-015",
+      "name": "Review and retrieve recorder evidence",
+      "description": "Provide authorized activity history, filters, pagination, activity detail, and safe image/video preview or playback for stored evidence across supported providers.",
+      "dependencies": [
+        "feat-014"
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-05: implemented authenticated, owner-scoped GET /api/v1/recorder-activities with validated pagination, operation/status/provider/date filters, stable occurredAt/id sorting, and GET /api/v1/recorder-activities/{activityId} with ordinal-ordered assets; added responsive web history with loading/empty/error/retry states, filters, pagination, detail, and image/video rendering through the existing no-store, short-lived, B2-version-pinned content redirect. Backend tests 40 passed/2 opt-in integrations skipped plus typecheck/build; PostgreSQL recorder integration passed 1/1 separately and cleaned fixtures. Web tests 22/22 plus typecheck/build; final ./init.sh and harness validation passed at 100/100. In-app browser visual QA was unavailable because no browser runtime was connected."
+    },
+    {
+      "id": "feat-016",
+      "name": "Recorder correction and lifecycle controls",
+      "description": "Implement only the approved metadata correction, cancellation/retry, deletion, retention, and audit behavior for recorder activities and media assets, including provider cleanup where permitted.",
+      "dependencies": [
+        "feat-015"
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-13 after approval of the lifecycle policy: added migration 0007 with cancelled/deleted states, lifecycle timestamps, append-only audit events, and retryable media cleanup jobs; owner-scoped metadata correction/audit/cancel/delete/cleanup-retry APIs; immediate list/detail/content revocation; exact-version B2 deletion; and browser correction, cancellation, confirmed deletion, audit display, and history refresh. No automatic MVP expiry was added. Migration applied locally. Backend 45 passed/2 opt-in integration skipped plus typecheck/build; PostgreSQL lifecycle integration 1/1 passed and cleaned fixtures; web 24/24 plus typecheck/build; 9 API JSON examples parsed; harness 100/100; final ./init.sh passed."
+    },
+    {
+      "id": "feat-017",
+      "name": "Recorder quality, security, and regression coverage",
+      "description": "Add focused backend, web, integration, authorization, upload-abuse, provider-failure, accessibility, type-check, build, and documented end-to-end coverage for completed recorder workflows.",
+      "dependencies": [
+        "feat-016"
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-13: hardened Fastify validation to reject unknown fields, fixed plugin ordering so auth/recorder rate limits actually execute, standardized 429 RATE_LIMITED responses, added no-store and API security headers, rejected duplicate retry capabilities before provider access, improved accessible async/progress/form semantics, and added focused session, authorization, upload-abuse, provider-outage, lifecycle, and accessibility coverage plus docs/TESTING.md release/E2E runbook. Backend 52 passed/2 opt-in integrations skipped plus typecheck/build; PostgreSQL auth+recorder integrations 2/2 passed and cleaned fixtures; web 26/26 plus typecheck/build; production dependency audits found 0 vulnerabilities in both roots; final ./init.sh passed. API JSON/state parse and harness validation passed at 100/100. Browser visual E2E was unavailable because no in-app browser instance was connected; the exact manual workflow is documented. No malware engine was selected within this coverage-only feature; feat-018 records scanner selection or explicit release-risk acceptance as a production gate. Reopened and completed on 2026-09-13 at user direction: lowered the shared password boundary from 12–128 to 6–128 characters in the web form, Fastify schema, authentication service, API contract, and architecture; added coverage proving 6 accepted/5 rejected. Backend 53 passed/2 opt-in integrations skipped plus typecheck/build; web 26/26 plus typecheck/build; final ./init.sh passed, all 9 API JSON examples parsed, and harness validation remained 100/100. Local smoke passed with web on localhost:5173 and the updated backend on 127.0.0.1:3001: health returned 200, a six-character login reached credential evaluation (401 for the nonexistent diagnostic user), and five characters were rejected with 400; no diagnostic data was created. Runtime follow-up corrected the browser API URL from 127.0.0.1:3001 to localhost:3001 so the session cookie is same-site with localhost:5173; CORS origin/credentials verification and ./init.sh passed."
+    },
+    {
+      "id": "feat-018",
+      "name": "Production readiness and release documentation",
+      "description": "Add observability, storage cost and retention controls, security review, deployment configuration, backup/recovery, provider outage procedures, and a concise operational runbook for the recorder product.",
+      "dependencies": [
+        "feat-017"
+      ],
+      "status": "blocked",
+      "evidence": "Activated on 2026-09-13 after feat-017 completion. Startup ./init.sh passed. Implemented request-correlation headers, no-store liveness and dependency-backed readiness endpoints, explicit proxy trust, production fail-fast validation for PostgreSQL/B2/HTTPS origin, graceful SIGTERM/SIGINT shutdown, independent backend/web production images, SPA nginx configuration, image healthchecks, and docs/OPERATIONS.md covering deploy, observability, storage cost/no-auto-expiry policy, PostgreSQL backup/restore, B2 outage response, and release gates. Backend 56 passed/2 opt-in integrations skipped plus typecheck/build; web 26/26 plus typecheck/build. Both Docker images build; nginx syntax and container Argon2 smoke checks pass. Live local readiness on port 3001 returns 200 ready with no-store and X-Request-Id. On 2026-09-13 the user explicitly deferred the remaining deployment, replica/shared-rate-limit, backup-objective, and malware-scanning decisions until later and directed work to the next feature. Google Drive remains deferred and legacy shopping retirement remains separate."
+    },
+    {
+      "id": "feat-019",
+      "name": "Legacy shopping-scope retirement",
+      "description": "After recorder workflows are verified, decide and implement the approved deprecation, removal, or migration of the retired shopping-record API, schema, and UI. Treat this as a separate breaking-contract/data-migration feature; do not remove legacy behavior as incidental recorder work.",
+      "dependencies": [
+        "feat-017"
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-13 after explicit user approval of the breaking removal. Pre-migration inventory confirmed the legacy create/history components were not rendered and local shopping_records contained 0 rows (24 kB). Removed unused web components/client types/functions/tests, four backend CRUD routes, server wiring, repository/domain/tests, and the obsolete JWT example; updated product/architecture/data/API documentation. Added and applied forward migration 0008_drop_legacy_shopping_records.sql without modifying migration 0002; schema inspection confirms the table is absent and the 0008 checksum record exists. Backend 46 passed/2 opt-in integrations skipped plus typecheck/build; PostgreSQL auth+recorder integrations 2/2 passed; web 16/16 plus typecheck/build. Live local smoke: retired endpoint returns 404 ROUTE_NOT_FOUND, readiness returns 200, and web serves on 5173. Final ./init.sh, API JSON parse, and harness validation passed."
+    },
+    {
+      "id": "feat-020",
+      "name": "Move S3-compatible storage to Backblaze B2",
+      "description": "Replace the Cloudflare R2-specific configuration and adapter assumptions with private Backblaze B2 S3-compatible storage while preserving the existing recorder API, verification, retry, and authorized retrieval contract.",
+      "dependencies": [
+        "feat-012",
+        "feat-014"
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-05 after the user selected Backblaze B2: replaced R2-specific environment/runtime configuration with validated B2 region, bucket, application-key ID, and application-key settings; configured AWS Signature V4 against the region-specific B2 S3 endpoint; preserved public storageProvider=s3 compatibility; retained private direct PUT, metadata/size/type/SHA-256 verification and retry isolation; required and persisted B2 VersionId; pinned verification/download and failed-version cleanup to exact object versions; updated UI copy, environment examples, architecture, product plan, and API contract. Baseline/final ./init.sh passed. Backend: 36 passed, 2 opt-in integrations skipped, typecheck/build passed; recorder PostgreSQL integration passed 1/1 separately. Web: 19/19, typecheck/build passed. All 9 API JSON examples parsed and harness scored 100/100. Live B2 smoke remains unavailable until real bucket/application-key values and bucket CORS are configured."
+    },
+    {
+      "id": "feat-021",
+      "name": "Tailwind and shadcn UI refresh",
+      "description": "Refresh the existing recorder browser interface with Tailwind CSS and local shadcn/ui-style primitives while preserving recorder behavior, API compatibility, responsive layouts, and accessible state feedback.",
+      "dependencies": [
+        "feat-017",
+        "feat-019"
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-14: integrated Tailwind CSS v4 through the official Vite plugin; added source-owned shadcn/ui primitives and components.json; refreshed the responsive shell, hero, API health, authentication, recorder upload/status, history/filter/detail/evidence, and 404 surfaces with Lucide icons and tokenized OKLCH theming while preserving the API contract and accessible labels/statuses. Web tests 16/16, TypeScript, and production build passed; ./init.sh passed before and after; npm production audit found 0 vulnerabilities; harness validation scored 100/100. Interactive browser visual QA was unavailable because the connected browser runtime reported zero browser instances."
+    },
+    {
+      "id": "feat-022",
+      "name": "Interactive evidence file picker",
+      "description": "Make the Document a handoff evidence picker visibly reflect selected files, support drag and drop, and allow operators to remove or replace files before starting an upload while preserving the recorder upload contract and accessibility.",
+      "dependencies": [
+        "feat-021"
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-14: the Evidence files surface now supports picker and drag/drop selection, changes visual state immediately, shows selected count/names/total size, rejects unsupported dropped media, supports tap-to-replace, Clear all, and per-file removal before upload, and keeps the existing sequential hashing/upload/retry contract. Added focused drag/drop/display/removal coverage. Web tests 17/17, TypeScript, and production build passed; ./init.sh passed before and after; harness validation scored 100/100. Interactive browser QA remained unavailable because the browser runtime listed zero instances; the local Vite server was left running on 127.0.0.1:5173 for user verification."
+    },
+    {
+      "id": "feat-023",
+      "name": "Evidence preview and upload validation fix",
+      "description": "Remove the native file-input validation conflict that blocks uploads after React captures a selection, and render safe local image/video previews for selected evidence before upload.",
+      "dependencies": [
+        "feat-022"
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-14: removed the native required constraint from the file input because selected evidence is intentionally captured in React state and the input value is cleared for same-file reselection; the state-backed disabled guard and submit validation remain authoritative. Added object-URL image thumbnails and playable video previews with error fallback and URL revocation on unmount. Focused coverage verifies the input is not natively required, selected images receive a preview URL, and clicking Start upload proceeds through activity creation. Web tests 17/17, TypeScript, and production build passed; ./init.sh passed before and after; harness validation scored 100/100. Browser runtime still reported zero available instances."
+    },
+    {
+      "id": "feat-024",
+      "name": "Clear New Record review experience",
+      "description": "Redesign the New Record workspace into clear activity, evidence selection, and pre-upload review sections with larger image/video previews and actionable file metadata so operators can assess evidence quality before upload.",
+      "dependencies": [
+        "feat-023"
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-14: redesigned New Record into a full-width, clearly numbered Activity details, Add evidence, and Review & upload flow. Selected evidence now appears in large 4:3 preview cards with image full-size links, playable video controls, filename/type/MIME/size/state metadata, per-file removal, clear-all, selected-count guidance, and a stronger review-aware upload CTA. The API/upload contract is unchanged. Web tests 17/17, TypeScript, and production build passed; final ./init.sh and harness validation passed. Interactive visual QA was unavailable because the browser runtime listed zero instances."
+    },
+    {
+      "id": "feat-025",
+      "name": "Reliable local evidence previews",
+      "description": "Keep selected image and video object URLs valid under React StrictMode so New Record displays the actual local media instead of the broken-preview fallback.",
+      "dependencies": [
+        "feat-024"
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-14: moved local preview URL creation and cleanup into the same file-scoped effect, so React StrictMode can revoke its first diagnostic URL and then create a fresh active URL instead of leaving image/video elements pointed at a revoked blob. Failed state also resets for a new file. Added a focused StrictMode regression test proving the stale URL is revoked while the active URL remains valid. Web tests 18/18, TypeScript, and production build passed; final ./init.sh and harness validation passed. Interactive browser QA was unavailable because no browser instance was connected."
+    },
+    {
+      "id": "feat-026",
+      "name": "Mobile, Vietnamese, and Drive roadmap documentation",
+      "description": "Document the discussed mobile-first workflow, Vietnamese-default localization, Drive preference, evidence selection/review, reference search/comparison, and interrupted-work recovery. Break implementation into bounded features with acceptance criteria and dependencies; update product, architecture, contract direction, progress, and handoff only.",
+      "dependencies": [
+        "feat-025"
+      ],
+      "acceptance_criteria": [
+        "Discussed ideas have bounded features, acceptance criteria, verification expectations and valid dependencies.",
+        "Product, architecture, API direction and handoff distinguish planned behavior from the implemented runtime.",
+        "Baseline and documentation validation are recorded; implementation features remain not-started."
+      ],
+      "status": "done",
+      "evidence": "Completed documentation-only on 2026-09-15: added docs/MOBILE_LOCALIZATION_DRIVE_PLAN.md, updated product/architecture/planned API notes, reprioritized existing feat-013 and added feat-027 through feat-034 with acceptance criteria/dependencies. ./init.sh passed; validation found 34 unique features, no dependency cycles, planned implementation features not-started, valid roadmap references and 9 parseable API JSON examples; harness validation scored 100/100. Progress and handoff updated. No application source, package/lockfile, migration, environment or runtime endpoint edits. Runtime tests/builds and device/Google checks were not run for this documentation-only scope."
+    },
+    {
+      "id": "feat-027",
+      "name": "Vietnamese-default localization with English switching",
+      "description": "Localize application-owned UI and errors, default to Vietnamese, retain English, and remember the browser preference. See docs/MOBILE_LOCALIZATION_DRIVE_PLAN.md for scope and verification.",
+      "dependencies": [
+        "feat-026"
+      ],
+      "acceptance_criteria": [
+        "First use defaults to Vietnamese; the language switch works before/after login and survives reload with graceful preference-storage failure.",
+        "Application labels, validation, errors, status, confirmations and accessible names use the selected locale, including HTML language and date/number/size formatting.",
+        "Switching language preserves form/file/upload state, original user content, API enums and stored timestamps; unknown errors have localized fallback text.",
+        "Translation and state-preservation tests, both-language workflow checks, web typecheck and build have recorded results."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-15: added application-owned Vietnamese translations with English fallback/switching, remembered browser preference (`shopping-recorder-locale`), `document.documentElement.lang`, and localized core home/account/health/new-record/history copy while preserving user-entered data and API values. Web `npm run test` passed 18/18; typecheck and production build passed. Browser/device visual QA and full remaining-copy audit are documented follow-ups for the phone-first feature; no backend/API/migration change was needed."
+    },
+    {
+      "id": "feat-028",
+      "name": "Phone-first responsive recorder workspace",
+      "description": "Prioritize create/history after login, simplify the introduction and connection indicator, and adapt navigation/forms/actions for phones, tablets, and desktop. See docs/MOBILE_LOCALIZATION_DRIVE_PLAN.md.",
+      "dependencies": [
+        "feat-027"
+      ],
+      "acceptance_criteria": [
+        "Create/history navigation preserves unfinished input; phone forms use one column and primary actions remain reachable with the keyboard open.",
+        "Both languages and long filenames/references fit 320/360/390/430/768/1280 CSS-pixel widths without unintended horizontal scrolling.",
+        "Primary controls target 44-by-44 CSS-pixel hit areas; safe areas, orientation, enlarged text and loading/error states remain usable.",
+        "Record web checks and Safari iPhone/Chrome Android keyboard and orientation checks plus tablet/desktop evidence or the exact unavailable checks."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-15: signed-in workspace now prioritizes New record and Evidence archive with a sticky, touch-sized two-section switcher; the introduction/health panel is limited to signed-out state; workflow/history remain mounted so switching preserves form/upload state; completion opens history; body includes mobile safe-area handling and application controls have 44px minimum height. Web tests 18/18, typecheck and production build passed. Device Safari/Android QA was unavailable and remains a manual verification item."
+    },
+    {
+      "id": "feat-029",
+      "name": "Mobile capture and additive evidence selection",
+      "description": "Add clear photo/video/file entry points, append selections before upload, warn about likely duplicates and validate type/size early. Keep server-owned asset lifecycle unchanged. See docs/MOBILE_LOCALIZATION_DRIVE_PLAN.md.",
+      "dependencies": [
+        "feat-028"
+      ],
+      "acceptance_criteria": [
+        "Capture or choose files using device-supported controls with a file-picker fallback; cancelling preserves existing selections.",
+        "Additional selection appends; replace-all, remove-one and clear-all are explicit; duplicate names never silently discard evidence.",
+        "Unsupported/oversized files report localized errors consistent with backend limits without losing prior valid files; previews retain StrictMode-safe cleanup.",
+        "Verify repeated selection, invalid files, capture on supported phones and existing upload/retry behavior, plus relevant web checks."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-15: New Record now offers Take photo, Record video and Choose files controls with mobile capture attributes plus the existing picker/drop fallback; later selections append instead of replacing valid files; unsupported files are rejected while valid selections remain; likely duplicate file identity is warned without silent removal. Added web regression coverage for capture attributes and additive selection. Web tests 19/19, typecheck and production build passed. Physical camera behavior remains manual Safari/Android QA because no browser/device runtime was connected."
+    },
+    {
+      "id": "feat-030",
+      "name": "Full evidence viewer and original downloads",
+      "description": "Show uncropped evidence previews and an accessible in-page viewer with zoom, previous/next navigation, video controls, and authorized original-file downloads. See docs/MOBILE_LOCALIZATION_DRIVE_PLAN.md.",
+      "dependencies": [
+        "feat-029"
+      ],
+      "acceptance_criteria": [
+        "Portrait/landscape images retain visible edges; the viewer supports zoom, previous/next, close/back and correct focus on mobile and desktop.",
+        "Video controls and localized media/session/provider errors remain usable.",
+        "Original downloads preserve verified bytes, safe filenames and owner-only access without permanent public links; any additive contract change is implemented and tested across client/backend.",
+        "Record viewer, download authorization/content, phone behavior and relevant build/type/test results."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-15: added owner-authorized in-page evidence viewer with uncropped image display, zoom in/out, previous/next navigation, close controls, video playback, per-asset download and viewer download links using the existing protected content endpoint. Added regression coverage for viewer open/close, zoom controls and original download filename. Web tests 19/19, typecheck and production build passed. Physical mobile viewer/download QA remains manual because no browser/device runtime was connected."
+    },
+    {
+      "id": "feat-031",
+      "name": "Drive-preferred storage selection for new records",
+      "description": "Default new records to available, validly linked Google Drive; otherwise use available application storage, with explicit user choice and connection recovery. See the state table in docs/MOBILE_LOCALIZATION_DRIVE_PLAN.md.",
+      "dependencies": [
+        "feat-013"
+      ],
+      "acceptance_criteria": [
+        "A valid available Drive connection defaults new records to Drive; available B2 remains selectable and is the default when not linked.",
+        "Show storage before creation and in record details; do not override explicit selections on background connection refresh.",
+        "Unavailable storage or failed/revoked/quota-limited Drive has clear recovery; a created record never changes provider automatically and old records never migrate.",
+        "Connecting from the form does not silently discard input/files; verify the complete provider-state matrix and localized phone UI."
+      ],
+      "status": "done",
+      "evidence": "Completed 2026-09-17. Added session-protected/no-store GET /api/v1/storage-providers, Drive-first defaults with configured B2 fallback, explicit-choice preservation on refresh, disabled creation when unavailable, localized recovery/connection controls with OAuth departure warning, immutable provider after creation, and fresh default for each subsequent record. History filters include both providers. Startup and final ./init.sh passed. Web test/typecheck/build passed (33/33); backend test/typecheck/build passed (78 passed, 4 opt-in tests skipped), including authenticated provider availability matrix and no-store. Backend rerun required approved escalation after sandbox tsx IPC EPERM. Browser discovery returned no instances; physical Safari iPhone/Chrome Android visual/upload QA remains unavailable and documented in docs/TESTING.md. No migrations or environment changes; live Drive smoke from feat-013 was not repeated. Reopened 2026-09-17 for user-reported Drive browser upload failure: live preflight only permits GET/HEAD/POST; fixing PUT/PATCH/DELETE CORS and misleading B2 network error. Regression fixed: explicit backend CORS methods permit PUT/PATCH/DELETE while retaining the configured origin and credentials; server/direct upload network errors are provider-appropriate and localized. Live Drive OPTIONS changed from GET,HEAD,POST to GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS (204). Web 35/35 and backend 79 passed/4 opt-in skipped; both typechecks/builds passed. No actual user file was uploaded by the agent."
+    },
+    {
+      "id": "feat-032",
+      "name": "Reference search across recorder history",
+      "description": "Search the owner's full history by order/shipment reference with existing filters and pagination. Document exact/partial, case and whitespace matching semantics during implementation. See docs/MOBILE_LOCALIZATION_DRIVE_PLAN.md.",
+      "dependencies": [
+        "feat-028"
+      ],
+      "acceptance_criteria": [
+        "Search runs server-side across owned records, composes with filters and resets pagination when changed or cleared.",
+        "Empty/loading/error states are localized and references retain their original stored values.",
+        "Additive query contract, matching edge cases, bounded queries and owner isolation are documented and verified across backend/client."
+      ],
+      "status": "done",
+      "evidence": "Completed 2026-09-17. Added bounded reference query to owner-scoped activity history, literal case-insensitive substring matching before count/pagination, trimmed query edges and preserved reference values. UI provides localized search/clear/help/error states, composes with filters, resets page on apply/clear and preserves search across paging/language switches. Fixed cancelled list schema to match the existing UI/domain contract. Startup ./init.sh passed; web 38/38 plus typecheck/build, backend 80 passed/5 opt-in skipped plus typecheck/build, PostgreSQL recorder integrations 2/2 with temporary fixture cleanup. Integration proves literal special characters, quote safety, both providers, null references, owner isolation, deleted exclusion, date/status filters and page boundaries. Browser discovery returned []; physical mobile/visual QA unavailable. No migration/environment changes; current local web 5173 and backend 3000 remain running."
+    },
+    {
+      "id": "feat-033",
+      "name": "Compare packing and unpacking evidence by reference",
+      "description": "Let owners select packing and unpacking records with the same reference for manual evidence comparison on phone and larger screens. See docs/MOBILE_LOCALIZATION_DRIVE_PLAN.md.",
+      "dependencies": [
+        "feat-032",
+        "feat-030"
+      ],
+      "acceptance_criteria": [
+        "Show selectable packing/unpacking records and their media, times and notes with phone tabs/sections and suitable wider layouts.",
+        "Handle a missing side or multiple records for one reference without assuming uniqueness or automatically pairing unrelated records.",
+        "Reuse owner-authorized viewing; verify both locales, multiple/missing matches and access isolation. No automated damage analysis."
+      ],
+      "status": "done",
+      "evidence": "Completed 2026-09-17. Added authenticated exact-reference comparison candidates bounded to the newest 50 records per operation, owner/tombstone isolation, explicit selection for multiple matches, one-match convenience, missing-side/truncation/error states, phone tabs, wide two-column evidence, notes/times/status/media and protected original downloads in VI/EN. No pair is persisted and no automatic/AI assessment occurs. Startup/final ./init.sh passed; web 42/42 plus typecheck/build, backend 83 passed/5 opt-in skipped plus typecheck/build, PostgreSQL recorder integrations 2/2 with fixtures cleaned, harness 100/100 and API JSON examples valid. Browser runtime had no available instances, so physical mobile/wide visual QA remains documented and unavailable. No migration, environment or provider change."
+    },
+  {
+    "id": "feat-034",
+      "name": "Recover server-created unfinished recorder activities",
+      "description": "Resume draft/uploading activities after reload or interruption by reconciling server assets, preserving ready files and reselecting missing local files when required. See docs/MOBILE_LOCALIZATION_DRIVE_PLAN.md.",
+      "dependencies": [
+        "feat-029",
+        "feat-031"
+      ],
+      "acceptance_criteria": [
+        "An unfinished-work view reopens the same server-created activity and reconciles server state before retries without duplicating ready assets.",
+        "Missing files can be reselected only after identity/content validation; expired attempts, sessions and provider permissions have clear recovery.",
+        "Preserve each activity's provider regardless of new-record defaults and honor completion/cancellation/deletion invariants.",
+        "Verify interrupted create/upload/finalize responses and reload recovery for B2 and Drive; background uploads, byte-level resume and durable offline videos are not promised."
+      ],
+      "status": "done",
+      "evidence": "Completed 2026-09-17. Added the unfinished-work view to Evidence archive, loading owner-scoped draft/uploading activities after reload, preserving the activity storage provider and ready assets, and reopening detail without creating a new activity. Missing assets require an exact filename/content-type/size/SHA-256 match before retry; retries reuse the same asset and finalize the newly issued attempt, with active-attempt, provider/network and generic recovery errors kept visible. Added a custom Delete unfinished activity action that invokes the existing cancellation/cleanup lifecycle and removes the item from the recovery list after success. Added VI/EN strings and component coverage for ready retention, wrong-file rejection and same-asset retry. Verification: ./init.sh passed; web 44/44 plus typecheck/build. Backend contract is unchanged and existing retry/finalize/cancel invariants are reused. Browser runtime discovery returned []; physical mobile/provider visual QA remains unavailable and documented. No migration, environment or provider changes."
+    },
+    {
+      "id": "feat-035",
+      "name": "Explain personal Google Drive storage after sign-in",
+      "description": "After application login, clearly explain that connecting Google Drive gives the operator a personal storage destination, with a visible connect/manage path and status that does not confuse app authentication with Google authorization.",
+      "dependencies": [
+        "feat-013",
+        "feat-031"
+      ],
+      "acceptance_criteria": [
+        "Signed-in users can understand why connecting Google Drive is useful before starting a record, without being forced to connect it.",
+        "The UI distinguishes application sign-in from Google Drive connection and shows connected, unavailable, reconnect and not-configured states with a direct action.",
+        "Existing provider choice, activity provider pinning and VI/EN behavior remain unchanged; no OAuth scope or credential contract change is implied."
+      ],
+      "status": "done",
+      "evidence": "Completed 2026-09-17. Signed-in workspace presents a personal-storage setup panel only while Google Drive is not connected; once connected the panel hides, while existing connection management remains in the profile menu. Copy distinguishes app sign-in from Google authorization, keeps Google optional and offers application storage as an alternative. Unlink/provider-change events make the panel eligible to reappear. VI/EN copy added; OAuth scope, credentials, provider pinning and API contract are unchanged. Verification: ./init.sh passed; web 44/44 tests, typecheck and build passed."
+    },
+    {
+      "id": "feat-036",
+      "name": "Use product-facing storage labels",
+      "description": "Replace infrastructure-specific Backblaze B2 wording in user-facing surfaces with a product-facing application storage label while preserving technical provider identifiers in APIs and diagnostics.",
+      "dependencies": [
+        "feat-031"
+      ],
+      "acceptance_criteria": [
+        "User-facing storage choices, badges, errors and activity details use a neutral label such as Application storage / Bộ nhớ ứng dụng.",
+        "Google Drive remains named because the user must recognize the external account and permission boundary.",
+        "Stored provider enums, API payloads, logs and operational documentation retain their technical identifiers; both locales and existing tests are updated together."
+      ],
+      "status": "done",
+      "evidence": "Completed 2026-09-17. Replaced user-facing Backblaze B2 wording across the workspace hero, recorder provider badge/select, history detail, comparison and unfinished-recovery surfaces with neutral Application storage / Bộ nhớ ứng dụng labels. Removed the Refresh storage and Manage Google Drive buttons from New Record's Storage area; status refresh remains automatic and connection management stays in the signed-in storage/profile surfaces. Google Drive remains named for account and permission clarity; API enums, backend provider identifiers, logs and storage behavior are unchanged. Web 44/44 tests, typecheck and build passed."
+    },
+    {
+      "id": "feat-037",
+      "name": "Reset form and present submitted evidence",
+      "description": "After a record is successfully completed, reset the new-record inputs and present a reviewable preview of the evidence that was just submitted, while retaining the secured record in history.",
+      "dependencies": [
+        "feat-030",
+        "feat-034"
+      ],
+      "acceptance_criteria": [
+        "Successful completion clears editable metadata and file-selection state so the next record starts cleanly.",
+        "The success state presents the submitted record reference and verified evidence preview, including image/video behavior and a link to the protected detail/history view.",
+        "Reset happens only after completion succeeds; upload/finalize failures preserve recovery state and do not discard selected evidence.",
+        "VI/EN, keyboard focus, object-URL cleanup and mobile layout are covered without changing completion invariants or making storage public."
+      ],
+      "status": "done",
+      "evidence": "Completed 2026-09-17. Successful completion now snapshots the verified local evidence for a centered success modal, clears activity metadata/file-selection state and resets the form so the next record starts clean. The modal shows the submitted reference, verified/secured status, image/video previews and Start another record; upload/finalize failures retain the existing recovery state. Added coverage for reset reference and retained preview. Verification: ./init.sh baseline passed; web 44/44 tests, typecheck and build passed. No backend contract, migration or storage visibility change."
+    },
+    {
+      "id": "feat-038",
+      "name": "Custom confirmation dialogs",
+      "description": "Replace browser-default confirmation prompts for destructive recorder actions with accessible application dialogs.",
+      "dependencies": [
+        "feat-033",
+        "feat-037"
+      ],
+      "acceptance_criteria": [
+        "Cancel and delete activity confirmations use the product modal style with explicit confirm and keep actions.",
+        "Dialogs expose role, modal semantics and localized copy; dismissing keeps the activity unchanged.",
+        "OS file chooser UI remains external to the web app and is not reimplemented."
+      ],
+      "status": "done",
+      "evidence": "Completed 2026-09-17. Replaced window.confirm for recorder cancel/delete actions with an accessible VI/EN application dialog. Web 44/44 tests, typecheck and build passed."
+    },
+    {
+      "id": "feat-039",
+      "name": "Custom application dropdowns",
+      "description": "Replace native browser select popups in recorder and comparison forms with an application-owned accessible listbox.",
+      "dependencies": [
+        "feat-038"
+      ],
+      "acceptance_criteria": [
+        "Storage, operation, status, order and comparison record choices open an application-owned listbox instead of a native dropdown.",
+        "Choices preserve form values and disabled options, with keyboard open/close support and localized labels.",
+        "No API enum or form submission contract changes."
+      ],
+      "status": "done",
+      "evidence": "Completed 2026-09-17. Replaced the shared Select primitive with a custom listbox popover while retaining a synchronized form select for compatibility. Added keyboard Enter/Space/ArrowDown/Escape behavior and preserved disabled options and values. Web 44/44 tests, typecheck and build passed."
+    }
+  ]
+}
