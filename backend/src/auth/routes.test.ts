@@ -41,6 +41,23 @@ function fixture() {
   return { app: buildApp(config, { auth: { authenticate, service } }), repository }
 }
 
+test('production sessions allow cross-site frontend and API requests', async () => {
+  const repository = new MemoryAuthRepository()
+  const service = new AuthService(repository)
+  const app = buildApp({ ...config, corsOrigin: 'https://shopping-recorder-web.vercel.app', nodeEnv: 'production' }, { auth: { service } })
+  try {
+    const registered = await app.inject({
+      method: 'POST', url: '/api/v1/auth/register',
+      headers: { origin: 'https://shopping-recorder-web.vercel.app' },
+      payload: { password: 'correct horse battery staple', username: 'production-cookie' },
+    })
+    const setCookie = registered.headers['set-cookie']
+    const cookieHeader = Array.isArray(setCookie) ? setCookie[0] : setCookie
+    assert.match(cookieHeader ?? '', /SameSite=None/)
+    assert.match(cookieHeader ?? '', /Secure/)
+  } finally { await app.close() }
+})
+
 test('registration hashes the password, creates a persistent session, and returns the current user', async () => {
   const { app, repository } = fixture()
   const registered = await app.inject({

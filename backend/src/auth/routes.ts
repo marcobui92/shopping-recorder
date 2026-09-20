@@ -28,7 +28,10 @@ function setSessionCookie(reply: FastifyReply, config: AppConfig, token: string)
     httpOnly: true,
     maxAge: cookieMaxAgeSeconds,
     path: '/',
-    sameSite: 'lax',
+    // The web app and API are hosted on different sites in production
+    // (for example, Vercel and Render). Lax cookies are not sent with
+    // cross-site fetch requests, so production sessions need SameSite=None.
+    sameSite: config.nodeEnv === 'production' ? 'none' : 'lax',
     secure: config.nodeEnv === 'production',
   })
 }
