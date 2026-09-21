@@ -3,6 +3,7 @@ import { Link, NavLink, Route, Routes } from 'react-router-dom'
 
 import { HomePage } from './pages/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { LegalPage } from './pages/LegalPage'
 import { I18nProvider, LanguageSwitcher, useI18n } from './i18n'
 
 export function App() {
@@ -31,13 +32,15 @@ function AppContent() {
         <div aria-hidden="true" className="page-grid pointer-events-none absolute inset-x-0 top-0 h-[34rem] opacity-70" />
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/privacy" element={<LegalPage kind="privacy" />} />
+          <Route path="/terms" element={<LegalPage kind="terms" />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
       <footer className="border-t bg-card/60">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-7 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <span>Shopping Recorder · {t('Operational evidence workspace')}</span>
-          <span>{t('Encrypted in transit · Owner-authorized access')}</span>
+          <nav aria-label="Legal" className="flex gap-4"><Link className="hover:text-foreground hover:underline" to="/privacy">Privacy Policy</Link><Link className="hover:text-foreground hover:underline" to="/terms">Terms of Service</Link><span>{t('Encrypted in transit · Owner-authorized access')}</span></nav>
         </div>
       </footer>
     </div>
