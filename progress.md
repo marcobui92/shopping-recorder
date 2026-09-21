@@ -406,3 +406,9 @@ NODE
 - Expired records remain in owner-scoped history, detail, search, comparison and the new status filter. Metadata, filenames, checksums and audit events remain; media content endpoints return not found and the UI removes preview/viewer/download controls with localized expiry guidance.
 - The PackTrace logo is now a keyboard-accessible button whose activation performs a full browser reload.
 - Verification: baseline/final `./init.sh`; migration applied; backend tests 85 passed/5 opt-in skipped, typecheck and build; PostgreSQL integrations 4/4; web tests 46/46, typecheck and build; harness validation 100/100; JSON and diff checks passed. No live provider object was deliberately aged/deleted in this session.
+
+## 2026-09-21 — Feature 041 production rollout
+
+- Committed feature 041 as `64da323`, fast-forwarded `develop` and `main`, and applied `0011_add_evidence_retention.sql` to the production Supabase database before pushing either remote branch.
+- Pushed both remote branches successfully. Production verification passed: Render health returned 200, the expired-status query reached authentication with `401 AUTH_REQUIRED` (confirming the new contract), and the Vercel bundle contains the PackTrace reload behavior with the PackTrace document title.
+- No production credential was written to the repository or handoff. The database credential supplied through chat should be rotated. `feat-018` remains blocked because malware-scanning/risk acceptance, backup objectives and remaining production governance are not resolved by this rollout.

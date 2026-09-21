@@ -3,7 +3,7 @@
 ## Current Objective
 
 - Goal: Deliver the PackTrace packing/unpacking evidence recorder with application storage and optional linked Google Drive.
-- feat-041 thirty-day evidence retention and logo reload completed on `develop`; no active feature. feat-018 remains blocked/deferred.
+- feat-041 thirty-day evidence retention and logo reload is deployed from commit `64da323`; production migration `0011` is applied. No active feature; feat-018 remains blocked/deferred.
 
 ## Feature 041 — Thirty-day evidence retention and logo refresh completed
 
@@ -12,6 +12,7 @@
 - Web history/filter/comparison support expired records without issuing media URLs or showing viewer/download controls. VI/EN expiry guidance is included. PackTrace logo activation now calls a full page reload through an accessible button.
 - Verification: backend 85 passed/5 opt-in skipped plus typecheck/build; PostgreSQL integrations 4/4; web 46/46 plus typecheck/build; migration and final `./init.sh` passed; harness 100/100. Provider deletion was deterministically adapter-tested; no live object was deliberately aged/deleted.
 - Next session: activate only one newly requested/unblocked feature. Do not restore indefinite retention or add provider-native lifecycle rules. Production multi-replica scheduling/locking decisions remain part of blocked `feat-018`.
+- Production rollout: migration `0011` was applied to Supabase before `develop` and `main` were pushed. Render health and the new expired-status contract passed; Vercel serves the new PackTrace reload bundle. Rotate the database credential that was supplied through chat; it is not stored in this repository.
 
 ## Feature 040 — Product identity refresh completed
 
