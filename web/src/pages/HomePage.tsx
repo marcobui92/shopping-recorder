@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Archive, CheckCircle2, Cloud, FileCheck2, LockKeyhole, Plus } from 'lucide-react'
+import { Archive, CheckCircle2, FileCheck2, LockKeyhole, Plus } from 'lucide-react'
 
 import type { AppUser, GoogleDriveStatus } from '../api'
 import { AccountAccess } from '../components/AccountAccess'
@@ -39,10 +39,7 @@ export function HomePage() {
 
       <div className={user ? 'hidden' : 'mt-12 sm:mt-16'}><AccountAccess onUserChange={handleUserChange} /></div>
       {user && <div className="mt-8 space-y-5 sm:space-y-8">
-        {driveStatus?.connected !== true && <section className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5" aria-labelledby="personal-storage-heading">
-          <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Cloud aria-hidden="true" className="size-5" /></span><div><h2 className="font-semibold" id="personal-storage-heading">{t('Set up your personal storage')}</h2><p className="mt-1 text-sm leading-6 text-muted-foreground">{t('Connect Google Drive after signing in to keep your evidence in your own personal storage. You can also use application storage without connecting Google.')}</p></div></div>
-          <GoogleDriveConnection onStatusChange={setDriveStatus} />
-        </section>}
+        <GoogleDriveConnection hideWhenConnected onStatusChange={setDriveStatus} showIntro />
         <nav className="sticky top-[4.5rem] z-30 -mx-1 flex rounded-2xl border bg-card/95 p-1.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/80" aria-label={t('Recorder workspace sections')}>
           <button className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${mobileView === 'new' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted'}`} type="button" aria-current={mobileView === 'new' ? 'page' : undefined} onClick={() => setMobileView('new')}><Plus aria-hidden="true" className="size-4" /> {t('New record')}</button>
           <button className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${mobileView === 'history' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted'}`} type="button" aria-current={mobileView === 'history' ? 'page' : undefined} onClick={() => setMobileView('history')}><Archive aria-hidden="true" className="size-4" /> {t('Evidence archive')}</button>
