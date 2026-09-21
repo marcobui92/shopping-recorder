@@ -104,6 +104,7 @@ const translations: Record<string, string> = {
   'File-level verification': 'Xác minh từng tệp', 'Private B2 storage': 'Lưu trữ B2 riêng tư', 'Private application storage': 'Bộ nhớ ứng dụng riêng tư',
   'Workspace': 'Không gian làm việc', 'Private evidence': 'Bằng chứng riêng tư',
   'Operational evidence workspace': 'Không gian bằng chứng vận hành', 'Encrypted in transit · Owner-authorized access': 'Mã hóa khi truyền · Chỉ chủ sở hữu được truy cập',
+  'Packing & unpacking evidence': 'Bằng chứng đóng gói và mở gói',
   'Checking API connection…': 'Đang kiểm tra kết nối API…', 'API unavailable': 'API không khả dụng', 'Try again': 'Thử lại',
   'Recorder service': 'Dịch vụ ghi nhận', 'Ready for evidence': 'Sẵn sàng ghi nhận bằng chứng', 'API is': 'API đang', 'API is ok': 'API đang hoạt động', 'optional': 'không bắt buộc',
   'Signed in as': 'Đã đăng nhập với tên', 'Session protected': 'Phiên được bảo vệ', 'Sign out': 'Đăng xuất',
@@ -138,7 +139,7 @@ const translations: Record<string, string> = {
   'Open viewer': 'Mở trình xem', 'Download original': 'Tải bản gốc', 'Evidence viewer': 'Trình xem bằng chứng', 'Zoom out': 'Thu nhỏ', 'Zoom in': 'Phóng to', 'Close viewer': 'Đóng trình xem', 'Previous evidence': 'Bằng chứng trước', 'Next evidence': 'Bằng chứng tiếp theo',
   'Audit trail': 'Lịch sử thay đổi', 'No corrections or lifecycle actions recorded.': 'Chưa có chỉnh sửa hoặc thao tác vòng đời nào.', 'This activity has no evidence files yet.': 'Hoạt động này chưa có tệp bằng chứng.', 'Unable to load this evidence. Check your session or storage connection.': 'Không thể tải bằng chứng. Hãy kiểm tra phiên hoặc kết nối nơi lưu.',
   'Activity deleted. Some storage cleanup remains pending.': 'Hoạt động đã xóa. Một phần dọn dẹp nơi lưu vẫn đang chờ xử lý.', 'Activity and stored evidence deleted.': 'Hoạt động và bằng chứng đã lưu đã được xóa.', 'Unable to delete the activity.': 'Không thể xóa hoạt động.', 'Unable to start this record.': 'Không thể bắt đầu bản ghi.', 'Unable to complete this record.': 'Không thể hoàn tất bản ghi.', 'Unknown type': 'Không rõ định dạng',
-  'This page does not exist.': 'Trang này không tồn tại.', 'Return to the Shopping Recorder workspace.': 'Quay lại không gian Shopping Recorder.', 'Go home': 'Về trang chính',
+  'This page does not exist.': 'Trang này không tồn tại.', 'Return to the PackTrace workspace.': 'Quay lại không gian PackTrace.', 'Go home': 'Về trang chính',
 }
 
 interface I18nValue { locale: Locale; setLocale: (locale: Locale) => void; t: (value: string) => string }

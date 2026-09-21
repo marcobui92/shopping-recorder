@@ -383,3 +383,19 @@ NODE
 - Replaced the shared native Select presentation with an application-owned listbox popover for storage, operation, status, order and comparison selections. A synchronized hidden form select preserves existing form values and API enums.
 - Added custom open/close behavior with click-away, Enter/Space/ArrowDown and Escape handling; disabled choices remain disabled and localized labels are preserved. Web tests 44/44, typecheck and build passed.
 - Follow-up visual fix: listbox popup now uses an explicit opaque card background and foreground color because the unavailable `bg-popover` token rendered transparently. Workflow/comparison tests 19/19 and typecheck passed.
+
+## 2026-09-21 — Feature 040 product identity refresh
+
+- Activated only feat-040 on `develop` after `./init.sh` passed. Replaced the narrow UnboxProof and legacy Shopping Recorder user-facing identity with PackTrace, a name that covers both packing and unpacking workflows.
+- Updated the inline brand mark, document title/description, footer, legal pages, not-found copy, and VI/EN supporting tagline. Technical routes, API identifiers, storage providers, and deployment URLs are unchanged.
+- Verification: `./init.sh` passed; web 44/44 tests, typecheck and build passed; `feature_list.json` parsed successfully. The feature is done on `develop`; no backend/API/storage contract changed.
+
+## 2026-09-21 — PackTrace logo direction revised
+
+- Reopened feat-040 after visual feedback. Kept the PackTrace name and replaced the first flat box/check mark with a rounded dark icon, line-art package, and two directional arrows to communicate packing and unpacking.
+- Verification: web 44/44 tests, typecheck, build and feature JSON validation passed. No backend/API/storage contract changed.
+
+## 2026-09-21 — PackTrace logo background softened
+
+- Reopened feat-040 after feedback that the dark logo background felt too heavy. Changed the mark to a light mint background with navy/teal package lines and lime return arrow.
+- Final verification: web 44/44 tests, typecheck and build passed. The mark now uses a high-contrast lavender background with indigo package lines, navy structure and lime return arrow. No backend/API/storage contract changed.

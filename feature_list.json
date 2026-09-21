@@ -481,6 +481,21 @@
       ],
       "status": "done",
       "evidence": "Completed 2026-09-17. Replaced the shared Select primitive with a custom listbox popover while retaining a synchronized form select for compatibility. Added keyboard Enter/Space/ArrowDown/Escape behavior and preserved disabled options and values. Web 44/44 tests, typecheck and build passed."
+    },
+    {
+      "id": "feat-040",
+      "name": "Refresh product identity for packing and unpacking",
+      "description": "Replace the narrow UnboxProof and legacy Shopping Recorder user-facing identity with a modern brand that clearly covers both packing and unpacking evidence.",
+      "dependencies": [
+        "feat-039"
+      ],
+      "acceptance_criteria": [
+        "The header mark, document title, metadata, footer and legal pages use one consistent product name.",
+        "The name and supporting copy clearly cover both packing and unpacking workflows in English and Vietnamese.",
+        "Technical routes, API identifiers, storage providers and deployment URLs remain unchanged."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-21 after visual feedback. Kept PackTrace and the package/arrows concept, then tuned the icon to a high-contrast lavender background with indigo package lines, navy structure and lime return arrow. Verification: web 44/44 tests, typecheck and build passed; feature_list.json remains valid."
     }
   ]
 }

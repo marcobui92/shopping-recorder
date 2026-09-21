@@ -1,9 +1,10 @@
-import { Box, ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import { Link, NavLink, Route, Routes } from 'react-router-dom'
 
 import { HomePage } from './pages/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { LegalPage } from './pages/LegalPage'
+import { BrandLogo } from './components/BrandLogo'
 import { I18nProvider, LanguageSwitcher, useI18n } from './i18n'
 
 export function App() {
@@ -17,8 +18,7 @@ function AppContent() {
       <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-6 lg:px-8">
           <Link className="flex min-w-0 shrink items-center gap-2 font-semibold tracking-tight sm:gap-3" to="/">
-            <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm"><Box aria-hidden="true" className="size-5" /></span>
-            <span className="whitespace-nowrap text-sm sm:text-base">Shopping Recorder</span>
+            <BrandLogo />
           </Link>
           <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2">
             <NavLink className="hidden rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:inline-flex" end to="/">{t('Workspace')}</NavLink>
@@ -39,7 +39,7 @@ function AppContent() {
       </main>
       <footer className="border-t bg-card/60">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-7 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <span>Shopping Recorder · {t('Operational evidence workspace')}</span>
+          <span>PackTrace · {t('Packing & unpacking evidence')}</span>
           <nav aria-label="Legal" className="flex gap-4"><Link className="hover:text-foreground hover:underline" to="/privacy">Privacy Policy</Link><Link className="hover:text-foreground hover:underline" to="/terms">Terms of Service</Link><span>{t('Encrypted in transit · Owner-authorized access')}</span></nav>
         </div>
       </footer>

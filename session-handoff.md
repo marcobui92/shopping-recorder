@@ -2,8 +2,14 @@
 
 ## Current Objective
 
-- Goal: Deliver the packing/unpacking evidence recorder with B2 and optional linked Google Drive.
-- No active feature. feat-034 completed on 2026-09-17; feat-018 remains blocked/deferred.
+- Goal: Deliver the PackTrace packing/unpacking evidence recorder with application storage and optional linked Google Drive.
+- feat-040 product identity refresh completed on `develop`; feat-018 remains blocked/deferred.
+
+## Feature 040 — Product identity refresh completed
+
+- Selected `PackTrace` as the modern product name because it covers both packing and unpacking evidence.
+- Updated the web mark, document title/description, footer, legal pages, not-found copy, and VI/EN tagline. Technical routes, API identifiers, storage providers and deployment URLs remain unchanged.
+- The PackTrace name is retained, with a high-contrast lavender mark, line-art package and bidirectional arrows after visual feedback. Web 44/44 tests, typecheck and build passed; no backend/API/storage contract changed.
 
 ## Feature 034 — Current Handoff
 
