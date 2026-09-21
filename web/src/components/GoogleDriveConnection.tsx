@@ -4,7 +4,7 @@ import { connectGoogleDrive, getGoogleDriveStatus, unlinkGoogleDrive, type Googl
 import { useI18n } from '../i18n'
 import { Button } from './ui/button'
 
-export function GoogleDriveConnection({ onStatusChange, showIntro = false, hideWhenConnected = false }: { onStatusChange?: (status: GoogleDriveStatus) => void; showIntro?: boolean; hideWhenConnected?: boolean } = {}) {
+export function GoogleDriveConnection({ onStatusChange, onUnlinked, showIntro = false, hideWhenConnected = false }: { onStatusChange?: (status: GoogleDriveStatus) => void; onUnlinked?: () => void; showIntro?: boolean; hideWhenConnected?: boolean } = {}) {
   const { t } = useI18n()
   const [status, setStatus] = useState<GoogleDriveStatus | null>(null)
   const [resolved, setResolved] = useState(false)
@@ -21,7 +21,7 @@ export function GoogleDriveConnection({ onStatusChange, showIntro = false, hideW
     setBusy(true)
     setError(false)
     try {
-      if (confirm === 'unlink') { await unlinkGoogleDrive(); await refresh(); window.dispatchEvent(new Event('storage-providers-changed')); setConfirm(null) }
+      if (confirm === 'unlink') { await unlinkGoogleDrive(); await refresh(); setConfirm(null); onUnlinked?.(); window.dispatchEvent(new Event('storage-providers-changed')) }
       else { window.location.assign(await connectGoogleDrive()) }
     } catch { setError(true) }
     finally { setBusy(false) }

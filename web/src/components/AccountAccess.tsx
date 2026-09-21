@@ -68,7 +68,7 @@ export function AccountAccess({ onUserChange }: { onUserChange: (user: AppUser |
           <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-full bg-primary/10 text-primary"><UserRound aria-hidden="true" className="size-5" /></span><div className="min-w-0"><span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('Signed in as')}</span><p className="truncate font-semibold">{user.username}</p></div></div>
           <div className="mt-4 flex items-center gap-2 rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground"><ShieldCheck aria-hidden="true" className="size-4 shrink-0 text-primary" /> {t('Session protected')}</div>
           {error && <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
-          <GoogleDriveConnection />
+          <GoogleDriveConnection onUnlinked={() => { setProfileOpen(false); window.location.reload() }} />
           <Button className="mt-4 w-full" disabled={submitting} variant="outline" onClick={() => void signOut()}><LogOut aria-hidden="true" className="size-4" /> {t('Sign out')}</Button>
         </div>}
       </div>
