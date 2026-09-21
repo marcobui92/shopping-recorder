@@ -51,6 +51,7 @@ test('recorder history query applies defaults and validates its timestamp range'
   assert.throws(() => parseListRecorderActivitiesInput({
     occurredFrom: '2026-09-04T00:00:00.000Z', occurredTo: '2026-09-03T00:00:00.000Z',
   }), (error: unknown) => error instanceof AppError && error.code === 'VALIDATION_ERROR')
+  assert.equal(parseListRecorderActivitiesInput({ status: 'expired' }).status, 'expired')
 })
 
 test('comparison requires one normalized exact reference', () => {

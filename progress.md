@@ -2,12 +2,13 @@
 
 ## Current State
 
-- Last updated: 2026-09-17
-- Active feature: none; feat-032 reference search completed. Next: feat-033 manual comparison.
+- Last updated: 2026-09-21
+- Active feature: none; feat-041 thirty-day evidence retention and logo refresh completed. feat-018 remains blocked/deferred.
 - Baseline: `./init.sh` installs the locked web and backend dependencies successfully.
 
 ## What's Done
 
+- [x] Completed `feat-041`: completed evidence now expires after 30 days, record metadata remains visible as expired, provider cleanup is automatic/retryable, content access is revoked before deletion, and tapping/clicking the PackTrace logo reloads the page.
 - [x] Completed `feat-027`: added Vietnamese-default application localization with English switching, browser-local preference persistence, document language updates, and localized core workspace/account/health/recorder copy while preserving API/user data.
 - [x] Completed `feat-028`: added a signed-in phone-first workspace switcher for New record/Evidence archive, preserved mounted form state across sections, auto-opened history after completion, reduced signed-in technical hero content, and added mobile safe-area/touch-target styling.
 - [x] Completed `feat-029`: added phone photo/video capture entry points, additive file selection, duplicate warnings and invalid-file handling while preserving valid files.
@@ -51,13 +52,12 @@
 
 ## What's Next
 
-1. Finish `feat-013`: OAuth state/PKCE callback, owner-scoped connection API, Drive folder/upload/verification/retrieval adapter, and focused tests.
-2. Then implement `feat-031` provider choice/default UI; keep one feature active at a time.
-3. Keep `feat-032` reference search, `feat-033` comparison and `feat-034` recovery as additional backlog; exact priority is not fixed. Read `docs/MOBILE_LOCALIZATION_DRIVE_PLAN.md` for acceptance criteria.
-4. `feat-018` remains blocked/deferred by user direction; do not automatically reactivate production work.
+1. Select one new unblocked feature only when requested; all product features through `feat-041` are done.
+2. `feat-018` remains blocked/deferred by user direction; do not automatically reactivate production work.
 
 ## Decisions
 
+- On 2026-09-21, evidence retention changed from indefinite to 30 days after `completed_at`. Expiry preserves activity/asset metadata and audit history, denies retrieval immediately, and deletes exact provider objects through retryable cleanup jobs. The backend sweeps on startup and hourly; provider-native lifecycle rules remain prohibited because they bypass application state/audit.
 - On 2026-09-15, the user approved documenting phone-first UX, Vietnamese as the main language with English switching, and Google Drive as preferred new-record storage when connected and available. Phone work precedes Drive; detailed order is proposed in `docs/MOBILE_LOCALIZATION_DRIVE_PLAN.md`. Search, comparison and recovery remain additional backlog. This session authorizes documents and feature breakdown only, not code.
 
 - On 2026-09-13, `feat-017` standardized authentication/recorder throttling on the existing Fastify rate-limit plugin: recorder lifecycle mutations allow 30 requests/minute per client group and upload mutations allow 60/minute; production multi-instance deployments must use a shared store in `feat-018`.
@@ -399,3 +399,10 @@ NODE
 
 - Reopened feat-040 after feedback that the dark logo background felt too heavy. Changed the mark to a light mint background with navy/teal package lines and lime return arrow.
 - Final verification: web 44/44 tests, typecheck and build passed. The mark now uses a high-contrast lavender background with indigo package lines, navy structure and lime return arrow. No backend/API/storage contract changed.
+
+## 2026-09-21 — Feature 041 retention and logo refresh completed
+
+- Added and locally applied `0011_add_evidence_retention.sql`. Completion now persists `evidence_expires_at = completed_at + 30 days`; existing completed rows were backfilled. A startup/hourly sweep atomically changes due rows to `expired`, records an audit event, creates exact-object cleanup jobs, then invokes B2/Drive deletion. Failed deletion stays pending for later retry and never restores content access.
+- Expired records remain in owner-scoped history, detail, search, comparison and the new status filter. Metadata, filenames, checksums and audit events remain; media content endpoints return not found and the UI removes preview/viewer/download controls with localized expiry guidance.
+- The PackTrace logo is now a keyboard-accessible button whose activation performs a full browser reload.
+- Verification: baseline/final `./init.sh`; migration applied; backend tests 85 passed/5 opt-in skipped, typecheck and build; PostgreSQL integrations 4/4; web tests 46/46, typecheck and build; harness validation 100/100; JSON and diff checks passed. No live provider object was deliberately aged/deleted in this session.

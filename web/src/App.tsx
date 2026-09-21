@@ -4,7 +4,7 @@ import { Link, NavLink, Route, Routes } from 'react-router-dom'
 import { HomePage } from './pages/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { LegalPage } from './pages/LegalPage'
-import { BrandLogo } from './components/BrandLogo'
+import { BrandRefreshButton } from './components/BrandRefreshButton'
 import { I18nProvider, LanguageSwitcher, useI18n } from './i18n'
 
 export function App() {
@@ -17,9 +17,7 @@ function AppContent() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-6 lg:px-8">
-          <Link className="flex min-w-0 shrink items-center gap-2 font-semibold tracking-tight sm:gap-3" to="/">
-            <BrandLogo />
-          </Link>
+          <BrandRefreshButton />
           <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2">
             <NavLink className="hidden rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:inline-flex" end to="/">{t('Workspace')}</NavLink>
             <span className="hidden items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:flex"><ShieldCheck aria-hidden="true" className="size-3.5 text-primary" /> {t('Private evidence')}</span>

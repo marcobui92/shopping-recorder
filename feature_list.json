@@ -496,6 +496,24 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-09-21 after visual feedback. Kept PackTrace and the package/arrows concept, then tuned the icon to a high-contrast lavender background with indigo package lines, navy structure and lime return arrow. Verification: web 44/44 tests, typecheck and build passed; feature_list.json remains valid."
+    },
+    {
+      "id": "feat-041",
+      "name": "Thirty-day evidence retention and logo refresh",
+      "description": "Automatically expire completed recorder evidence 30 days after completion, delete provider objects while preserving record metadata with an expired status, and reload the browser page when the PackTrace logo is activated.",
+      "dependencies": [
+        "feat-016",
+        "feat-040"
+      ],
+      "acceptance_criteria": [
+        "A completed activity receives a deterministic evidence expiry time 30 days after completion; a background sweep marks due records expired before attempting provider deletion.",
+        "Expired records remain owner-visible and filterable, retain metadata and audit history, deny evidence retrieval, and clearly communicate that stored evidence has expired.",
+        "Provider cleanup uses the existing exact-object cleanup mechanism and failed deletions remain retryable without restoring evidence access.",
+        "Activating the PackTrace logo performs a full page reload and remains keyboard-accessible.",
+        "Migration, API contract, operations documentation, focused backend/web tests, type checks, builds, progress and handoff evidence are updated together."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-21. Added migration 0011 with a completedAt + 30-day evidence deadline, expired lifecycle state/timestamps/audit and due index; startup/hourly backend sweeping revokes access before exact-provider cleanup and retries pending failures while preserving owner-visible metadata. Updated API/domain/docs and VI/EN archive/comparison UI so expired evidence has no preview/download controls. PackTrace logo is now an accessible full-page reload button. Migration applied locally; PostgreSQL integrations 4/4 passed; backend 85 passed/5 opt-in skipped plus typecheck/build; web 46/46 plus typecheck/build; harness 100/100; final ./init.sh passed. No live provider object was intentionally aged/deleted; provider deletion is covered through deterministic adapter tests and existing live provider behavior."
     }
   ]
 }

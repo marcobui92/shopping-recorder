@@ -34,7 +34,7 @@ These tests create uniquely named fixtures and remove them in `finally` blocks.
 | Authorization | Missing and other-owner activities/assets return equivalent `404` responses across read, correction, cancellation, deletion, audit, and content routes |
 | Upload abuse | Unknown fields, unsupported MIME declarations, excessive byte sizes, malformed checksums, duplicate active attempts, and mutation bursts fail before privileged provider behavior |
 | Provider failures | Missing objects and verification mismatches fail closed; transient finalize/download/cleanup outages use stable errors and preserve retryable state |
-| Lifecycle integrity | PostgreSQL integration covers finalization, completion, audited correction, tombstone visibility, exact-version cleanup jobs, retry completion, and fixture cleanup |
+| Lifecycle integrity | PostgreSQL integration covers finalization, completion, 30-day expiry with retained metadata and denied retrieval, audited correction, tombstone visibility, exact-version cleanup jobs, retry completion, and fixture cleanup |
 | Browser behavior | Component tests cover session restore, validated file selection, upload/finalize/reconciliation/retry, completion, history states, evidence rendering, correction, confirmation, and audit display |
 | Accessibility | Forms and landmarks have accessible names; fields have programmatic labels; progress has a file-specific label; asynchronous success uses status; actionable failures use alert; controls expose disabled state |
 | Build safety | Both roots pass TypeScript checks and production builds |

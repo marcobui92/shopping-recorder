@@ -13,7 +13,7 @@ vi.mock('../api', () => ({
 }))
 
 const base = {
-  completedAt: '2026-09-05T09:10:00.000Z', createdAt: '2026-09-05T09:00:00.000Z', notes: null,
+  completedAt: '2026-09-05T09:10:00.000Z', createdAt: '2026-09-05T09:00:00.000Z', evidenceExpiresAt: '2026-10-05T09:10:00.000Z', expiredAt: null, notes: null,
   occurredAt: '2026-09-05T08:55:00.000Z', reference: 'ORDER-1042', status: 'complete' as const,
   storageProvider: 's3' as const, updatedAt: '2026-09-05T09:10:00.000Z',
 }

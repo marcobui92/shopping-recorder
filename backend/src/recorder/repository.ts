@@ -42,6 +42,10 @@ export interface LifecycleMutationResult {
   cleanupTargets: CleanupTarget[]
 }
 
+export interface RetentionSweepResult extends LifecycleMutationResult {
+  expiredActivities: number
+}
+
 export interface RecorderRepository {
   beginFinalize(ownerUserId: string, assetId: string, attemptId: string): Promise<BeginFinalizeResult | null>
   completeActivity(ownerUserId: string, activityId: string): Promise<RecorderActivity | null>
@@ -74,6 +78,7 @@ export interface RecorderRepository {
   getReadyAsset(ownerUserId: string, assetId: string): Promise<UploadTarget | null>
   deleteActivity(ownerUserId: string, activityId: string): Promise<LifecycleMutationResult | null>
   finishCleanup(cleanupId: string, succeeded: boolean): Promise<void>
+  expireDueActivities(limit: number): Promise<RetentionSweepResult>
   listAuditEvents(ownerUserId: string, activityId: string): Promise<ActivityAuditEvent[] | null>
   listActivities(ownerUserId: string, input: ListRecorderActivitiesInput): Promise<{ activities: RecorderActivity[]; totalRecords: number }>
   listComparisonCandidates(ownerUserId: string, reference: string, operationType: OperationType, limit: number): Promise<RecorderActivity[]>
@@ -85,6 +90,8 @@ export interface RecorderRepository {
 interface ActivityRow {
   completed_at: Date | null
   created_at: Date
+  evidence_expires_at: Date | null
+  expired_at: Date | null
   id: string
   notes: string | null
   occurred_at: Date
@@ -132,6 +139,8 @@ function toActivity(row: ActivityRow): RecorderActivity {
   return {
     completedAt: row.completed_at?.toISOString() ?? null,
     createdAt: row.created_at.toISOString(),
+    evidenceExpiresAt: row.evidence_expires_at?.toISOString() ?? null,
+    expiredAt: row.expired_at?.toISOString() ?? null,
     id: row.id,
     notes: row.notes,
     occurredAt: row.occurred_at.toISOString(),
@@ -193,7 +202,7 @@ async function transaction<T>(pool: Pool, work: (client: PoolClient) => Promise<
 }
 
 const activityColumns = `id, owner_user_id, operation_type, status, storage_provider, reference, notes,
-  occurred_at, completed_at, created_at, updated_at`
+  occurred_at, completed_at, evidence_expires_at, expired_at, created_at, updated_at`
 const assetColumns = `id, activity_id, storage_provider, ordinal, media_type, status, original_filename,
   declared_content_type, verified_content_type, expected_size_bytes, verified_size_bytes,
   expected_sha256, verified_sha256, ready_at, created_at, updated_at`
@@ -317,7 +326,7 @@ export class PostgresRecorderRepository implements RecorderRepository {
 
       const completed = await client.query<ActivityRow>(`
         UPDATE recorder_activities
-        SET status = 'complete', completed_at = now(), updated_at = now()
+        SET status = 'complete', completed_at = now(), evidence_expires_at = now() + interval '30 days', updated_at = now()
         WHERE id = $1
         RETURNING ${activityColumns}
       `, [activityId])
@@ -407,7 +416,7 @@ export class PostgresRecorderRepository implements RecorderRepository {
       `, [activityId, ownerUserId])
       const current = found.rows[0]
       if (!current) return null
-      if (current.status !== 'complete' && current.status !== ('deleted' as RecorderActivity['status'])) {
+      if (current.status !== 'complete' && current.status !== 'expired' && current.status !== ('deleted' as RecorderActivity['status'])) {
         throw new Error('ACTIVITY_NOT_DELETABLE')
       }
       if (current.status !== ('deleted' as RecorderActivity['status'])) {
@@ -433,7 +442,7 @@ export class PostgresRecorderRepository implements RecorderRepository {
     return transaction(this.pool, async (client) => {
       const found = await client.query<{ id: string }>(`
         SELECT id FROM recorder_activities
-        WHERE id = $1 AND owner_user_id = $2 AND status IN ('cancelled', 'deleted') FOR UPDATE
+        WHERE id = $1 AND owner_user_id = $2 AND status IN ('cancelled', 'expired', 'deleted') FOR UPDATE
       `, [activityId, ownerUserId])
       if (!found.rows[0]) return null
       await client.query(`
@@ -453,6 +462,56 @@ export class PostgresRecorderRepository implements RecorderRepository {
         updated_at = now()
       WHERE id = $1
     `, [cleanupId, succeeded])
+  }
+
+  async expireDueActivities(limit: number): Promise<RetentionSweepResult> {
+    return transaction(this.pool, async (client) => {
+      const due = await client.query<{ id: string }>(`
+        SELECT id FROM recorder_activities
+        WHERE status = 'complete' AND evidence_expires_at <= now()
+        ORDER BY evidence_expires_at, id
+        LIMIT $1 FOR UPDATE SKIP LOCKED
+      `, [limit])
+      const ids = due.rows.map((row) => row.id)
+      if (ids.length) {
+        await client.query(`
+          UPDATE recorder_activities
+          SET status = 'expired', expired_at = now(), updated_at = now()
+          WHERE id = ANY($1::uuid[])
+        `, [ids])
+        await client.query(`
+          INSERT INTO media_cleanup_jobs
+            (activity_id, asset_id, storage_provider, provider_object_ref, provider_version_ref)
+          SELECT activity_id, id, storage_provider, provider_object_ref, provider_version_ref
+          FROM media_assets WHERE activity_id = ANY($1::uuid[]) AND provider_object_ref IS NOT NULL
+          ON CONFLICT (activity_id, asset_id) DO NOTHING
+        `, [ids])
+        await client.query(`
+          INSERT INTO recorder_activity_audit_events (activity_id, owner_user_id, action, after_state)
+          SELECT id, owner_user_id, 'expired', jsonb_build_object('status', 'expired', 'expiredAt', expired_at)
+          FROM recorder_activities WHERE id = ANY($1::uuid[])
+        `, [ids])
+      }
+      const targets = await client.query<{
+        id: string; provider_object_ref: string; provider_version_ref: string | null; storage_provider: StorageProvider
+      }>(`
+        SELECT j.id, j.provider_object_ref, j.provider_version_ref, j.storage_provider
+        FROM media_cleanup_jobs j
+        JOIN recorder_activities a ON a.id = j.activity_id
+        WHERE a.status = 'expired' AND j.status = 'pending'
+        ORDER BY j.updated_at, j.id
+        LIMIT $1
+      `, [limit])
+      return {
+        expiredActivities: ids.length,
+        cleanupTargets: targets.rows.map((row) => ({
+          cleanupId: row.id,
+          providerObjectRef: row.provider_object_ref,
+          providerVersionRef: row.provider_version_ref,
+          storageProvider: row.storage_provider,
+        })),
+      }
+    })
   }
 
   async listAuditEvents(ownerUserId: string, activityId: string): Promise<ActivityAuditEvent[] | null> {
@@ -661,7 +720,7 @@ export class PostgresRecorderRepository implements RecorderRepository {
       SELECT a.id, a.activity_id, a.storage_provider, a.declared_content_type, a.expected_size_bytes, a.original_filename,
              a.expected_sha256, a.provider_object_ref, a.provider_version_ref, r.owner_user_id
       FROM media_assets a JOIN recorder_activities r ON r.id = a.activity_id
-      WHERE a.id = $1 AND r.owner_user_id = $2 AND a.status = 'ready' AND r.status NOT IN ('cancelled', 'deleted')
+      WHERE a.id = $1 AND r.owner_user_id = $2 AND a.status = 'ready' AND r.status NOT IN ('cancelled', 'expired', 'deleted')
     `, [assetId, ownerUserId])
     return result.rows[0] ? toUploadTarget(result.rows[0]) : null
   }

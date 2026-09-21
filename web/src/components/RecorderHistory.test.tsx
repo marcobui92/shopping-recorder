@@ -20,7 +20,7 @@ vi.mock('../api', () => ({
 }))
 
 const activity = {
-  completedAt: '2026-09-05T09:10:00.000Z', createdAt: '2026-09-05T09:00:00.000Z', id: 'activity-1',
+  completedAt: '2026-09-05T09:10:00.000Z', createdAt: '2026-09-05T09:00:00.000Z', evidenceExpiresAt: '2026-10-05T09:10:00.000Z', expiredAt: null, id: 'activity-1',
   notes: 'Carton seal', occurredAt: '2026-09-05T08:55:00.000Z', operationType: 'packing' as const,
   reference: 'ORDER-1042', status: 'complete' as const, storageProvider: 's3' as const,
   updatedAt: '2026-09-05T09:10:00.000Z',
@@ -98,6 +98,21 @@ describe('RecorderHistory', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
     await screen.findByText('Activity and stored evidence deleted.')
     expect(deleteRecorderActivity).toHaveBeenCalledWith('activity-1')
+  })
+
+  it('keeps expired record metadata visible without exposing evidence controls', async () => {
+    const expired = { ...activity, status: 'expired' as const, expiredAt: '2026-10-05T09:10:00.000Z' }
+    vi.mocked(listRecorderActivities).mockResolvedValue({ data: [expired], meta: { page: 1, pageSize: 10, totalPages: 1, totalRecords: 1 } })
+    vi.mocked(getRecorderActivity).mockResolvedValue({ ...expired, assets: [image] })
+    render(<RecorderHistory />)
+    await screen.findByText('ORDER-1042')
+    expect(screen.getAllByText('Expired').length).toBeGreaterThan(0)
+    fireEvent.click(screen.getByRole('button', { name: 'View evidence' }))
+    await screen.findByText('Stored evidence expired after 30 days and is no longer available. The record metadata is preserved.')
+    expect(screen.getByText('Evidence expired')).toBeInTheDocument()
+    expect(screen.queryByAltText('seal.jpg')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Open viewer' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Download original' })).not.toBeInTheDocument()
   })
 })
 

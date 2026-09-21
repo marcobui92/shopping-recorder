@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 export type Locale = 'vi' | 'en'
 
 const translations: Record<string, string> = {
+  'Reload PackTrace': 'Tải lại PackTrace',
   'Manual comparison': 'Đối chiếu thủ công',
   'Compare packing and unpacking': 'Đối chiếu đóng gói và mở gói',
   'Enter one exact reference, then choose each record yourself. References are not unique.': 'Nhập chính xác một mã, sau đó tự chọn từng bản ghi. Mã tham chiếu không phải là duy nhất.',
@@ -135,7 +136,9 @@ const translations: Record<string, string> = {
   'Apply filters': 'Áp dụng bộ lọc', 'All': 'Tất cả', 'Newest first': 'Mới nhất trước', 'Oldest first': 'Cũ nhất trước', 'Occurred from': 'Từ thời điểm', 'Occurred to': 'Đến thời điểm',
   'Loading evidence records…': 'Đang tải bản ghi bằng chứng…', 'No evidence records match these filters.': 'Không có bản ghi phù hợp với bộ lọc.', 'View evidence': 'Xem bằng chứng', 'Previous': 'Trước', 'Next': 'Sau',
   'Close detail': 'Đóng chi tiết', 'Unreferenced activity': 'Hoạt động chưa có mã', 'Status': 'Trạng thái', 'Occurred': 'Thời điểm', 'Storage': 'Nơi lưu', 'Save correction': 'Lưu chỉnh sửa', 'Saving…': 'Đang lưu…', 'Cancel activity': 'Hủy hoạt động', 'Delete activity': 'Xóa hoạt động',
-  'Order': 'Thứ tự', 'Draft': 'Bản nháp', 'Complete': 'Hoàn tất', 'Cancelled': 'Đã hủy', 'Page': 'Trang', 'of': 'trên', 'Close': 'Đóng', 'Correct activity metadata': 'Chỉnh sửa thông tin hoạt động', 'Unable to load activity detail.': 'Không thể tải chi tiết hoạt động.', 'Unable to cancel the activity.': 'Không thể hủy hoạt động.', 'Loading activity detail…': 'Đang tải chi tiết hoạt động…',
+  'Order': 'Thứ tự', 'Draft': 'Bản nháp', 'Complete': 'Hoàn tất', 'Expired': 'Đã hết hạn', 'Cancelled': 'Đã hủy', 'Page': 'Trang', 'of': 'trên', 'Close': 'Đóng', 'Correct activity metadata': 'Chỉnh sửa thông tin hoạt động.', 'Unable to load activity detail.': 'Không thể tải chi tiết hoạt động.', 'Unable to cancel the activity.': 'Không thể hủy hoạt động.', 'Loading activity detail…': 'Đang tải chi tiết hoạt động…',
+  'Evidence expired': 'Bằng chứng đã hết hạn',
+  'Stored evidence expired after 30 days and is no longer available. The record metadata is preserved.': 'Bằng chứng lưu trữ đã hết hạn sau 30 ngày và không còn khả dụng. Thông tin bản ghi vẫn được giữ lại.',
   'Open viewer': 'Mở trình xem', 'Download original': 'Tải bản gốc', 'Evidence viewer': 'Trình xem bằng chứng', 'Zoom out': 'Thu nhỏ', 'Zoom in': 'Phóng to', 'Close viewer': 'Đóng trình xem', 'Previous evidence': 'Bằng chứng trước', 'Next evidence': 'Bằng chứng tiếp theo',
   'Audit trail': 'Lịch sử thay đổi', 'No corrections or lifecycle actions recorded.': 'Chưa có chỉnh sửa hoặc thao tác vòng đời nào.', 'This activity has no evidence files yet.': 'Hoạt động này chưa có tệp bằng chứng.', 'Unable to load this evidence. Check your session or storage connection.': 'Không thể tải bằng chứng. Hãy kiểm tra phiên hoặc kết nối nơi lưu.',
   'Activity deleted. Some storage cleanup remains pending.': 'Hoạt động đã xóa. Một phần dọn dẹp nơi lưu vẫn đang chờ xử lý.', 'Activity and stored evidence deleted.': 'Hoạt động và bằng chứng đã lưu đã được xóa.', 'Unable to delete the activity.': 'Không thể xóa hoạt động.', 'Unable to start this record.': 'Không thể bắt đầu bản ghi.', 'Unable to complete this record.': 'Không thể hoàn tất bản ghi.', 'Unknown type': 'Không rõ định dạng',

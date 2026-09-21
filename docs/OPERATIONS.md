@@ -56,7 +56,7 @@ Treat a growing or old pending-cleanup count as both a cost and privacy incident
 
 `B2_MAX_IMAGE_BYTES` and `B2_MAX_VIDEO_BYTES` cap individual objects, while upload capability lifetimes limit abandoned PUT exposure. Review the verified-byte query above alongside B2 billed bytes, request counts, and lifecycle/version totals.
 
-The accepted MVP policy has no automatic evidence expiry. Completed evidence remains until its owner explicitly deletes the activity. Cancellation/deletion revokes application access first and creates exact-version cleanup work; provider cleanup failure stays retryable. Do not add a bucket lifecycle rule that independently deletes current evidence, because it would leave database records pointing to missing versions.
+Stored evidence expires 30 days after an activity is completed. The backend runs a retention sweep at startup and hourly: it first commits the owner-visible `expired` state and audit event, then deletes the exact B2 version or Drive file through tracked cleanup jobs. Metadata, filenames, checksums and audit history remain in PostgreSQL. Provider failures leave cleanup pending for the next sweep or an authorized retry and never restore content access. Alert when completed rows remain past `evidence_expires_at` or pending cleanup grows old. Do not add an independent bucket/Drive lifecycle rule because it would bypass application state and audit handling.
 
 ## PostgreSQL backup and recovery
 

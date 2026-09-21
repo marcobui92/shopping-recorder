@@ -24,6 +24,9 @@ async function start() {
   const googleRepository = pool ? new GoogleConnectionRepository(pool) : undefined
   const googleService = config.googleDrive && googleRepository ? new GoogleDriveService(config.googleDrive, googleRepository) : undefined
   const driveStorage = config.googleDrive && googleRepository ? new DriveMediaStorage(config.googleDrive, googleRepository) : undefined
+  const recorderService = recorderRepository
+    ? new RecorderMediaService(recorderRepository, [...(s3Storage ? [s3Storage] : []), ...(driveStorage ? [driveStorage] : [])], config.s3)
+    : undefined
   const app = buildApp(config, {
     driveUpload: config.googleDrive && pool && googleRepository ? new DriveUploadService(pool, config.googleDrive, googleRepository) : undefined,
     auth: {
@@ -32,9 +35,7 @@ async function start() {
     },
     recorder: {
       authenticate: pool ? createPostgresSessionAuthenticator(pool) : undefined,
-      service: recorderRepository
-        ? new RecorderMediaService(recorderRepository, [...(s3Storage ? [s3Storage] : []), ...(driveStorage ? [driveStorage] : [])], config.s3)
-        : undefined,
+      service: recorderService,
     },
     google: {
       authenticate: pool ? createPostgresSessionAuthenticator(pool) : undefined,
@@ -48,6 +49,20 @@ async function start() {
   })
 
   let stopping = false
+  let retentionSweepRunning = false
+  let retentionTimer: NodeJS.Timeout | undefined
+  const runRetentionSweep = async () => {
+    if (!recorderService || retentionSweepRunning) return
+    retentionSweepRunning = true
+    try {
+      const result = await recorderService.runRetentionSweep()
+      if (result.expiredActivities || result.cleanupPending) app.log.info(result, 'Evidence retention sweep completed')
+    } catch (error) {
+      app.log.error(error, 'Evidence retention sweep failed')
+    } finally {
+      retentionSweepRunning = false
+    }
+  }
   const stop = async (signal: NodeJS.Signals) => {
     if (stopping) return
     stopping = true
@@ -64,6 +79,7 @@ async function start() {
   process.once('SIGTERM', stopOnSigterm)
   process.once('SIGINT', stopOnSigint)
   app.addHook('onClose', async () => {
+    if (retentionTimer) clearInterval(retentionTimer)
     process.removeListener('SIGTERM', stopOnSigterm)
     process.removeListener('SIGINT', stopOnSigint)
   })
@@ -76,6 +92,11 @@ async function start() {
 
   try {
     await app.listen({ host: config.host, port: config.port })
+    if (recorderService) {
+      void runRetentionSweep()
+      retentionTimer = setInterval(() => { void runRetentionSweep() }, 60 * 60 * 1000)
+      retentionTimer.unref()
+    }
   } catch (error) {
     app.log.error(error)
     process.exitCode = 1

@@ -36,7 +36,7 @@ class MemoryRecorderRepository implements RecorderRepository {
   async createActivity(userId: string, input: CreateRecorderActivityInput): Promise<RecorderActivity> {
     const now = new Date().toISOString()
     const activity: RecorderActivity = {
-      ...input, completedAt: null, createdAt: now, id: randomUUID(), ownerUserId: userId, status: 'draft', updatedAt: now,
+      ...input, completedAt: null, createdAt: now, evidenceExpiresAt: null, expiredAt: null, id: randomUUID(), ownerUserId: userId, status: 'draft', updatedAt: now,
     }
     this.activities.set(activity.id, activity)
     return activity
@@ -89,7 +89,7 @@ class MemoryRecorderRepository implements RecorderRepository {
     const assets = [...this.assets.values()].filter((asset) => asset.activityId === activityId)
     if (!assets.length || assets.some((asset) => asset.status !== 'ready')) throw new Error('ACTIVITY_NOT_COMPLETABLE')
     const now = new Date().toISOString()
-    const completed = { ...activity, completedAt: now, status: 'complete' as const, updatedAt: now }
+    const completed = { ...activity, completedAt: now, evidenceExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), status: 'complete' as const, updatedAt: now }
     this.activities.set(activityId, completed)
     return completed
   }
@@ -161,6 +161,16 @@ class MemoryRecorderRepository implements RecorderRepository {
 
   async finishCleanup(cleanupId: string, succeeded: boolean): Promise<void> {
     if (succeeded) this.cleanupSucceeded.add(cleanupId)
+  }
+
+  async expireDueActivities() {
+    const due = [...this.activities.values()].filter((activity) => activity.status === 'complete' && activity.evidenceExpiresAt && activity.evidenceExpiresAt <= new Date().toISOString())
+    for (const activity of due) {
+      const expired = { ...activity, status: 'expired' as const, expiredAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      this.activities.set(activity.id, expired)
+      this.addAudit(activity.id, 'expired', { ...activity }, { ...expired })
+    }
+    return { expiredActivities: due.length, cleanupTargets: due.flatMap((activity) => this.pendingCleanup(activity.id)) }
   }
 
   async listAuditEvents(userId: string, activityId: string): Promise<ActivityAuditEvent[] | null> {
@@ -252,7 +262,7 @@ class MemoryRecorderRepository implements RecorderRepository {
   async getReadyAsset(userId: string, assetId: string): Promise<UploadTarget | null> {
     const asset = this.assets.get(assetId)
     const activity = asset ? this.activities.get(asset.activityId) : null
-    return asset?.status === 'ready' && activity?.status !== 'cancelled' && !this.deleted.has(asset.activityId)
+    return asset?.status === 'ready' && activity?.status !== 'cancelled' && activity?.status !== 'expired' && !this.deleted.has(asset.activityId)
       ? this.getAssetUploadTarget(userId, assetId) : null
   }
 }
@@ -301,13 +311,14 @@ class FakeS3Storage implements MediaStorageAdapter {
 function fixture() {
   const repository = new MemoryRecorderRepository()
   const storage = new FakeS3Storage()
+  const service = new RecorderMediaService(repository, [storage], s3)
   const app = buildApp(config, {
     recorder: {
       authenticate: async (request) => request.headers.cookie === 'recorder_session=valid' ? ownerId : null,
-      service: new RecorderMediaService(repository, [storage], s3),
+      service,
     },
   })
-  return { app, repository, storage }
+  return { app, repository, service, storage }
 }
 
 const mediaPayload = {
@@ -381,6 +392,39 @@ test('owner can create an S3 activity, upload intent, finalize, and retrieve rea
   assert.equal(retrieve.headers.location, 'https://presigned.b2.example/download?signature=redacted')
   assert.equal(storage.downloadVersionRef, 'verified-version')
   assert.equal(retrieve.headers['cache-control'], 'no-store')
+  await app.close()
+})
+
+test('retention expires completed evidence, preserves its record, and deletes provider bytes', async () => {
+  const { app, repository, service, storage } = fixture()
+  const headers = { cookie: 'recorder_session=valid', origin: allowedOrigin }
+  const createdActivity = await app.inject({
+    method: 'POST', url: '/api/v1/recorder-activities', headers,
+    payload: { operationType: 'packing', reference: 'RETENTION-1', storageProvider: 's3' },
+  })
+  const activityId = createdActivity.json().data.id as string
+  const createdAsset = await app.inject({
+    method: 'POST', url: `/api/v1/recorder-activities/${activityId}/media-assets`, headers, payload: mediaPayload,
+  })
+  const { asset, upload } = createdAsset.json().data
+  await app.inject({ method: 'POST', url: `/api/v1/media-assets/${asset.id}/upload-attempts/${upload.attemptId}/finalize`, headers, payload: {} })
+  await app.inject({ method: 'POST', url: `/api/v1/recorder-activities/${activityId}/complete`, headers, payload: {} })
+  repository.activities.set(activityId, { ...repository.activities.get(activityId)!, evidenceExpiresAt: '2020-01-01T00:00:00.000Z' })
+
+  const sweep = await service.runRetentionSweep()
+  assert.deepEqual(sweep, { cleanupPending: 0, expiredActivities: 1 })
+  assert.equal(storage.deleteCalls, 1)
+
+  const detail = await app.inject({ method: 'GET', url: `/api/v1/recorder-activities/${activityId}`, headers: { cookie: headers.cookie } })
+  assert.equal(detail.statusCode, 200)
+  assert.equal(detail.json().data.status, 'expired')
+  assert.ok(detail.json().data.expiredAt)
+  assert.equal(detail.json().data.reference, 'RETENTION-1')
+  const content = await app.inject({ method: 'GET', url: `/api/v1/media-assets/${asset.id}/content`, headers: { cookie: headers.cookie } })
+  assert.equal(content.statusCode, 404)
+  const filtered = await app.inject({ method: 'GET', url: '/api/v1/recorder-activities?status=expired', headers: { cookie: headers.cookie } })
+  assert.equal(filtered.json().meta.totalRecords, 1)
+  assert.deepEqual((await repository.listAuditEvents(ownerId, activityId))?.map((event) => event.action), ['expired'])
   await app.close()
 })
 

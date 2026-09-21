@@ -10,7 +10,7 @@ vi.mock('../api', () => ({
   finalizeMediaAsset: vi.fn(), getRecorderActivity: vi.fn(), listRecorderActivities: vi.fn(), retryMediaAsset: vi.fn(), uploadMedia: vi.fn(),
 }))
 
-const activity = { id: 'unfinished-1', reference: 'ORDER-9', operationType: 'packing' as const, status: 'uploading' as const, storageProvider: 'google_drive' as const, completedAt: null, createdAt: '2026-09-01T00:00:00Z', occurredAt: '2026-09-01T00:00:00Z', updatedAt: '2026-09-01T00:01:00Z', notes: null }
+const activity = { id: 'unfinished-1', reference: 'ORDER-9', operationType: 'packing' as const, status: 'uploading' as const, storageProvider: 'google_drive' as const, completedAt: null, createdAt: '2026-09-01T00:00:00Z', evidenceExpiresAt: null, expiredAt: null, occurredAt: '2026-09-01T00:00:00Z', updatedAt: '2026-09-01T00:01:00Z', notes: null }
 const asset = { id: 'asset-1', activityId: activity.id, contentType: 'text/plain', createdAt: activity.createdAt, mediaType: 'image' as const, ordinal: 1, originalFilename: 'proof.txt', readyAt: null, sha256: '8bb0cf6eb9b03a5f2f5d6f4f4f6f5d8b5a0f9e1efb2a6f2f4f5f9f9f9f9f9f9f9', sizeBytes: 4, status: 'pending_upload' as const, updatedAt: activity.updatedAt }
 
 describe('RecorderRecovery', () => {

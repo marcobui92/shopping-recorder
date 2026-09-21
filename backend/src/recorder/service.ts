@@ -160,6 +160,14 @@ export class RecorderMediaService {
     return pending
   }
 
+  async runRetentionSweep(limit = 100): Promise<{ cleanupPending: number; expiredActivities: number }> {
+    const result = await this.repository.expireDueActivities(limit)
+    return {
+      cleanupPending: await this.cleanup(result.cleanupTargets),
+      expiredActivities: result.expiredActivities,
+    }
+  }
+
   async cancelActivity(ownerUserId: string, activityId: string): Promise<{ activity: PublicRecorderActivity; cleanupPending: number }> {
     try {
       const result = await this.repository.cancelActivity(ownerUserId, activityId)

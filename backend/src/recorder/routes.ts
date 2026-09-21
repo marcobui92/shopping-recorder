@@ -88,7 +88,7 @@ export function registerRecorderRoutes(
           page: { type: 'integer', minimum: 1, maximum: 1_000_000 },
           pageSize: { type: 'integer', minimum: 1, maximum: 100 },
           sortDirection: { type: 'string', enum: ['asc', 'desc'] },
-          status: { type: 'string', enum: ['draft', 'uploading', 'complete', 'cancelled'] },
+          status: { type: 'string', enum: ['draft', 'uploading', 'complete', 'expired', 'cancelled'] },
           storageProvider: { type: 'string', enum: ['s3', 'google_drive'] },
         },
       },

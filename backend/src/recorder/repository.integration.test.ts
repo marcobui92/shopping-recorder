@@ -91,6 +91,14 @@ test('PostgreSQL repository persists and finalizes an S3 media attempt', {
     assert.equal(audit?.[0].action, 'metadata_updated')
     assert.equal(audit?.[0].before?.reference, `TEST-${userId}`)
 
+    await pool.query("UPDATE recorder_activities SET evidence_expires_at = now() - interval '1 second' WHERE id = $1", [activityId])
+    const expiration = await repository.expireDueActivities(100)
+    assert.equal(expiration.expiredActivities, 1)
+    assert.equal(expiration.cleanupTargets.length, 1)
+    assert.equal((await repository.getActivity(userId, activityId))?.status, 'expired')
+    assert.equal(await repository.getReadyAsset(userId, assetId), null)
+    assert.equal((await repository.listActivities(userId, { page: 1, pageSize: 20, sortDirection: 'desc', status: 'expired' })).totalRecords, 1)
+
     const deletion = await repository.deleteActivity(userId, activityId)
     assert.equal(deletion?.cleanupTargets.length, 1)
     assert.equal(deletion?.cleanupTargets[0].providerVersionRef, 'integration-version')
@@ -101,7 +109,7 @@ test('PostgreSQL repository persists and finalizes an S3 media attempt', {
     await repository.finishCleanup(deletion!.cleanupTargets[0].cleanupId, true)
     assert.equal((await repository.retryCleanup(userId, activityId))?.cleanupTargets.length, 0)
     audit = await repository.listAuditEvents(userId, activityId)
-    assert.deepEqual(audit?.map((event) => event.action), ['metadata_updated', 'deleted', 'cleanup_retried'])
+    assert.deepEqual(audit?.map((event) => event.action), ['metadata_updated', 'expired', 'deleted', 'cleanup_retried'])
   } finally {
     if (activityId) {
       await pool.query('DELETE FROM recorder_activity_audit_events WHERE activity_id = $1', [activityId])

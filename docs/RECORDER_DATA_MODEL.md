@@ -15,7 +15,7 @@ Recorder migrations `0003`–`0007` are additive and independent of the former s
 - A media asset is not retrievable evidence until the backend verifies provider existence, byte size, media type, and SHA-256 checksum during finalization.
 - Provider object IDs, bucket names, Drive file IDs, upload session IDs, credentials, and provider errors are server-only. Public API resources expose application IDs and stable media metadata.
 - Retrying an upload creates a new attempt for the existing asset. It does not create a duplicate asset.
-- Lifecycle controls use immediate logical cancellation/deletion plus tracked provider cleanup. The MVP has no automatic expiry; evidence remains until its owner deletes it.
+- Lifecycle controls use immediate logical cancellation/deletion plus tracked provider cleanup. Completed evidence expires automatically 30 days after completion while record metadata remains owner-visible.
 
 ## Entities
 
@@ -87,12 +87,13 @@ The API never returns credential or provider-reference columns. Unlink revokes G
 | `id` | `uuid` | Primary key |
 | `owner_user_id` | `uuid` | Required FK to `app_users(id)`; indexed with creation time |
 | `operation_type` | `varchar(16)` | `packing` or `unpacking` |
-| `status` | `varchar(16)` | `draft`, `uploading`, `complete`, `cancelled`, or internal-only `deleted` |
+| `status` | `varchar(16)` | `draft`, `uploading`, `complete`, `expired`, `cancelled`, or internal-only `deleted` |
 | `storage_provider` | `varchar(16)` | `s3` or `google_drive`; immutable after first asset |
 | `reference` | `varchar(160)` | Nullable operator reference, package ID, or order label |
 | `notes` | `text` | Nullable; maximum 2,000 characters at the API boundary |
 | `occurred_at` | `timestamptz` | Required operational timestamp; defaults to server time |
 | `completed_at` | `timestamptz` | Nullable; set exactly once on completion |
+| `evidence_expires_at` / `expired_at` | `timestamptz` | Completion plus 30 days, and the actual logical expiry time; introduced by migration `0011` |
 | `cancelled_at` / `deleted_at` | `timestamptz` | Nullable lifecycle timestamps introduced by migration `0007` |
 | `created_at` / `updated_at` | `timestamptz` | Required |
 
@@ -146,7 +147,7 @@ Only one nonterminal attempt may exist per asset. This is enforced by a partial 
 ## Database Constraint Strategy
 
 - Use `CHECK` constraints for bounded state/provider values instead of PostgreSQL enum types, so later forward migrations can add states without replacing a database type.
-- Require `completed_at` exactly when an activity is `complete`; require `ready_at` and all verified media fields exactly when an asset is `ready`.
+- Require `completed_at` and `evidence_expires_at` for `complete` and `expired` activities, and `expired_at` only for `expired`; require `ready_at` and all verified media fields exactly when an asset is `ready`.
 - Add a partial unique index on `(storage_provider, provider_object_ref)` when the provider reference is not null.
 - Keep `ON DELETE RESTRICT` for recorder rows. User deletion is logical: media access is revoked, provider bytes are removed, and the minimal activity/audit tombstone remains for integrity.
 - Enforce the selected provider using `UNIQUE (id, storage_provider)` on activities and a composite foreign key from media assets.
@@ -157,13 +158,14 @@ Only one nonterminal attempt may exist per asset. This is enforced by a partial 
 ### Activity
 
 ```text
-draft --first upload attempt--> uploading --explicit completion--> complete --owner delete--> deleted
+  draft --first upload attempt--> uploading --explicit completion--> complete --30 days--> expired --owner delete--> deleted
   \---------------- cancellation ----------------/
 ```
 
 - `draft` may have no assets.
 - `uploading` begins when the first upload attempt is issued and may contain pending, failed, or ready assets.
 - `complete` requires at least one asset and requires every asset to be `ready`.
+- Completing sets a deterministic evidence deadline 30 days later. The retention sweep marks the record `expired`, denies content access, appends an audit event, and queues exact-object provider deletion. Cleanup failures stay retryable and never restore access.
 - Metadata (`operation_type`, `reference`, `notes`, and `occurred_at`) may be corrected before or after completion and every correction is audited; storage choice and evidence bytes remain immutable.
 - `draft` and `uploading` activities may become `cancelled`; `complete` activities cannot be cancelled.
 - Only `complete` activities may become internal-only `deleted`. Deleted activities are immediately absent from list/detail/content APIs.
@@ -196,5 +198,7 @@ Existing applied migrations, including `0001_create_schema_migrations.sql` and `
 4. `0006_create_google_drive_connections.sql` — created by `feat-013` after the Google adapter is implemented; add encrypted credential and connection-state persistence without modifying recorder ownership.
 5. `0007_add_recorder_lifecycle_controls.sql` — add lifecycle timestamps/states, append-only audit events, and retryable provider cleanup jobs. Number `0006` remains reserved for deferred Google Drive work.
 6. `0008_drop_legacy_shopping_records.sql` — separately approved breaking retirement; drop the legacy table after inventorying zero local rows. It has no recorder-table dependency.
+7. `0009_add_drive_upload_guard.sql` and `0010_create_google_drive_oauth_states.sql` — persist Drive upload single-use state and OAuth state.
+8. `0011_add_evidence_retention.sql` — add evidence expiry timestamps/status/audit support and the due-record index; backfill existing completed records from `completed_at`.
 
 Each migration runs transactionally through the existing migration runner. A failed migration is fixed by a new forward migration after release; applied migration files are never edited because the runner verifies checksums. Before applying a destructive migration outside local development, take and verify a database backup. Migration `0008` requires restoring that backup or a separately reviewed forward reconstruction if rollback is required.

@@ -31,7 +31,7 @@ The recorder contract supports packing/unpacking activities and verified image/v
 | S3 storage | Coordinate secure S3 uploads and retrieval without public credentials or URLs | feat-012 |
 | Google Drive storage | Coordinate Drive uploads through a linked Google account and approved folder policy | feat-013 |
 | Review | List, filter, and retrieve activities and authorized evidence previews/playback | feat-015 |
-| Lifecycle controls | Correct metadata, audit changes, cancel unfinished work, and delete completed evidence with retryable provider cleanup; no automatic MVP expiry | feat-016 |
+| Lifecycle controls | Correct metadata, audit changes, cancel unfinished work, delete records, and automatically expire stored evidence 30 days after completion with retryable provider cleanup | feat-016 / feat-041 |
 
 ## Planned Additions — Not Implemented (2026-09-15)
 
@@ -96,6 +96,8 @@ All timestamps are UTC RFC 3339 strings. Request objects reject unknown properti
   "notes": "Outer carton and seal",
   "occurredAt": "2026-09-03T08:30:00.000Z",
   "completedAt": null,
+  "evidenceExpiresAt": null,
+  "expiredAt": null,
   "createdAt": "2026-09-03T08:31:00.000Z",
   "updatedAt": "2026-09-03T08:32:00.000Z",
   "assets": []
@@ -103,11 +105,13 @@ All timestamps are UTC RFC 3339 strings. Request objects reject unknown properti
 ```
 
 - `operationType`: `packing` or `unpacking`.
-- `status`: `draft`, `uploading`, `complete`, or `cancelled`. Internal `deleted` tombstones are never returned.
+- `status`: `draft`, `uploading`, `complete`, `expired`, or `cancelled`. Internal `deleted` tombstones are never returned.
 - `storageProvider`: `s3` or `google_drive`; it cannot change after the first asset is created.
 - `reference`: nullable string, maximum 160 characters.
 - `notes`: nullable string, maximum 2,000 characters.
 - `occurredAt`: required valid timestamp, defaulted to server time when omitted during creation.
+- `evidenceExpiresAt`: null until completion, then exactly 30 days after `completedAt`.
+- `expiredAt`: set when the retention sweep revokes evidence access and queues provider cleanup; expired record metadata remains visible.
 - `assets`: included by the detail endpoint and omitted from list items.
 
 ### Media asset
@@ -183,7 +187,7 @@ Returns only the caller's activities. Supported query parameters:
 - `page`: positive one-based integer, default `1`, maximum `1000000`.
 - `pageSize`: positive integer, default `20`, maximum `100`.
 - `operationType`: optional `packing` or `unpacking`.
-- `status`: optional `draft`, `uploading`, `complete`, or `cancelled`.
+- `status`: optional `draft`, `uploading`, `complete`, `expired`, or `cancelled`.
 - `reference`: optional string, at most 160 characters before trimming. Leading/trailing whitespace is trimmed; empty/whitespace-only means no reference filter. Matches a literal substring, case-insensitively using PostgreSQL lower/collation behavior; accents and internal whitespace remain significant. `%`, `_`, backslash, quotes and punctuation are ordinary characters, not SQL wildcards. Null references do not match a nonempty query. Stored references are never rewritten. Search applies before count/pagination across all of the owner's visible records and combines with all other filters using AND. Existing page/pageSize bounds and stable sort are unchanged. Duplicate parameters, overlong values and NUL are rejected with 400 VALIDATION_ERROR.
 - `storageProvider`: optional `s3` or `google_drive`.
 - `occurredFrom` / `occurredTo`: optional inclusive RFC 3339 timestamps; `occurredFrom` must not exceed `occurredTo`.
@@ -235,7 +239,9 @@ Cancels only a `draft` or `uploading` activity, expires active attempts, revokes
 
 ### `DELETE /api/v1/recorder-activities/{activityId}`
 
-Deletes only a completed activity after explicit browser confirmation. The API changes it to an internal tombstone immediately and attempts exact-version provider cleanup. Returns `202` with `{ "data": { "cleanupPending": number } }`; deleted activities disappear from history/detail/content immediately. There is no automatic retention expiry in the MVP.
+Deletes a completed or expired activity after explicit browser confirmation. The API changes it to an internal tombstone immediately and attempts exact-version provider cleanup. Returns `202` with `{ "data": { "cleanupPending": number } }`; deleted activities disappear from history/detail/content immediately.
+
+Completed evidence automatically expires 30 days after `completedAt`. The backend sweep changes the activity to `expired` before provider calls, so content retrieval is denied immediately even if B2 or Drive deletion must retry. List/detail responses retain the record, asset metadata and audit trail; provider references remain private.
 
 ### `POST /api/v1/recorder-activities/{activityId}/cleanup-retry`
 

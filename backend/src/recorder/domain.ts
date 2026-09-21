@@ -1,6 +1,6 @@
 import { AppError } from '../errors.js'
 
-export type ActivityStatus = 'draft' | 'uploading' | 'complete' | 'cancelled'
+export type ActivityStatus = 'draft' | 'uploading' | 'complete' | 'expired' | 'cancelled'
 export type AssetStatus = 'pending_upload' | 'verifying' | 'ready' | 'failed'
 export type MediaType = 'image' | 'video'
 export type OperationType = 'packing' | 'unpacking'
@@ -9,6 +9,8 @@ export type StorageProvider = 's3' | 'google_drive'
 export interface RecorderActivity {
   completedAt: string | null
   createdAt: string
+  evidenceExpiresAt: string | null
+  expiredAt: string | null
   id: string
   notes: string | null
   occurredAt: string
@@ -36,7 +38,7 @@ export interface UpdateRecorderActivityInput {
 }
 
 export interface ActivityAuditEvent {
-  action: 'metadata_updated' | 'cancelled' | 'deleted' | 'cleanup_retried'
+  action: 'metadata_updated' | 'cancelled' | 'deleted' | 'expired' | 'cleanup_retried'
   after: Record<string, unknown> | null
   before: Record<string, unknown> | null
   createdAt: string
@@ -218,8 +220,8 @@ export function parseListRecorderActivitiesInput(value: unknown): ListRecorderAc
   if (input.operationType !== undefined && input.operationType !== 'packing' && input.operationType !== 'unpacking') {
     throw new AppError(400, 'VALIDATION_ERROR', 'operationType must be packing or unpacking.')
   }
-  if (input.status !== undefined && input.status !== 'draft' && input.status !== 'uploading' && input.status !== 'complete' && input.status !== 'cancelled') {
-    throw new AppError(400, 'VALIDATION_ERROR', 'status must be draft, uploading, complete, or cancelled.')
+  if (input.status !== undefined && input.status !== 'draft' && input.status !== 'uploading' && input.status !== 'complete' && input.status !== 'expired' && input.status !== 'cancelled') {
+    throw new AppError(400, 'VALIDATION_ERROR', 'status must be draft, uploading, complete, expired, or cancelled.')
   }
   if (input.storageProvider !== undefined && input.storageProvider !== 's3' && input.storageProvider !== 'google_drive') {
     throw new AppError(400, 'VALIDATION_ERROR', 'storageProvider must be s3 or google_drive.')

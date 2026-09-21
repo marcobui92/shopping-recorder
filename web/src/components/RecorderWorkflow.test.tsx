@@ -33,7 +33,7 @@ vi.mock('../api', () => ({
 }))
 
 const activity = {
-  completedAt: null, createdAt: '2026-09-05T00:00:00.000Z', id: 'activity-1', notes: null,
+  completedAt: null, createdAt: '2026-09-05T00:00:00.000Z', evidenceExpiresAt: null, expiredAt: null, id: 'activity-1', notes: null,
   occurredAt: '2026-09-05T00:00:00.000Z', operationType: 'packing' as const, reference: null,
   status: 'draft' as const, storageProvider: 's3' as const, updatedAt: '2026-09-05T00:00:00.000Z',
 }
@@ -54,7 +54,7 @@ beforeEach(() => {
   vi.mocked(createMediaAsset).mockResolvedValue({ asset, upload })
   vi.mocked(uploadMedia).mockImplementation(async (_file, _capability, onProgress) => { onProgress(100) })
   vi.mocked(finalizeMediaAsset).mockResolvedValue({ ...asset, readyAt: activity.createdAt, status: 'ready' })
-  vi.mocked(completeRecorderActivity).mockResolvedValue({ ...activity, completedAt: activity.createdAt, status: 'complete' })
+  vi.mocked(completeRecorderActivity).mockResolvedValue({ ...activity, completedAt: activity.createdAt, evidenceExpiresAt: '2026-10-05T00:00:00.000Z', status: 'complete' })
 })
 
 afterEach(() => cleanup())

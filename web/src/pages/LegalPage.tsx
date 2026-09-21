@@ -22,7 +22,7 @@ export function LegalPage({ kind }: LegalPageProps) {
         <h2>Your choices</h2>
         <p>You can correct activity metadata, delete completed activities, disconnect Google Drive, or contact the service owner about account data. Disconnecting Google Drive does not delete files already stored there.</p>
         <h2>Security and retention</h2>
-        <p>Sessions, provider credentials, and evidence access are protected with application controls and encryption in transit. Evidence remains until you delete it or the service owner applies an announced retention policy.</p>
+        <p>Sessions, provider credentials, and evidence access are protected with application controls and encryption in transit. Stored evidence is deleted 30 days after the record is completed; record metadata remains available with an expired status.</p>
         <h2>Contact</h2>
         <p>For privacy questions or data requests, contact the PackTrace service owner through the support channel provided with your deployment.</p>
       </div> : <div className="prose mt-10 max-w-none text-sm leading-7 text-muted-foreground">

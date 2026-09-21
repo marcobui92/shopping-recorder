@@ -22,12 +22,14 @@ export interface AppUser {
 export interface RecorderActivity {
   completedAt: string | null
   createdAt: string
+  evidenceExpiresAt: string | null
+  expiredAt: string | null
   id: string
   notes: string | null
   occurredAt: string
   operationType: 'packing' | 'unpacking'
   reference: string | null
-  status: 'draft' | 'uploading' | 'complete' | 'cancelled'
+  status: 'draft' | 'uploading' | 'complete' | 'expired' | 'cancelled'
   storageProvider: 's3' | 'google_drive'
   updatedAt: string
 }
@@ -44,7 +46,7 @@ export interface ListRecorderActivitiesInput {
   page?: number
   pageSize?: number
   sortDirection?: 'asc' | 'desc'
-  status?: 'draft' | 'uploading' | 'complete' | 'cancelled'
+  status?: 'draft' | 'uploading' | 'complete' | 'expired' | 'cancelled'
   storageProvider?: 's3' | 'google_drive'
 }
 
@@ -80,7 +82,7 @@ export interface MediaAsset {
 }
 
 export interface ActivityAuditEvent {
-  action: 'metadata_updated' | 'cancelled' | 'deleted' | 'cleanup_retried'
+  action: 'metadata_updated' | 'cancelled' | 'deleted' | 'expired' | 'cleanup_retried'
   after: Record<string, unknown> | null
   before: Record<string, unknown> | null
   createdAt: string
