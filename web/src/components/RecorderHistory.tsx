@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Archive, ArrowLeft, ArrowRight, Calendar, ChevronLeft, ChevronRight, Clock3, Download, Eye, FileX2, LoaderCircle, PackageCheck, RefreshCw, Search, Trash2, X, ZoomIn, ZoomOut } from 'lucide-react'
 
 import {
@@ -60,6 +60,8 @@ export function RecorderHistory({ refreshKey = 0 }: RecorderHistoryProps) {
   const [viewerAssetId, setViewerAssetId] = useState<string | null>(null)
   const [viewerZoom, setViewerZoom] = useState(1)
   const [confirmAction, setConfirmAction] = useState<'cancel' | 'delete' | null>(null)
+  const detailRequest = useRef(0)
+  const detailTrigger = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     let active = true
@@ -75,13 +77,39 @@ export function RecorderHistory({ refreshKey = 0 }: RecorderHistoryProps) {
     return () => { active = false }
   }, [appliedFilters, refreshKey, reloadKey])
 
-  async function openDetail(activityId: string) {
+  async function openDetail(activityId: string, trigger?: HTMLElement) {
+    const request = ++detailRequest.current
+    detailTrigger.current = trigger ?? document.activeElement as HTMLElement | null
     setSelected(null); setViewerAssetId(null); setDetailLoading(true); setDetailError(''); setMediaErrors([]); setActionError(''); setActionNotice('')
     try {
       const [detail, audit] = await Promise.all([getRecorderActivity(activityId), getActivityAuditEvents(activityId)])
+      if (request !== detailRequest.current) return
       setSelected(detail); setAuditEvents(audit)
-    } catch (reason) { setDetailError(reason instanceof Error ? reason.message : 'Unable to load activity detail.') } finally { setDetailLoading(false) }
+    } catch (reason) {
+      if (request === detailRequest.current) setDetailError(reason instanceof Error ? reason.message : 'Unable to load activity detail.')
+    } finally { if (request === detailRequest.current) setDetailLoading(false) }
   }
+
+  function closeDetail() {
+    detailRequest.current += 1
+    setSelected(null); setDetailLoading(false); setDetailError(''); setViewerAssetId(null); setConfirmAction(null)
+    queueMicrotask(() => detailTrigger.current?.focus())
+  }
+
+  const detailOpen = detailLoading || Boolean(detailError) || Boolean(selected)
+  useEffect(() => {
+    if (!detailOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    function closeWithEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      if (viewerAssetId) setViewerAssetId(null)
+      else if (confirmAction) setConfirmAction(null)
+      else closeDetail()
+    }
+    document.addEventListener('keydown', closeWithEscape)
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener('keydown', closeWithEscape) }
+  }, [confirmAction, detailOpen, viewerAssetId])
 
   async function saveMetadata(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -179,20 +207,24 @@ export function RecorderHistory({ refreshKey = 0 }: RecorderHistoryProps) {
             <ul className="divide-y rounded-xl border">
               {activities.map((activity) => <li className="flex flex-col gap-4 p-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between" key={activity.id}>
                 <div className="flex min-w-0 items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><PackageCheck aria-hidden="true" className="size-5" /></span><div className="min-w-0"><strong className="block truncate text-sm">{activity.reference || `${t(activity.operationType === 'packing' ? 'Packing' : 'Unpacking')} ${t('record')}`}</strong><span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><Calendar aria-hidden="true" className="size-3" /> {displayDate(activity.occurredAt)}</span><span>·</span><span className="capitalize">{t(activity.operationType === 'packing' ? 'Packing' : 'Unpacking')}</span><Badge variant={statusVariant(activity.status)}>{t(activity.status[0].toUpperCase() + activity.status.slice(1))}</Badge></span></div></div>
-                <Button className="shrink-0" size="sm" variant="outline" onClick={() => void openDetail(activity.id)}><Eye aria-hidden="true" className="size-3.5" /> {t('View evidence')}</Button>
+                <Button className="shrink-0" size="sm" variant="outline" onClick={(event) => void openDetail(activity.id, event.currentTarget)}><Eye aria-hidden="true" className="size-3.5" /> {t('View evidence')}</Button>
               </li>)}
             </ul>
             <nav className="mt-4 flex items-center justify-between gap-3" aria-label="Recorder history pages"><Button disabled={meta.page <= 1} size="sm" variant="outline" onClick={() => changePage(meta.page - 1)}><ArrowLeft aria-hidden="true" className="size-3.5" /> {t('Previous')}</Button><span className="text-xs text-muted-foreground">{t('Page')} {meta.page} {t('of')} {Math.max(meta.totalPages, 1)}</span><Button disabled={meta.page >= meta.totalPages} size="sm" variant="outline" onClick={() => changePage(meta.page + 1)}>{t('Next')} <ArrowRight aria-hidden="true" className="size-3.5" /></Button></nav>
           </>}
         </div>
 
-        {detailLoading && <p className="mt-5 flex items-center gap-2 rounded-xl bg-muted p-4 text-sm text-muted-foreground" role="status"><LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> {t('Loading activity detail…')}</p>}
-        {detailError && <p className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{detailError}</p>}
-        {actionError && <p className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{actionError}</p>}
-        {actionNotice && <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700" role="status">{actionNotice}</p>}
+        {!selected && actionError && <p className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{actionError}</p>}
+        {!selected && actionNotice && <p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700" role="status">{actionNotice}</p>}
 
-        {selected && <article className="mt-6 rounded-2xl border bg-muted/20 p-5" aria-labelledby={`activity-${selected.id}`}>
-          <div className="flex items-start justify-between gap-4"><div><Badge className="capitalize">{t(selected.operationType === 'packing' ? 'Packing' : 'Unpacking')}</Badge><h3 className="mt-3 text-xl font-semibold" id={`activity-${selected.id}`}>{selected.reference || t('Unreferenced activity')}</h3></div><Button aria-label={t('Close detail')} size="icon" variant="ghost" onClick={() => setSelected(null)}><X aria-hidden="true" className="size-4" /></Button></div>
+        {detailOpen && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-3 backdrop-blur-sm sm:p-6" data-testid="activity-detail-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget && !saving) closeDetail() }}>
+          <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl overflow-y-auto rounded-2xl border bg-card shadow-2xl sm:max-h-[calc(100dvh-3rem)]" role="dialog" aria-modal="true" aria-labelledby={selected ? `activity-${selected.id}` : undefined} aria-label={!selected ? t('Activity detail') : undefined}>
+          {detailLoading && <p className="flex min-h-48 items-center justify-center gap-2 p-5 text-sm text-muted-foreground" role="status"><LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> {t('Loading activity detail…')}</p>}
+          {detailError && <div className="p-5"><div className="flex justify-end"><Button aria-label={t('Close detail')} size="icon" variant="ghost" onClick={closeDetail}><X aria-hidden="true" className="size-4" /></Button></div><p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{detailError}</p></div>}
+        {selected && <article className="bg-muted/20 p-4 sm:p-6" aria-labelledby={`activity-${selected.id}`}>
+          <div className="flex items-start justify-between gap-4"><div><Badge className="capitalize">{t(selected.operationType === 'packing' ? 'Packing' : 'Unpacking')}</Badge><h3 className="mt-3 text-xl font-semibold" id={`activity-${selected.id}`}>{selected.reference || t('Unreferenced activity')}</h3></div><Button aria-label={t('Close detail')} size="icon" variant="ghost" onClick={closeDetail}><X aria-hidden="true" className="size-4" /></Button></div>
+          {actionError && <p className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{actionError}</p>}
+          {actionNotice && <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700" role="status">{actionNotice}</p>}
           <dl className="mt-5 grid gap-3 sm:grid-cols-3"><div className="rounded-xl bg-card p-3"><dt className="text-xs text-muted-foreground">{t('Status')}</dt><dd className="mt-1 text-sm font-semibold capitalize">{t(selected.status[0].toUpperCase() + selected.status.slice(1))}</dd></div><div className="rounded-xl bg-card p-3"><dt className="text-xs text-muted-foreground">{t('Occurred')}</dt><dd className="mt-1 text-sm font-semibold">{displayDate(selected.occurredAt)}</dd></div><div className="rounded-xl bg-card p-3"><dt className="text-xs text-muted-foreground">{t('Storage')}</dt><dd className="mt-1 text-sm font-semibold">{selected.storageProvider === 's3' ? t('Application storage') : 'Google Drive'}</dd></div></dl>
           {selected.status === 'expired' && <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800" role="status">{t('Stored evidence expired after 30 days and is no longer available. The record metadata is preserved.')}</p>}
           {selected.notes && <p className="mt-4 text-sm leading-6 text-muted-foreground">{selected.notes}</p>}
@@ -213,8 +245,10 @@ export function RecorderHistory({ refreshKey = 0 }: RecorderHistoryProps) {
           <h4 className="mt-7 flex items-center gap-2 text-sm font-semibold"><Clock3 aria-hidden="true" className="size-4 text-primary" /> Audit trail</h4>
           {auditEvents.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">No corrections or lifecycle actions recorded.</p> : <ul className="mt-3 divide-y rounded-xl border bg-card">{auditEvents.map((event) => <li className="flex items-center justify-between gap-4 p-3 text-sm" key={event.id}><strong className="capitalize">{event.action.replaceAll('_', ' ')}</strong><span className="text-xs text-muted-foreground">{displayDate(event.createdAt)}</span></li>)}</ul>}
         </article>}
-        {confirmAction && <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm" role="presentation"><div className="w-full max-w-md rounded-2xl border bg-card p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="confirm-action-heading"><h3 className="text-lg font-semibold" id="confirm-action-heading">{t(confirmAction === 'cancel' ? 'Cancel unfinished activity?' : 'Delete completed activity?')}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{t(confirmAction === 'cancel' ? 'This will cancel the activity and remove uploaded evidence.' : 'This permanently hides the activity and deletes its evidence. This cannot be undone.')}</p><div className="mt-5 flex justify-end gap-2"><Button variant="ghost" onClick={() => setConfirmAction(null)}>{t('Keep')}</Button><Button variant={confirmAction === 'delete' ? 'destructive' : 'default'} disabled={saving} onClick={() => { const action = confirmAction; setConfirmAction(null); void (action === 'cancel' ? cancelActivity() : deleteActivity()) }}>{t('Confirm')}</Button></div></div></div>}
-        {viewerAsset && <div className="fixed inset-0 z-[60] grid place-items-center bg-slate-950/90 p-3 sm:p-8" role="dialog" aria-modal="true" aria-label={t('Evidence viewer')}>
+          </div>
+        </div>}
+        {confirmAction && <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm" role="presentation"><div className="w-full max-w-md rounded-2xl border bg-card p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="confirm-action-heading"><h3 className="text-lg font-semibold" id="confirm-action-heading">{t(confirmAction === 'cancel' ? 'Cancel unfinished activity?' : 'Delete completed activity?')}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{t(confirmAction === 'cancel' ? 'This will cancel the activity and remove uploaded evidence.' : 'This permanently hides the activity and deletes its evidence. This cannot be undone.')}</p><div className="mt-5 flex justify-end gap-2"><Button variant="ghost" onClick={() => setConfirmAction(null)}>{t('Keep')}</Button><Button variant={confirmAction === 'delete' ? 'destructive' : 'default'} disabled={saving} onClick={() => { const action = confirmAction; setConfirmAction(null); void (action === 'cancel' ? cancelActivity() : deleteActivity()) }}>{t('Confirm')}</Button></div></div></div>}
+        {viewerAsset && <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/90 p-3 sm:p-8" role="dialog" aria-modal="true" aria-label={t('Evidence viewer')}>
           <div className="flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-card shadow-2xl">
             <div className="flex items-center justify-between gap-3 border-b p-3"><strong className="min-w-0 truncate text-sm">{viewerAsset.originalFilename}</strong><div className="flex items-center gap-1"><Button aria-label={t('Zoom out')} className="!min-h-0" size="icon" variant="ghost" onClick={() => setViewerZoom((zoom) => Math.max(.75, zoom - .25))}><ZoomOut aria-hidden="true" className="size-4" /></Button><span className="w-12 text-center text-xs text-muted-foreground">{Math.round(viewerZoom * 100)}%</span><Button aria-label={t('Zoom in')} className="!min-h-0" size="icon" variant="ghost" onClick={() => setViewerZoom((zoom) => Math.min(2, zoom + .25))}><ZoomIn aria-hidden="true" className="size-4" /></Button><Button aria-label={t('Close viewer')} className="!min-h-0" size="icon" variant="ghost" onClick={() => setViewerAssetId(null)}><X aria-hidden="true" className="size-4" /></Button></div></div>
             <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-auto bg-slate-950 p-3"><div className="flex min-h-full min-w-full items-center justify-center" style={{ transform: `scale(${viewerZoom})`, transformOrigin: 'center' }}>{viewerAsset.mediaType === 'image' ? <img className="max-h-[75vh] max-w-full object-contain" alt={viewerAsset.originalFilename} src={getMediaAssetContentUrl(viewerAsset.id)} /> : <video className="max-h-[75vh] max-w-full" controls autoPlay={false} src={getMediaAssetContentUrl(viewerAsset.id)} />}</div>{readyAssets.length > 1 && <><Button aria-label={t('Previous evidence')} className="absolute left-3 top-1/2 !min-h-0 -translate-y-1/2 rounded-full bg-white/90" size="icon" variant="outline" onClick={() => moveViewer(-1)}><ChevronLeft aria-hidden="true" className="size-5" /></Button><Button aria-label={t('Next evidence')} className="absolute right-3 top-1/2 !min-h-0 -translate-y-1/2 rounded-full bg-white/90" size="icon" variant="outline" onClick={() => moveViewer(1)}><ChevronRight aria-hidden="true" className="size-5" /></Button></>}</div>

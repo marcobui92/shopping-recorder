@@ -53,6 +53,10 @@ These tests create uniquely named fixtures and remove them in `finally` blocks.
 
 Record the browser, backend, PostgreSQL, and B2 outcomes in `progress.md`. Live B2 checks are supplemental: deterministic adapter tests and PostgreSQL integration remain mandatory even when credentials are unavailable.
 
+For direct mobile capture, repeat the upload with the camera controls using an image and a video larger than 1 MiB. The Drive server proxy must accept the configured media limit rather than Fastify's default request limit. Also verify Safari/Chrome camera files whose MIME metadata is empty or `application/octet-stream`: recognized `.jpg`, `.heic`, `.mp4`, `.mov`, and `.webm` filenames are normalized, while an unrecognized extension remains rejected.
+
+At a narrow phone width in both VI and EN, open the profile menu and verify long Drive account actions wrap inside the viewport, inside actions remain clickable, and tapping outside dismisses it. In New record, confirm storage/operation are visible side by side, reference/notes stay full-width, and the camera actions appear with substantially less scrolling while desktop spacing remains unchanged. In Evidence archive, View evidence must open a centered, internally scrollable dialog; closing by X, outside tap, or Escape must retain search filters and pagination, and the nested evidence viewer must remain above the detail dialog.
+
 ## Known production gate
 
 The application verifies allowed MIME declarations, byte signatures, size, ownership metadata, and SHA-256, but it does not run an antivirus or content-scanning engine. `feat-018` must select an operational scanner or explicitly document risk acceptance before a production release; this guide must then add its outage and positive-detection checks.

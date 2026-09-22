@@ -60,6 +60,8 @@ describe('RecorderHistory', () => {
     expect(vi.mocked(listRecorderActivities).mock.lastCall?.[0]).not.toHaveProperty('storageProvider')
     fireEvent.click(screen.getByRole('button', { name: 'View evidence' }))
     const preview = await screen.findByAltText('seal.jpg')
+    const detail = screen.getByRole('dialog', { name: 'ORDER-1042' })
+    expect(detail).toHaveClass('max-h-[calc(100dvh-1.5rem)]', 'max-w-5xl', 'overflow-y-auto')
     expect(screen.getByRole('form', { name: 'Correct activity metadata' })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Recorder history pages' })).toBeInTheDocument()
     expect(preview).toHaveAttribute('src', 'http://api.test/media-assets/asset-1/content')
@@ -71,6 +73,25 @@ describe('RecorderHistory', () => {
     expect(screen.getAllByRole('link', { name: 'Download original' })[1]).toHaveAttribute('download', 'seal.jpg')
     fireEvent.click(screen.getByRole('button', { name: 'Close viewer' }))
     expect(screen.queryByRole('dialog', { name: 'Evidence viewer' })).not.toBeInTheDocument()
+  })
+
+  it('dismisses centered activity detail outside and with Escape while retaining archive state', async () => {
+    render(<RecorderHistory />)
+    await screen.findByText('ORDER-1042')
+    fireEvent.change(screen.getByLabelText('Search order or shipment reference'), { target: { value: 'KEEP-FILTER' } })
+    const trigger = screen.getByRole('button', { name: 'View evidence' })
+    fireEvent.click(trigger)
+    await screen.findByRole('dialog', { name: 'ORDER-1042' })
+    fireEvent.pointerDown(screen.getByTestId('activity-detail-backdrop'))
+    expect(screen.queryByRole('dialog', { name: 'ORDER-1042' })).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Search order or shipment reference')).toHaveValue('KEEP-FILTER')
+    await waitFor(() => expect(trigger).toHaveFocus())
+
+    fireEvent.click(trigger)
+    await screen.findByRole('dialog', { name: 'ORDER-1042' })
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: 'ORDER-1042' })).not.toBeInTheDocument()
+    expect(document.body).not.toHaveStyle({ overflow: 'hidden' })
   })
 
   it('shows an empty state and retries a failed history request', async () => {

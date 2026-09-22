@@ -514,6 +514,58 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-09-21. Added migration 0011 with a completedAt + 30-day evidence deadline, expired lifecycle state/timestamps/audit and due index; startup/hourly backend sweeping revokes access before exact-provider cleanup and retries pending failures while preserving owner-visible metadata. Updated API/domain/docs and VI/EN archive/comparison UI so expired evidence has no preview/download controls. PackTrace logo is now an accessible full-page reload button. Migration applied locally; PostgreSQL integrations 4/4 passed; backend 85 passed/5 opt-in skipped plus typecheck/build; web 46/46 plus typecheck/build; harness 100/100; final ./init.sh passed. No live provider object was intentionally aged/deleted; provider deletion is covered through deterministic adapter tests and existing live provider behavior."
+    },
+    {
+      "id": "feat-042",
+      "name": "Reliable direct camera capture uploads",
+      "description": "Fix image and video uploads created through mobile camera capture so they use supported media metadata and preserve the selected storage provider and recovery state on failure.",
+      "dependencies": ["feat-041"],
+      "acceptance_criteria": [
+        "Photos and videos captured from the device camera pass client validation and upload through the same provider-safe workflow as selected files.",
+        "Browser-specific empty or generic capture MIME metadata is normalized only when the filename safely identifies an allowed media type; unsupported files remain rejected.",
+        "Focused tests cover captured image/video metadata, provider-appropriate errors and unchanged record/provider recovery behavior."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-22. Raised the authenticated Drive proxy route body limit from Fastify's 1 MiB default to the configured maximum media size, while retaining exact Content-Length and asset-size checks. Camera files with empty or generic MIME metadata are normalized only from allow-listed filename extensions and retain correct image/video preview and create-asset metadata. Focused Drive tests 15/15 and RecorderWorkflow tests 17/17 passed; backend/web typecheck and production builds passed. Live physical-device capture remains a documented manual check."
+    },
+    {
+      "id": "feat-043",
+      "name": "Mobile account popup containment and dismissal",
+      "description": "Keep Vietnamese reconnect/change-account actions inside the account popup on narrow screens and dismiss the popup when tapping outside it.",
+      "dependencies": ["feat-042"],
+      "acceptance_criteria": [
+        "Long Vietnamese account actions wrap or size within the viewport without overflowing the popup.",
+        "Tapping or clicking outside the popup dismisses it while interactions inside remain usable.",
+        "Keyboard and accessible popup behavior remain covered in VI and EN."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-22. The profile popup is capped to the phone viewport, long Vietnamese Drive actions wrap within their buttons, and confirmation actions wrap when needed. Document pointer dismissal closes only outside taps/clicks; Escape closes and restores trigger focus. AccountAccess and GoogleDriveConnection focused tests 7/7 passed; web typecheck passed."
+    },
+    {
+      "id": "feat-044",
+      "name": "Compact mobile record form",
+      "description": "Reorganize mobile text inputs and selectors so core record fields and evidence actions require substantially less vertical scrolling without changing submitted values.",
+      "dependencies": ["feat-043"],
+      "acceptance_criteria": [
+        "Phone layouts surface operation, reference, notes, storage and evidence controls in a compact, understandable order.",
+        "Text inputs and application selectors retain labels, touch targets, validation and VI/EN behavior.",
+        "Desktop layout and API payload behavior remain unchanged."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-22. Phone layout now hides nonessential recorder intro/help copy, places storage and operation in a two-column field grid, keeps reference and notes full-width, shortens the notes/drop zone, and reduces section/footer spacing; sm/desktop sizing and all form names/payloads remain intact. RecorderWorkflow focused tests 18/18, web typecheck and production build passed. Browser discovery returned no available browser, so physical phone visual verification remains manual."
+    },
+    {
+      "id": "feat-045",
+      "name": "Centered evidence detail modal",
+      "description": "Open selected evidence-record details in a centered responsive modal instead of appending the detail below the record list.",
+      "dependencies": ["feat-044"],
+      "acceptance_criteria": [
+        "Viewing a record opens its metadata, lifecycle actions and evidence in a centered responsive dialog above the archive.",
+        "The dialog supports explicit close and outside dismissal without losing archive filters or pagination.",
+        "Evidence viewer nesting, focus/accessibility semantics and phone scrolling remain usable."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-22. Activity detail loading, errors, metadata actions and evidence now render in a centered, viewport-bounded modal with internal phone scrolling and body scroll lock. Explicit close, outside pointer dismissal and Escape restore the list trigger while filters/pagination remain mounted; nested confirmation and evidence viewer overlays use a higher layer. RecorderHistory focused tests 7/7, web typecheck and production build passed. Browser discovery returned no available browser, so physical phone visual verification remains manual."
     }
   ]
 }

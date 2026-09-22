@@ -1,14 +1,15 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
-import { ApiError, getSession, login, logout, registerAccount } from '../api'
+import { ApiError, getGoogleDriveStatus, getSession, login, logout, registerAccount } from '../api'
+import { I18nProvider } from '../i18n'
 import { AccountAccess } from './AccountAccess'
 
 vi.mock('../api', () => ({
   ApiError: class ApiError extends Error {
     constructor(public status: number, public code: string, message: string) { super(message) }
   },
-  getSession: vi.fn(), login: vi.fn(), logout: vi.fn(), registerAccount: vi.fn(),
+  getGoogleDriveStatus: vi.fn(), getSession: vi.fn(), login: vi.fn(), logout: vi.fn(), registerAccount: vi.fn(),
 }))
 
 beforeEach(() => vi.clearAllMocks())
@@ -28,6 +29,34 @@ it('restores an existing application session', async () => {
 
   await screen.findByText(/Signed in as/)
   expect(onUserChange).toHaveBeenCalledWith(user)
+})
+
+it('contains Vietnamese profile actions and dismisses the popup outside or with Escape', async () => {
+  localStorage.setItem('shopping-recorder-locale', 'vi')
+  const target = document.createElement('span')
+  target.id = 'header-profile'
+  document.body.append(target)
+  vi.mocked(getSession).mockResolvedValue({ email: null, id: 'user-1', username: 'operator' })
+  vi.mocked(getGoogleDriveStatus).mockResolvedValue({ configured: true, connected: true, state: 'connected', updatedAt: null })
+  render(<I18nProvider><AccountAccess onUserChange={vi.fn()} /></I18nProvider>)
+
+  const trigger = await screen.findByRole('button', { name: 'Mở hồ sơ' })
+  fireEvent.click(trigger)
+  const dialog = await screen.findByRole('dialog', { name: 'Menu hồ sơ' })
+  const reconnect = await screen.findByRole('button', { name: 'Kết nối lại hoặc đổi tài khoản Google' })
+  expect(dialog).toHaveClass('max-w-[calc(100vw-1.5rem)]')
+  expect(reconnect).toHaveClass('max-w-full', 'whitespace-normal', 'break-words')
+  fireEvent.pointerDown(reconnect)
+  expect(screen.getByRole('dialog', { name: 'Menu hồ sơ' })).toBeInTheDocument()
+  fireEvent.pointerDown(document.body)
+  expect(screen.queryByRole('dialog', { name: 'Menu hồ sơ' })).not.toBeInTheDocument()
+
+  fireEvent.click(trigger)
+  fireEvent.keyDown(document, { key: 'Escape' })
+  expect(screen.queryByRole('dialog', { name: 'Menu hồ sơ' })).not.toBeInTheDocument()
+  expect(trigger).toHaveFocus()
+  target.remove()
+  localStorage.removeItem('shopping-recorder-locale')
 })
 
 it('lets an operator create an account when no session exists', async () => {

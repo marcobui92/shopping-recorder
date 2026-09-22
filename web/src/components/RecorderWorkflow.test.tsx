@@ -78,6 +78,16 @@ describe('RecorderWorkflow', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Select at least one image or video.')
   })
 
+  it('uses compact phone spacing while retaining desktop field sizing', () => {
+    render(<RecorderWorkflow />)
+    const details = screen.getByRole('heading', { name: 'Activity details' }).closest('section')!
+    const fields = details.querySelector('.grid.grid-cols-2')
+    expect(fields).toHaveClass('gap-3', 'lg:grid-cols-1')
+    expect(screen.getByLabelText('Notes')).toHaveClass('h-20', 'sm:h-auto', 'sm:min-h-24')
+    expect(screen.getByText('Drop evidence here or choose files').closest('label')).toHaveClass('min-h-32', 'sm:min-h-44', 'py-4', 'sm:py-7')
+    expect(screen.getByText('Add the handoff context, then review every photo and video before starting the secure upload.')).toHaveClass('hidden', 'sm:block')
+  })
+
   it('shows dropped files immediately and lets the operator remove them before upload', async () => {
     render(<RecorderWorkflow />)
     const file = new File([new Uint8Array([0xff, 0xd8, 0xff, 0x00])], 'handoff.jpg', { type: 'image/jpeg' })
@@ -110,6 +120,27 @@ describe('RecorderWorkflow', () => {
     expect(document.getElementById('record-video')).toHaveAttribute('capture', 'environment')
     expect(screen.getByText('2 files ready for review')).toBeInTheDocument()
     expect(screen.getAllByText(/front\.jpg|seal\.png/)).toHaveLength(3)
+  })
+
+  it('normalizes direct camera files with missing or generic MIME metadata', async () => {
+    render(<RecorderWorkflow />)
+    const photo = new File([new Uint8Array([0xff, 0xd8, 0xff])], 'camera.jpg', { type: '' })
+    const video = new File([new Uint8Array([0x00, 0x00, 0x00, 0x18])], 'camera.mp4', { type: 'application/octet-stream' })
+    Object.defineProperty(photo, 'arrayBuffer', { value: async () => new Uint8Array([0xff, 0xd8, 0xff]).buffer })
+    Object.defineProperty(video, 'arrayBuffer', { value: async () => new Uint8Array([0x00, 0x00, 0x00, 0x18]).buffer })
+
+    fireEvent.change(document.getElementById('record-photo')!, { target: { files: [photo] } })
+    fireEvent.change(document.getElementById('record-video')!, { target: { files: [video] } })
+    expect(screen.getByRole('link', { name: 'Open full preview of camera.jpg' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Preview of camera.mp4')).toBeInTheDocument()
+    expect(screen.getByText(/image\/jpeg/)).toBeInTheDocument()
+    expect(screen.getByText(/video\/mp4/)).toBeInTheDocument()
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Review complete · Upload' })).toBeEnabled())
+    fireEvent.click(screen.getByRole('button', { name: 'Review complete · Upload' }))
+    await waitFor(() => expect(createMediaAsset).toHaveBeenCalledTimes(2))
+    expect(createMediaAsset).toHaveBeenNthCalledWith(1, 'activity-1', expect.objectContaining({ contentType: 'image/jpeg', mediaType: 'image', originalFilename: 'camera.jpg' }))
+    expect(createMediaAsset).toHaveBeenNthCalledWith(2, 'activity-1', expect.objectContaining({ contentType: 'video/mp4', mediaType: 'video', originalFilename: 'camera.mp4' }))
   })
 
   it('uploads, finalizes, and completes a packing evidence record', async () => {

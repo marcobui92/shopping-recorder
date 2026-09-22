@@ -3,7 +3,16 @@
 ## Current Objective
 
 - Goal: Deliver the PackTrace packing/unpacking evidence recorder with application storage and optional linked Google Drive.
-- feat-041 thirty-day evidence retention and logo reload is deployed from commit `64da323`; production migration `0011` is applied. No active feature; feat-018 remains blocked/deferred.
+- feat-041 thirty-day evidence retention and logo reload is deployed from commit `64da323`; production migration `0011` is applied. Features 042–045 are complete locally on `develop` and are not committed or deployed. No active feature; feat-018 remains blocked/deferred.
+
+## Features 042–045 — Mobile bug-fix sequence completed locally
+
+- `feat-042`: Drive's authenticated upload proxy now accepts bodies up to the configured maximum media size instead of Fastify's 1 MiB default. Empty/generic camera MIME metadata is normalized only from allow-listed extensions, preserving the correct image/video preview and asset declaration.
+- `feat-043`: the portalled profile popup is viewport-bounded; long Vietnamese Drive actions wrap. Outside pointer dismissal and Escape close the popup, while inside interactions remain usable.
+- `feat-044`: the phone recorder hides nonessential explanatory copy, uses compact spacing, places storage/operation side by side, keeps reference/notes full width, and shortens the notes/drop zone. Desktop breakpoint sizing and payload field names remain unchanged.
+- `feat-045`: archive activity detail is now a centered, viewport-bounded modal with internal scrolling, outside/X/Escape dismissal, body scroll lock and trigger focus restoration. Search/filter/pagination state remains mounted; confirmation and evidence viewer overlays stay above it.
+- Verification: backend 86 passed/5 opt-in skipped plus typecheck/build; web 50/50 plus typecheck/build; feature JSON and diff checks passed. No migration, environment variable or API response-shape change. Browser runtime discovery returned `[]`, so physical iPhone/Android visual/camera verification remains documented in `docs/TESTING.md`.
+- Next action: review/commit/push/deploy only if requested. Do not migrate the database for these changes; there is no new migration.
 
 ## Feature 041 — Thirty-day evidence retention and logo refresh completed
 

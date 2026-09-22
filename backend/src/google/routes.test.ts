@@ -74,6 +74,17 @@ test('Drive proxy accepts only session-owner octet streams with exact declared l
   } finally { await app.close() }
 })
 
+test('Drive proxy accepts direct camera payloads larger than Fastify default body limit', async () => {
+  const { app, uploads } = fixture()
+  const url = `/api/v1/google-drive/uploads/${randomUUID()}/${randomUUID()}`
+  const cameraPayload = Buffer.alloc(1024 * 1024 + 1, 0x7f)
+  try {
+    const result = await app.inject({ method: 'PUT', url, headers: { ...headers, 'content-type': 'application/octet-stream' }, payload: cameraPayload })
+    assert.equal(result.statusCode, 204, result.body)
+    assert.deepEqual(uploads, ['owner'])
+  } finally { await app.close() }
+})
+
 test('Drive content returns authenticated original bytes and a safely encoded attachment filename', async () => {
   const { Readable } = await import('node:stream')
   const app = buildApp(config, { recorder: { authenticate: async () => 'owner', service: {

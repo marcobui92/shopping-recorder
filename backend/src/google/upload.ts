@@ -58,9 +58,14 @@ export class DriveUploadService {
 }
 
 export function registerDriveUploadRoute(app: FastifyInstance, config: AppConfig, authenticate?: SessionAuthenticator, service?: Pick<DriveUploadService, 'upload'>): void {
+  const bodyLimit = Math.max(
+    config.s3?.maxImageBytes ?? 25 * 1024 * 1024,
+    config.s3?.maxVideoBytes ?? 500 * 1024 * 1024,
+  )
   void app.register(async scoped => {
     scoped.addContentTypeParser('application/octet-stream', (request, payload, done) => done(null, payload))
     scoped.put('/api/v1/google-drive/uploads/:assetId/:attemptId', {
+      bodyLimit,
       config: { rateLimit: { groupId: 'recorder-uploads', max: 60, timeWindow: '1 minute' } },
       schema: { params: { type: 'object', required: ['assetId', 'attemptId'], additionalProperties: false, properties: { assetId: { type: 'string', format: 'uuid' }, attemptId: { type: 'string', format: 'uuid' } } } },
       onRequest: async request => {

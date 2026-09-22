@@ -1,5 +1,5 @@
 import { GoogleDriveConnection } from './GoogleDriveConnection'
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ArrowRight, LoaderCircle, LogOut, ShieldCheck, UserRound } from 'lucide-react'
 
@@ -19,6 +19,7 @@ export function AccountAccess({ onUserChange }: { onUserChange: (user: AppUser |
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [profileOpen, setProfileOpen] = useState(false)
+  const profileRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     void getSession().then((current) => {
@@ -29,6 +30,24 @@ export function AccountAccess({ onUserChange }: { onUserChange: (user: AppUser |
       onUserChange(null)
     }).finally(() => setChecking(false))
   }, [onUserChange])
+
+  useEffect(() => {
+    if (!profileOpen) return
+    function dismissOutside(event: PointerEvent) {
+      if (!profileRef.current?.contains(event.target as Node)) setProfileOpen(false)
+    }
+    function dismissWithKeyboard(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      setProfileOpen(false)
+      profileRef.current?.querySelector('button')?.focus()
+    }
+    document.addEventListener('pointerdown', dismissOutside)
+    document.addEventListener('keydown', dismissWithKeyboard)
+    return () => {
+      document.removeEventListener('pointerdown', dismissOutside)
+      document.removeEventListener('keydown', dismissWithKeyboard)
+    }
+  }, [profileOpen])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -62,9 +81,9 @@ export function AccountAccess({ onUserChange }: { onUserChange: (user: AppUser |
 
   if (user) {
     const profile = (
-      <div className="relative">
+      <div className="relative" ref={profileRef}>
         <Button aria-expanded={profileOpen} aria-haspopup="dialog" aria-label={t('Open profile')} className="grid size-10 !min-h-0 place-items-center rounded-full bg-primary p-0 text-primary-foreground shadow-sm" type="button" onClick={() => setProfileOpen((open) => !open)}><UserRound aria-hidden="true" className="size-5" /></Button>
-        {profileOpen && <div className="absolute right-0 top-12 z-50 w-72 rounded-2xl border bg-card p-4 text-left shadow-xl" role="dialog" aria-label={t('Profile menu')}>
+        {profileOpen && <div className="absolute right-0 top-12 z-50 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl border bg-card p-4 text-left shadow-xl" role="dialog" aria-label={t('Profile menu')}>
           <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-full bg-primary/10 text-primary"><UserRound aria-hidden="true" className="size-5" /></span><div className="min-w-0"><span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('Signed in as')}</span><p className="truncate font-semibold">{user.username}</p></div></div>
           <div className="mt-4 flex items-center gap-2 rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground"><ShieldCheck aria-hidden="true" className="size-4 shrink-0 text-primary" /> {t('Session protected')}</div>
           {error && <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
