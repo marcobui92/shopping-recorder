@@ -578,7 +578,7 @@
         "Focused storage/proxy tests, type checks and builds pass with no migration or response-shape change."
       ],
       "status": "done",
-      "evidence": "Completed on 2026-09-24. Production curl showed the Drive PUT URL bypassed the Vercel rewrite and carried no Cookie, so Render could not authenticate the mobile upload. DriveMediaStorage now receives the app CORS origin from server wiring and emits the same-origin `/api/v1/google-drive/uploads/...` URL; the redirect URI remains the local fallback for isolated adapter tests. Backend test suite 86 passed/5 opt-in skipped, typecheck and build passed. No migration, provider credential or API response-shape change."
+      "evidence": "Completed on 2026-09-24. Production curl showed the Drive PUT URL bypassed the Vercel rewrite and carried no Cookie, so Render could not authenticate the mobile upload. DriveMediaStorage now receives the app CORS origin from server wiring and emits the same-origin `/api/v1/google-drive/uploads/...` URL; the redirect URI remains the local fallback for isolated adapter tests. Client retry also refreshes legacy server capabilities that point to a different production origin. Backend test suite 86 passed/5 opt-in skipped and web 50/50 passed, with typechecks and builds passing. No migration, provider credential or API response-shape change."
     }
   ]
 }

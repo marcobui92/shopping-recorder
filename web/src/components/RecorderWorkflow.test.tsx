@@ -177,6 +177,10 @@ describe('RecorderWorkflow', () => {
   })
 
   it('creates a new attempt under the same asset after verification confirms an interrupted upload failed', async () => {
+    vi.mocked(createMediaAsset).mockResolvedValueOnce({
+      asset,
+      upload: { ...upload, expiresAt: '2026-10-01T00:00:00.000Z', strategy: 'server', url: 'https://shopping-recorder.onrender.com/api/v1/google-drive/uploads/asset-1/attempt-1' },
+    })
     vi.mocked(uploadMedia).mockRejectedValueOnce(new Error('Upload interrupted.'))
     vi.mocked(finalizeMediaAsset)
       .mockRejectedValueOnce(new ApiError(422, 'UPLOAD_VERIFICATION_FAILED', 'The uploaded media could not be verified.'))

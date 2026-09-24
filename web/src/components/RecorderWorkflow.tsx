@@ -101,6 +101,20 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
+function canReuseCapability(capability: UploadCapability): boolean {
+  if (new Date(capability.expiresAt).getTime() <= Date.now()) return false
+  if (capability.strategy !== 'server' || typeof window === 'undefined') return true
+  try {
+    const target = new URL(capability.url, window.location.href)
+    const current = new URL(window.location.href)
+    if (target.origin === current.origin) return true
+    // Local development may intentionally run the API on a separate port. In
+    // production, server capabilities must use the web origin so its session
+    // cookie survives the Vercel rewrite.
+    return current.hostname === 'localhost' || current.hostname === '127.0.0.1'
+  } catch { return false }
+}
+
 function EvidencePreview({ file, mediaType }: { file: File; mediaType: SupportedMediaType }) {
   const [failed, setFailed] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
@@ -208,7 +222,7 @@ export function RecorderWorkflow({ onCompleted }: { onCompleted?: () => void }) 
     try {
       let assetId = item.assetId
       let upload: UploadCapability
-      if (retry && assetId && item.capability && new Date(item.capability.expiresAt).getTime() > Date.now()) {
+      if (retry && assetId && item.capability && canReuseCapability(item.capability)) {
         upload = item.capability
         update(item.key, { error: undefined, progress: 0, stage: 'preparing' })
       } else if (retry && assetId) {

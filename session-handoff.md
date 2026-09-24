@@ -19,6 +19,7 @@
 - A production mobile curl proved Drive upload capabilities pointed directly to Render and carried no Cookie. Since API/session traffic is reverse-proxied through Vercel, this caused authentication failure before upload handling.
 - `DriveMediaStorage` now accepts the configured web origin from `server.ts` and emits the application upload URL on that origin. The Vercel rewrite forwards it to Render while preserving the browser session cookie. Three-argument adapter construction keeps a safe redirect-origin fallback for local/integration fixtures.
 - Backend 86 tests passed/5 opt-in skipped, typecheck/build passed. Commit/push/deploy is pending the user's current release request; no migration is needed.
+- Follow-up: the web retry path refreshes an unexpired server capability when its origin differs from the production web origin, covering activities that were opened before this deployment.
 
 ## Feature 041 — Thirty-day evidence retention and logo refresh completed
 
