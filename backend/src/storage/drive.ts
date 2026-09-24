@@ -11,7 +11,12 @@ interface DriveRef { owner: string; account: string; file: string }
 interface DriveVersion { revision: string; contentType: string; size: number }
 export class DriveMediaStorage implements MediaStorageAdapter {
   readonly provider = 'google_drive' as const
-  constructor(private readonly config: GoogleDriveConfig, private readonly repository: GoogleConnectionStore, private readonly client = new GoogleDriveClient(config)) {}
+  constructor(
+    private readonly config: GoogleDriveConfig,
+    private readonly repository: GoogleConnectionStore,
+    private readonly client = new GoogleDriveClient(config),
+    private readonly uploadOrigin = new URL(config.redirectUri).origin,
+  ) {}
 
   private async connection(ref: DriveRef) {
     const connection = await this.repository.get(ref.owner)
@@ -29,7 +34,7 @@ export class DriveMediaStorage implements MediaStorageAdapter {
     return {
       providerObjectRef: JSON.stringify({ owner: input.ownerUserId, account: connection.providerAccountId, file: upload.fileId } satisfies DriveRef),
       providerUploadRef: JSON.stringify(encryptSecret(upload.sessionUrl, this.config.tokenEncryptionKey)),
-      capability: { attemptId, expiresAt: new Date(Date.now() + 900_000).toISOString(), method: 'PUT', strategy: 'server', headers: { 'Content-Type': 'application/octet-stream' }, url: new URL(`/api/v1/google-drive/uploads/${input.assetId}/${attemptId}`, this.config.redirectUri).href },
+      capability: { attemptId, expiresAt: new Date(Date.now() + 900_000).toISOString(), method: 'PUT', strategy: 'server', headers: { 'Content-Type': 'application/octet-stream' }, url: new URL(`/api/v1/google-drive/uploads/${input.assetId}/${attemptId}`, this.uploadOrigin).href },
     }
   }
   async verify(objectRef: string, expected: StorageObjectInput) {

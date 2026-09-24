@@ -14,6 +14,12 @@
 - Verification: backend 86 passed/5 opt-in skipped plus typecheck/build; web 50/50 plus typecheck/build; feature JSON and diff checks passed. No migration, environment variable or API response-shape change. Browser runtime discovery returned `[]`, so physical iPhone/Android visual/camera verification remains documented in `docs/TESTING.md`.
 - Next action: review/commit/push/deploy only if requested. Do not migrate the database for these changes; there is no new migration.
 
+## Feature 046 — Drive upload session origin fix
+
+- A production mobile curl proved Drive upload capabilities pointed directly to Render and carried no Cookie. Since API/session traffic is reverse-proxied through Vercel, this caused authentication failure before upload handling.
+- `DriveMediaStorage` now accepts the configured web origin from `server.ts` and emits the application upload URL on that origin. The Vercel rewrite forwards it to Render while preserving the browser session cookie. Three-argument adapter construction keeps a safe redirect-origin fallback for local/integration fixtures.
+- Backend 86 tests passed/5 opt-in skipped, typecheck/build passed. Commit/push/deploy is pending the user's current release request; no migration is needed.
+
 ## Feature 041 — Thirty-day evidence retention and logo refresh completed
 
 - Migration `0011_add_evidence_retention.sql` is applied locally. Completed activities receive `evidence_expires_at` exactly 30 days after completion; existing completed rows were backfilled. `expired_at`, public `expired` status, audit support and the due index are additive.

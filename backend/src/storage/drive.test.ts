@@ -24,7 +24,7 @@ function fixture() {
   client.pin = async () => undefined
   client.download = async (_connection, _file, revision) => { downloaded.push(revision); return new Response(new Uint8Array(content)) }
   client.delete = async (_connection, file) => { deleted.push(file) }
-  const adapter = new DriveMediaStorage(config, repo, client)
+  const adapter = new DriveMediaStorage(config, repo, client, 'https://shopping-recorder-web.vercel.app')
   return { adapter, client, downloaded, deleted, setContent: (value: Buffer) => { content = value }, setHead: (value: string) => { head = value }, disconnect: () => { connection = null }, replace: () => { connection!.providerAccountId = 'other' } }
 }
 
@@ -32,7 +32,7 @@ test('Drive capabilities contain only the authenticated application upload URL; 
   const { adapter } = fixture()
   const issued = await adapter.issueUpload(input, 'attempt')
   assert.equal(issued.capability.strategy, 'server')
-  assert.equal(issued.capability.url, 'http://localhost:3001/api/v1/google-drive/uploads/asset/attempt')
+  assert.equal(issued.capability.url, 'https://shopping-recorder-web.vercel.app/api/v1/google-drive/uploads/asset/attempt')
   assert.doesNotMatch(JSON.stringify(issued.capability), /secret-session|refresh|Bearer/)
   assert.doesNotMatch(issued.providerUploadRef!, /secret-session/)
   assert.equal(decryptSecret(JSON.parse(issued.providerUploadRef!), key), 'https://www.googleapis.com/upload/secret-session')

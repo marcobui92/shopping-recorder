@@ -23,7 +23,7 @@ async function start() {
   const s3Storage = config.s3 ? new B2MediaStorage(config.s3) : undefined
   const googleRepository = pool ? new GoogleConnectionRepository(pool) : undefined
   const googleService = config.googleDrive && googleRepository ? new GoogleDriveService(config.googleDrive, googleRepository) : undefined
-  const driveStorage = config.googleDrive && googleRepository ? new DriveMediaStorage(config.googleDrive, googleRepository) : undefined
+  const driveStorage = config.googleDrive && googleRepository ? new DriveMediaStorage(config.googleDrive, googleRepository, undefined, config.corsOrigin) : undefined
   const recorderService = recorderRepository
     ? new RecorderMediaService(recorderRepository, [...(s3Storage ? [s3Storage] : []), ...(driveStorage ? [driveStorage] : [])], config.s3)
     : undefined

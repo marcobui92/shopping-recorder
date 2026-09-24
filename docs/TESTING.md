@@ -55,6 +55,8 @@ Record the browser, backend, PostgreSQL, and B2 outcomes in `progress.md`. Live 
 
 For direct mobile capture, repeat the upload with the camera controls using an image and a video larger than 1 MiB. The Drive server proxy must accept the configured media limit rather than Fastify's default request limit. Also verify Safari/Chrome camera files whose MIME metadata is empty or `application/octet-stream`: recognized `.jpg`, `.heic`, `.mp4`, `.mov`, and `.webm` filenames are normalized, while an unrecognized extension remains rejected.
 
+When testing Drive through a reverse proxy, inspect the returned upload capability: its URL must use the configured web origin, not the backend host directly. The browser PUT should therefore go through the web rewrite and carry the authenticated session; a direct backend PUT without a Cookie is not a valid browser test.
+
 At a narrow phone width in both VI and EN, open the profile menu and verify long Drive account actions wrap inside the viewport, inside actions remain clickable, and tapping outside dismisses it. In New record, confirm storage/operation are visible side by side, reference/notes stay full-width, and the camera actions appear with substantially less scrolling while desktop spacing remains unchanged. In Evidence archive, View evidence must open a centered, internally scrollable dialog; closing by X, outside tap, or Escape must retain search filters and pagination, and the nested evidence viewer must remain above the detail dialog.
 
 ## Known production gate

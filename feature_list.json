@@ -566,6 +566,19 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-09-22. Activity detail loading, errors, metadata actions and evidence now render in a centered, viewport-bounded modal with internal phone scrolling and body scroll lock. Explicit close, outside pointer dismissal and Escape restore the list trigger while filters/pagination remain mounted; nested confirmation and evidence viewer overlays use a higher layer. RecorderHistory focused tests 7/7, web typecheck and production build passed. Browser discovery returned no available browser, so physical phone visual verification remains manual."
+    },
+    {
+      "id": "feat-046",
+      "name": "Keep Drive upload capabilities on the web origin",
+      "description": "Route authenticated Google Drive upload capabilities through the configured web origin so reverse-proxied production sessions retain their cookie on mobile and desktop browsers.",
+      "dependencies": ["feat-045"],
+      "acceptance_criteria": [
+        "Drive upload capabilities use the configured web CORS origin for the application upload URL, while local adapter tests retain a safe fallback.",
+        "A reverse-proxied upload keeps the authenticated session and existing origin/length/provider checks; provider upload sessions and credentials remain server-only.",
+        "Focused storage/proxy tests, type checks and builds pass with no migration or response-shape change."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-24. Production curl showed the Drive PUT URL bypassed the Vercel rewrite and carried no Cookie, so Render could not authenticate the mobile upload. DriveMediaStorage now receives the app CORS origin from server wiring and emits the same-origin `/api/v1/google-drive/uploads/...` URL; the redirect URI remains the local fallback for isolated adapter tests. Backend test suite 86 passed/5 opt-in skipped, typecheck and build passed. No migration, provider credential or API response-shape change."
     }
   ]
 }
