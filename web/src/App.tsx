@@ -1,7 +1,8 @@
-import { ShieldCheck } from 'lucide-react'
+import { Archive, ShieldCheck } from 'lucide-react'
 import { Link, NavLink, Route, Routes } from 'react-router-dom'
 
 import { HomePage } from './pages/HomePage'
+import { ArchivePage } from './pages/ArchivePage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { LegalPage } from './pages/LegalPage'
 import { BrandRefreshButton } from './components/BrandRefreshButton'
@@ -19,7 +20,8 @@ function AppContent() {
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-6 lg:px-8">
           <BrandRefreshButton />
           <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2">
-            <NavLink className="hidden rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:inline-flex" end to="/">{t('Workspace')}</NavLink>
+            <NavLink className="rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:px-3" end to="/">{t('Workspace')}</NavLink>
+            <NavLink className="inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:px-3" to="/archive"><Archive aria-hidden="true" className="size-4" /><span className="hidden sm:inline">{t('Evidence archive')}</span><span className="sr-only sm:hidden">{t('Evidence archive')}</span></NavLink>
             <span className="hidden items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:flex"><ShieldCheck aria-hidden="true" className="size-3.5 text-primary" /> {t('Private evidence')}</span>
             <span className="relative" id="header-profile" />
             <LanguageSwitcher />
@@ -30,6 +32,7 @@ function AppContent() {
         <div aria-hidden="true" className="page-grid pointer-events-none absolute inset-x-0 top-0 h-[34rem] opacity-70" />
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/archive" element={<ArchivePage />} />
           <Route path="/privacy" element={<LegalPage kind="privacy" />} />
           <Route path="/terms" element={<LegalPage kind="terms" />} />
           <Route path="*" element={<NotFoundPage />} />

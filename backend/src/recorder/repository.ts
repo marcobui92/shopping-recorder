@@ -69,6 +69,7 @@ export interface RecorderRepository {
     providerObjectRef: string
     providerUploadRef: string | null
   }): Promise<MediaAsset | null>
+  discardAsset(ownerUserId: string, assetId: string): Promise<LifecycleMutationResult | null>
   failFinalize(assetId: string, attemptId: string, failureCode: string): Promise<void>
   finishFinalize(assetId: string, attemptId: string, verified: VerifiedStorageObject): Promise<MediaAsset>
   getActivity(ownerUserId: string, activityId: string): Promise<RecorderActivity | null>
@@ -256,7 +257,7 @@ export class PostgresRecorderRepository implements RecorderRepository {
     if (!activity) return null
     const assets = await this.pool.query<AssetRow>(`
       SELECT ${assetColumns} FROM media_assets
-      WHERE activity_id = $1
+      WHERE activity_id = $1 AND discarded_at IS NULL
       ORDER BY ordinal ASC, id ASC
     `, [activityId])
     return { activity, assets: assets.rows.map(toAsset) }
@@ -318,7 +319,7 @@ export class PostgresRecorderRepository implements RecorderRepository {
       const assets = await client.query<{ non_ready: string; total: string }>(`
         SELECT count(*)::text AS total,
                count(*) FILTER (WHERE status <> 'ready')::text AS non_ready
-        FROM media_assets WHERE activity_id = $1
+        FROM media_assets WHERE activity_id = $1 AND discarded_at IS NULL
       `, [activityId])
       if (Number(assets.rows[0].total) < 1 || Number(assets.rows[0].non_ready) > 0) {
         throw new Error('ACTIVITY_NOT_COMPLETABLE')
@@ -577,7 +578,7 @@ export class PostgresRecorderRepository implements RecorderRepository {
              a.expected_sha256, a.provider_object_ref, a.provider_version_ref, r.owner_user_id
       FROM media_assets a
       JOIN recorder_activities r ON r.id = a.activity_id
-      WHERE a.id = $1 AND r.owner_user_id = $2 AND r.status NOT IN ('cancelled', 'deleted')
+      WHERE a.id = $1 AND a.discarded_at IS NULL AND r.owner_user_id = $2 AND r.status NOT IN ('cancelled', 'deleted')
     `, [assetId, ownerUserId])
     return result.rows[0] ? toUploadTarget(result.rows[0]) : null
   }
@@ -589,7 +590,7 @@ export class PostgresRecorderRepository implements RecorderRepository {
         WHERE u.asset_id = a.id AND u.status IN ('issued', 'finalizing')
       ) AS active
       FROM media_assets a JOIN recorder_activities r ON r.id = a.activity_id
-      WHERE a.id = $1 AND r.owner_user_id = $2 AND r.status NOT IN ('cancelled', 'deleted')
+      WHERE a.id = $1 AND a.discarded_at IS NULL AND r.owner_user_id = $2 AND r.status NOT IN ('cancelled', 'deleted')
     `, [assetId, ownerUserId])
     const row = result.rows[0]
     if (!row) return null
@@ -605,7 +606,7 @@ export class PostgresRecorderRepository implements RecorderRepository {
       const result = await client.query<AssetRow & { owner_user_id: string }>(`
         SELECT ${assetColumns.split(',').map((column) => `a.${column.trim()}`).join(', ')}, r.owner_user_id
         FROM media_assets a JOIN recorder_activities r ON r.id = a.activity_id
-        WHERE a.id = $1 AND r.owner_user_id = $2 AND r.status NOT IN ('cancelled', 'deleted') FOR UPDATE OF a
+        WHERE a.id = $1 AND a.discarded_at IS NULL AND r.owner_user_id = $2 AND r.status NOT IN ('cancelled', 'deleted') FOR UPDATE OF a
       `, [input.assetId, input.ownerUserId])
       const asset = result.rows[0]
       if (!asset) return null
@@ -640,6 +641,41 @@ export class PostgresRecorderRepository implements RecorderRepository {
     })
   }
 
+  async discardAsset(ownerUserId: string, assetId: string): Promise<LifecycleMutationResult | null> {
+    return transaction(this.pool, async (client) => {
+      const result = await client.query<{
+        activity_id: string; activity_status: RecorderActivity['status']; provider_object_ref: string | null
+      }>(`
+        SELECT a.activity_id, r.status AS activity_status, a.provider_object_ref
+        FROM media_assets a
+        JOIN recorder_activities r ON r.id = a.activity_id
+        WHERE a.id = $1 AND a.discarded_at IS NULL AND r.owner_user_id = $2
+        FOR UPDATE OF a, r
+      `, [assetId, ownerUserId])
+      const asset = result.rows[0]
+      if (!asset) return null
+      if (['complete', 'cancelled', 'expired', 'deleted'].includes(asset.activity_status)) throw new Error('ACTIVITY_IMMUTABLE')
+      const active = await client.query(`
+        SELECT 1 FROM media_upload_attempts WHERE asset_id = $1 AND status IN ('issued', 'finalizing')
+      `, [assetId])
+      if (active.rowCount) throw new Error('UPLOAD_ALREADY_ACTIVE')
+      await client.query(`
+        UPDATE media_upload_attempts SET status = 'expired', updated_at = now()
+        WHERE asset_id = $1 AND status NOT IN ('succeeded', 'failed', 'expired')
+      `, [assetId])
+      await client.query(`UPDATE media_assets SET discarded_at = now(), updated_at = now() WHERE id = $1`, [assetId])
+      if (asset.provider_object_ref) {
+        await client.query(`
+          INSERT INTO media_cleanup_jobs (activity_id, asset_id, storage_provider, provider_object_ref, provider_version_ref)
+          SELECT a.activity_id, a.id, a.storage_provider, a.provider_object_ref, a.provider_version_ref
+          FROM media_assets a WHERE a.id = $1 AND a.provider_object_ref IS NOT NULL
+          ON CONFLICT (activity_id, asset_id) DO NOTHING
+        `, [assetId])
+      }
+      return { cleanupTargets: await cleanupTargets(client, asset.activity_id) }
+    })
+  }
+
   async beginFinalize(ownerUserId: string, assetId: string, attemptId: string): Promise<BeginFinalizeResult | null> {
     return transaction(this.pool, async (client) => {
       const result = await client.query<UploadTargetRow & {
@@ -651,7 +687,7 @@ export class PostgresRecorderRepository implements RecorderRepository {
         FROM media_assets a
         JOIN recorder_activities r ON r.id = a.activity_id
         JOIN media_upload_attempts u ON u.asset_id = a.id
-        WHERE a.id = $1 AND u.id = $2 AND r.owner_user_id = $3 AND r.status NOT IN ('cancelled', 'deleted')
+        WHERE a.id = $1 AND a.discarded_at IS NULL AND u.id = $2 AND r.owner_user_id = $3 AND r.status NOT IN ('cancelled', 'deleted')
         FOR UPDATE OF a, u
       `, [assetId, attemptId, ownerUserId])
       const row = result.rows[0]

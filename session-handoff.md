@@ -2,7 +2,7 @@
 
 ## Current Objective
 
-- Goal: Deliver the PackTrace packing/unpacking evidence recorder with application storage and optional linked Google Drive.
+- Goal: Deliver the PackTrace packing/unpacking evidence recorder with application storage and optional linked Google Drive. Feature 047 is complete locally; no deployment was requested in this turn.
 - feat-041 thirty-day evidence retention and logo reload is deployed from commit `64da323`; production migration `0011` is applied. Features 042–045 are complete locally on `develop` and are not committed or deployed. No active feature; feat-018 remains blocked/deferred.
 
 ## Features 042–045 — Mobile bug-fix sequence completed locally
@@ -20,6 +20,13 @@
 - `DriveMediaStorage` now accepts the configured web origin from `server.ts` and emits the application upload URL on that origin. The Vercel rewrite forwards it to Render while preserving the browser session cookie. Three-argument adapter construction keeps a safe redirect-origin fallback for local/integration fixtures.
 - Backend 86 tests passed/5 opt-in skipped, typecheck/build passed. Commit/push/deploy is pending the user's current release request; no migration is needed.
 - Follow-up: the web retry path refreshes an unexpired server capability when its origin differs from the production web origin, covering activities that were opened before this deployment.
+
+## Feature 047 — Focused upload-first recorder workspace completed
+
+- After login, New record renders first with evidence capture and review before the storage connection panel and archive navigation. On phones, details are ordered below evidence while desktop retains the two-column layout.
+- Added `discarded_at` via migration `0012_discard_failed_media_assets.sql`. Discarding a failed asset is a soft state transition; activity detail/completion/upload retry ignore discarded assets, while provider objects are sent through the existing cleanup queue. Added `DELETE /api/v1/media-assets/{assetId}` and a localized Remove action beside Retry.
+- Verification: migration applied locally; backend test 86 passed/5 skipped; web 50/50; backend/web typecheck and builds passed. Browser/physical mobile QA remains manual because no browser runtime was available. Changes are not committed or pushed; deploy only on explicit request.
+- Follow-up UX moved archive fully out of the recorder workspace: `/archive` is a dedicated route with session-aware login/history, and the global header exposes it as a first-class navigation item at all breakpoints. Web 50/50, typecheck and build pass after the route split.
 
 ## Feature 041 — Thirty-day evidence retention and logo refresh completed
 

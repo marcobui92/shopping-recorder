@@ -1,19 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Archive, CheckCircle2, FileCheck2, LockKeyhole, Plus } from 'lucide-react'
+import { CheckCircle2, FileCheck2, LockKeyhole } from 'lucide-react'
 
 import type { AppUser, GoogleDriveStatus } from '../api'
 import { AccountAccess } from '../components/AccountAccess'
 import { HealthStatus } from '../components/HealthStatus'
 import { RecorderWorkflow } from '../components/RecorderWorkflow'
-import { RecorderHistory } from '../components/RecorderHistory'
 import { GoogleDriveConnection } from '../components/GoogleDriveConnection'
 import { useI18n } from '../i18n'
 
 export function HomePage() {
   const { t } = useI18n()
   const [user, setUser] = useState<AppUser | null>(null)
-  const [historyRefreshKey, setHistoryRefreshKey] = useState(0)
-  const [mobileView, setMobileView] = useState<'new' | 'history'>('new')
   const [driveStatus, setDriveStatus] = useState<GoogleDriveStatus | null>(null)
   const handleUserChange = useCallback((current: AppUser | null) => setUser(current), [])
   useEffect(() => {
@@ -38,14 +35,9 @@ export function HomePage() {
       </section>}
 
       <div className={user ? 'hidden' : 'mt-12 sm:mt-16'}><AccountAccess onUserChange={handleUserChange} /></div>
-      {user && <div className="mt-8 space-y-5 sm:space-y-8">
+      {user && <div className="mt-4 sm:mt-8">
+        <RecorderWorkflow />
         <GoogleDriveConnection hideWhenConnected onStatusChange={setDriveStatus} showIntro />
-        <nav className="sticky top-[4.5rem] z-30 -mx-1 flex rounded-2xl border bg-card/95 p-1.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/80" aria-label={t('Recorder workspace sections')}>
-          <button className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${mobileView === 'new' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted'}`} type="button" aria-current={mobileView === 'new' ? 'page' : undefined} onClick={() => setMobileView('new')}><Plus aria-hidden="true" className="size-4" /> {t('New record')}</button>
-          <button className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${mobileView === 'history' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted'}`} type="button" aria-current={mobileView === 'history' ? 'page' : undefined} onClick={() => setMobileView('history')}><Archive aria-hidden="true" className="size-4" /> {t('Evidence archive')}</button>
-        </nav>
-        <div className={mobileView === 'new' ? '' : 'hidden'} aria-hidden={mobileView !== 'new'}><RecorderWorkflow onCompleted={() => setHistoryRefreshKey((value) => value + 1)} /></div>
-        <div className={mobileView === 'history' ? '' : 'hidden'} aria-hidden={mobileView !== 'history'}><RecorderHistory refreshKey={historyRefreshKey} /></div>
       </div>}
     </div>
   )

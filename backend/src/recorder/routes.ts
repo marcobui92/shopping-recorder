@@ -267,6 +267,15 @@ export function registerRecorderRoutes(
     return reply.status(201).send({ data: result })
   })
 
+  app.delete('/api/v1/media-assets/:assetId', {
+    config: uploadMutationConfig,
+    schema: { params: uuidParams },
+  }, async (request) => {
+    const ownerUserId = await requireOwner(request, config, dependencies, true)
+    const { assetId } = request.params as { assetId: string }
+    return { data: await service(dependencies).discardAsset(ownerUserId, assetId) }
+  })
+
   app.post('/api/v1/media-assets/:assetId/upload-attempts/:attemptId/finalize', {
     config: uploadMutationConfig,
     schema: {

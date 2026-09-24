@@ -274,6 +274,12 @@ export async function retryMediaAsset(assetId: string): Promise<{ asset: MediaAs
   return payload.data as { asset: MediaAsset; upload: UploadCapability }
 }
 
+export async function discardMediaAsset(assetId: string): Promise<{ cleanupPending: number }> {
+  const payload = await recorderRequest<{ data?: { cleanupPending?: number } }>(`/media-assets/${assetId}`, { method: 'DELETE' })
+  if (!Number.isInteger(payload.data?.cleanupPending)) throw new ApiError(500, 'INVALID_RESPONSE', 'The service returned an invalid discard response.')
+  return { cleanupPending: payload.data!.cleanupPending! }
+}
+
 export async function finalizeMediaAsset(assetId: string, attemptId: string): Promise<MediaAsset> {
   const payload = await recorderRequest<{ data?: MediaAsset }>(
     `/media-assets/${assetId}/upload-attempts/${attemptId}/finalize`,

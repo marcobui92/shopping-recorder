@@ -289,6 +289,14 @@ Creates a retry capability for a failed, expired, or pending asset when it has n
 
 Returns `409 UPLOAD_ALREADY_ACTIVE` when an `issued` or `finalizing` attempt already exists, and `409 ASSET_ALREADY_READY` when verification previously succeeded.
 
+### `DELETE /api/v1/media-assets/{assetId}`
+
+Soft-discard a failed media asset while retaining its database record for audit/history. If a provider object exists, cleanup is queued and processed by the backend.
+
+Response: `{ "data": { "cleanupPending": 0 } }`.
+
+Possible errors include `ASSET_NOT_FOUND`, `UPLOAD_ALREADY_ACTIVE`, and `ACTIVITY_IMMUTABLE`.
+
 ### `POST /api/v1/media-assets/{assetId}/upload-attempts/{attemptId}/finalize`
 
 Starts backend verification. The request body is an empty object. The server verifies provider existence, provider/activity binding, byte size, detected media type, and SHA-256 checksum over the stored bytes before marking the asset `ready`. The Backblaze B2 adapter reads the private object version once during finalization to calculate SHA-256; it does not trust browser metadata or an ETag as a content digest, and it stores B2's version ID for immutable retrieval.

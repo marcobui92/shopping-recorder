@@ -141,6 +141,16 @@ class MemoryRecorderRepository implements RecorderRepository {
     return { cleanupTargets: this.pendingCleanup(activityId) }
   }
 
+  async discardAsset(userId: string, assetId: string) {
+    const asset = this.assets.get(assetId)
+    const activity = asset ? this.activities.get(asset.activityId) : undefined
+    if (!asset || !activity || activity.ownerUserId !== userId) return null
+    if (activity.status === 'complete' || activity.status === 'cancelled') throw new Error('ACTIVITY_IMMUTABLE')
+    if (this.activeAttemptAssets.has(assetId)) throw new Error('UPLOAD_ALREADY_ACTIVE')
+    this.assets.delete(assetId)
+    return { cleanupTargets: this.pendingCleanup(activity.id) }
+  }
+
   async deleteActivity(userId: string, activityId: string) {
     const activity = this.activities.get(activityId)
     if (!activity || activity.ownerUserId !== userId) return null

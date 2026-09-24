@@ -579,6 +579,19 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-09-24. Production curl showed the Drive PUT URL bypassed the Vercel rewrite and carried no Cookie, so Render could not authenticate the mobile upload. DriveMediaStorage now receives the app CORS origin from server wiring and emits the same-origin `/api/v1/google-drive/uploads/...` URL; the redirect URI remains the local fallback for isolated adapter tests. Client retry also refreshes legacy server capabilities that point to a different production origin. Backend test suite 86 passed/5 opt-in skipped and web 50/50 passed, with typechecks and builds passing. No migration, provider credential or API response-shape change."
+    },
+    {
+      "id": "feat-047",
+      "name": "Focused upload-first recorder workspace",
+      "description": "Make evidence capture the first post-login action, move secondary record information and archive navigation below/behind the primary upload flow, compact the media review, and allow failed assets to be discarded safely.",
+      "dependencies": ["feat-046"],
+      "acceptance_criteria": [
+        "After login, the new-record evidence capture controls and selected media appear before secondary metadata and storage guidance; the archive is a separate lower-priority view.",
+        "Media review remains compact while retaining preview, progress, retry, and remove actions; a failed asset can be discarded without leaving a server-side unfinished asset that blocks completion.",
+        "Existing metadata/API payloads, provider locking, accessibility labels, and VI/EN behavior remain intact; migration, focused tests, type checks and builds pass."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-24. New-record evidence controls now render first after login, metadata/storage guidance follows, and archive is a separate /archive page selectable from the global header. Mobile media review spacing is compact while preserving preview/progress/retry/remove actions. Migration 0012 adds soft-discard timestamps and active-asset filtering; DELETE /api/v1/media-assets/{assetId} queues provider cleanup without deleting the audit row. Backend tests 86 passed/5 opt-in skipped, web tests 50/50, typechecks and production builds passed; migration 0012 applied locally."
     }
   ]
 }

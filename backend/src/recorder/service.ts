@@ -197,6 +197,16 @@ export class RecorderMediaService {
     return { cleanupPending: await this.cleanup(result.cleanupTargets) }
   }
 
+  async discardAsset(ownerUserId: string, assetId: string): Promise<{ cleanupPending: number }> {
+    try {
+      const result = await this.repository.discardAsset(ownerUserId, assetId)
+      if (!result) throw new AppError(404, 'ASSET_NOT_FOUND', 'The media asset does not exist.')
+      return { cleanupPending: await this.cleanup(result.cleanupTargets) }
+    } catch (error) {
+      mapRepositoryConflict(error)
+    }
+  }
+
   async listAuditEvents(ownerUserId: string, activityId: string) {
     const events = await this.repository.listAuditEvents(ownerUserId, activityId)
     if (!events) throw new AppError(404, 'ACTIVITY_NOT_FOUND', 'The recorder activity does not exist.')
