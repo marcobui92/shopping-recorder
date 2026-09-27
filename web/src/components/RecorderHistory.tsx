@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react'
-import { Archive, ArrowLeft, ArrowRight, Calendar, ChevronLeft, ChevronRight, Clock3, Download, Eye, FileX2, LoaderCircle, PackageCheck, RefreshCw, Search, Trash2, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Calendar, ChevronLeft, ChevronRight, Clock3, Download, Eye, FileX2, LoaderCircle, PackageCheck, RefreshCw, Search, Trash2, X, ZoomIn, ZoomOut } from 'lucide-react'
 
 import {
   ApiError,
@@ -17,13 +17,12 @@ import {
 } from '../api'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { Select } from './ui/select'
 import { Textarea } from './ui/textarea'
 import { useI18n } from '../i18n'
-import { RecorderComparison } from './RecorderComparison'
 import { RecorderRecovery } from './RecorderRecovery'
 
 interface RecorderHistoryProps { refreshKey?: number }
@@ -174,14 +173,14 @@ export function RecorderHistory({ refreshKey = 0 }: RecorderHistoryProps) {
 
   return (
     <Card className="overflow-hidden" aria-labelledby="recorder-history-heading">
-      <CardHeader className="border-b bg-muted/40">
-        <div className="mb-3 flex items-center justify-between"><Badge variant="outline"><Archive aria-hidden="true" className="size-3" /> {t('Evidence archive')}</Badge>{!loading && <span className="text-xs font-medium text-muted-foreground">{meta.totalRecords} {t(meta.totalRecords === 1 ? 'record' : 'records')}</span>}</div>
-        <CardTitle id="recorder-history-heading">{t('Recorded handoffs')}</CardTitle>
-        <CardDescription>{t('Search activity history and review verified evidence.')}</CardDescription>
+      <CardHeader className="border-b bg-muted/40 px-4 py-3 sm:px-6">
+        <div className="flex items-center justify-between gap-4">
+          <CardTitle className="text-lg" id="recorder-history-heading">{t('Recorded handoffs')}</CardTitle>
+          {!loading && <span className="shrink-0 text-xs font-medium text-muted-foreground">{meta.totalRecords} {t(meta.totalRecords === 1 ? 'record' : 'records')}</span>}
+        </div>
       </CardHeader>
       <CardContent className="p-6">
         <RecorderRecovery />
-        <RecorderComparison />
         <form aria-label={t('Filter recorder history')} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" onSubmit={applyFilters}>
           <div className="space-y-2 sm:col-span-2 lg:col-span-3">
             <Label htmlFor="filter-reference">{t('Search order or shipment reference')}</Label>

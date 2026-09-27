@@ -2,8 +2,53 @@
 
 ## Current Objective
 
-- Goal: Deliver the PackTrace packing/unpacking evidence recorder with application storage and optional linked Google Drive. Feature 047 is complete locally; no deployment was requested in this turn.
-- feat-041 thirty-day evidence retention and logo reload is deployed from commit `64da323`; production migration `0011` is applied. Features 042–045 are complete locally on `develop` and are not committed or deployed. No active feature; feat-018 remains blocked/deferred.
+- Goal: Deliver the LinhCj's packing/unpacking evidence recorder with application storage and optional linked Google Drive. Feature 053's browser-managed remembered login and identity rename are complete locally; no deployment was requested in this turn.
+- feat-041 thirty-day evidence retention and logo reload is deployed from commit `64da323`; production migration `0011` is applied. Features 042–045 and 048–053 are complete locally on `develop` and are not committed or deployed. No active feature; feat-018 remains blocked/deferred.
+
+## Feature 053 — Remembered browser login and LinhCj's identity completed
+
+- User-facing naming is now LinhCj's in the logo, accessible reload label, HTML title/description, login explanation, footer, not-found copy and legal pages. Internal npm/API/storage/local-preference names remain unchanged to avoid compatibility or data-contract churn.
+- Login and registration expose a localized remember-credentials checkbox. The remembered username is stored locally and immediately restored; plaintext passwords are not stored by application code. Supported browsers receive a `PasswordCredential`, while standard form autocomplete keeps native password-manager/Keychain behavior available elsewhere. Unchecking the option clears the remembered username.
+- Verification: final `./init.sh`; web 46/46 tests; web typecheck/build; `git diff --check`; harness 100/100. Focused coverage confirms username restoration, browser credential delegation and no plaintext password in localStorage. Vite HMR/reload applied all changed surfaces. Browser discovery earlier in the turn returned `[]`, so user-facing visual review remains manual on the running local app. No backend/API/migration/environment change.
+- Local database, backend and Vite processes remain running for user review. No commit, push or deployment was requested.
+
+## Feature 052 — Compact authenticated mobile header completed
+
+- The Vietnamese Workspace label no longer consumes phone-header width. Workspace and Evidence archive are 36px icon-only navigation links below `sm`, with full localized labels restored on tablet/desktop.
+- Both links retain explicit localized accessible names. Mobile horizontal padding/gaps are tighter while PackTrace, profile and the country-flag language selector remain available; authentication and routing behavior are unchanged.
+- Verification: startup `./init.sh`; web 45/45 tests; web typecheck/build; Vite HMR applied `App.tsx`. Browser discovery returned `[]`, so the supplied screenshot informed the responsive correction and final visual review remains manual on the running local app. No backend/API/migration/environment change.
+- Local database, backend and Vite processes remain running for user review. No commit, push or deployment was requested.
+
+## Feature 051 — Colorful viewport-centered login completed
+
+- Signed-out Workspace and Archive use the available viewport below the shared shell to center one max-width login/register card. Workspace/Archive navigation and the private-evidence badge remain hidden until sign-in.
+- The card now opens with a compact indigo/violet gradient panel containing the Evidence recorder badge, packing-handoff headline, workflow explanation and two benefit chips. This restores enough visual character and product context without bringing back the oversized public hero or separate marketing column.
+- Username/password and actions follow the intro immediately; registration keeps username, optional email and password. Session restoration remains silent and signed-in navigation/profile behavior is unchanged.
+- Verification: startup/final `./init.sh`; web 44/44 tests; web typecheck/build; `git diff --check`; harness 100/100; Vite HMR applied the final AccountAccess update. Browser discovery returned `[]`, so visual review remains manual on the local app. No backend/API/migration/environment change.
+- Local database, backend and Vite processes remain running for user review. Sign out to inspect the new login state. No commit, push or deployment was requested.
+
+## Feature 050 — Country-flag language menu completed
+
+- LanguageSwitcher now uses the shared custom Select component with a borderless, shadowless 24x40px header trigger after iterative visual feedback. The trigger and menu show only 🇻🇳 / 🇺🇸 plus the standard chevron; visible VI/EN text is removed. The menu remains 64px wide so its selected check does not crowd the flag.
+- Shared Select now forwards an explicit accessible name to icon-only triggers and options. The language choices remain announced as “Tiếng Việt” and “English”, retain keyboard behavior and persist through the existing I18nProvider/localStorage path.
+- Verification: startup/final `./init.sh`; web 43/43 tests; web typecheck/build; `git diff --check`; harness 100/100; Vite HMR applied the final 24px-high control on the running local app. No backend/API/migration/environment change.
+- Local database, backend and Vite processes remain running for user review. No commit, push or deployment was requested.
+
+## Feature 049 — Compact language selector completed
+
+- Replaced the two separate VI/EN buttons with one 32px-high header control containing a language icon, current locale and dropdown chevron.
+- The native labeled selector keeps VI/EN keyboard and assistive-technology behavior plus the existing browser-local locale persistence. Existing history/workflow language-change tests now operate through the combobox.
+- Verification: startup `./init.sh`; web 43/43 tests; web typecheck/build; local Vite HMR and `http://localhost:5173` 200. Browser automation had no available instance, so the user-facing local visual check remains manual. No backend/API/migration/environment change.
+- Local database, backend and Vite processes remain running for user review. No commit, push or deployment was requested.
+
+## Feature 048 — Seamless workspace/archive navigation completed
+
+- Removed the visible API health card and session-restoration card. The app shell now owns one silent session check, renders the public page immediately, and shares resolved auth state across routes.
+- Workspace and Archive remain React Router navigation without session re-fetches. The profile control is mounted in the shared header, so it remains available in Archive and through route changes.
+- Removed the web packing/unpacking comparison component, its client helper/tests/translations, and the archive entry point. The backend comparison endpoint is unchanged for API compatibility and documented as no longer used by the current web client.
+- Reduced Recorded handoffs to a compact one-row title and record count. Added app-level coverage for silent startup, one session request, route navigation and profile persistence.
+- Verification: startup `./init.sh`; web 43/43 tests; web typecheck/build; `git diff --check`; harness 100/100. Browser discovery returned `[]`, so physical/interactive visual QA remains unavailable. No backend, migration, environment, commit, push or deployment change.
+- Next action: review/commit/deploy only if requested. No database migration is needed.
 
 ## Features 042–045 — Mobile bug-fix sequence completed locally
 

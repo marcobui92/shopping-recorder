@@ -126,6 +126,8 @@ Tiêu chí nghiệm thu: tìm trên toàn bộ bản ghi của chủ sở hữu 
 
 ## feat-033 — Đối chiếu đóng gói và mở gói
 
+Trạng thái hiện tại: giao diện này đã được gỡ khỏi web ở feat-048 để Archive tập trung vào tìm kiếm và xem bằng chứng. Endpoint phía server được giữ lại để không phá vỡ tương thích API.
+
 Tiêu chí nghiệm thu: từ cùng mã tham chiếu, chọn được bản ghi đóng gói và mở gói để đối chiếu ảnh/video, thời gian và ghi chú. Điện thoại dùng hai phần/tab dễ chuyển; màn hình rộng có thể đặt cạnh nhau. Có trạng thái thiếu một phía hoặc nhiều bản ghi cùng mã, không tự ghép sai hay yêu cầu mã duy nhất. Chỉ xem bản ghi của chủ sở hữu; đối chiếu thủ công, chưa có AI đánh giá hư hỏng.
 
 ## feat-034 — Tiếp tục bản ghi đang dở

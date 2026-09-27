@@ -75,7 +75,7 @@ Detailed scope, acceptance criteria, provider-state behavior, and verification a
 | Documentation | feat-026 | Consolidated decisions, feature breakdown and handoff |
 | Phone experience first | feat-027, feat-028, feat-029, feat-030 | Vietnamese-default UI, responsive workspace, additive capture/selection, full viewer and original downloads |
 | Google Drive next | feat-013, feat-031 | Account connection/storage adapter, then visible provider choice with Drive preferred when connected and available |
-| Additional backlog | feat-032, feat-033, feat-034 | Reference search, manual packing/unpacking comparison, recovery of server-created unfinished activities |
+| Additional backlog | feat-032, feat-033, feat-034 | Reference search, a manual comparison experiment later retired from the web UI by feat-048, and recovery of server-created unfinished activities |
 
 The phone-before-Drive grouping is accepted. Ordering within that group and the additional backlog is a proposed implementation sequence, not a delivery commitment. Vietnamese-first localization is proposed first so subsequent screens use the translation structure. Only a browser-local language preference is planned initially; user content, references, filenames, API values and stored timestamps are preserved.
 

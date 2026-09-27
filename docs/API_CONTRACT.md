@@ -209,6 +209,8 @@ List items omit `assets`. The empty collection uses `200`, not `404`.
 
 ### `GET /api/v1/recorder-activities/comparison-candidates`
 
+Compatibility note: feat-048 removed comparison from the current web UI and client bundle. This endpoint remains unchanged so existing API consumers are not broken.
+
 Requires the application session and one `reference` query parameter. The raw parameter is at most 160 characters; the server trims its edges, rejects an empty value, NUL, duplicate/unknown parameters, and matches the stored reference exactly without regard to letter case. Internal whitespace, accents, punctuation and special characters remain significant. This differs deliberately from the activity list's substring search.
 
 The response contains separate newest-first `packing` and `unpacking` arrays of public activity metadata plus `truncated`. Deleted and other-owner records never appear. Each side is independently limited to its newest 50 candidates; `truncated` is true if either side exceeded that limit. Every lifecycle status may appear so the operator can see incomplete/cancelled candidates rather than receiving a fabricated pair. No provider references, assets, credentials, or ownership IDs are returned.
@@ -223,7 +225,7 @@ The response contains separate newest-first `packing` and `unpacking` arrays of 
 }
 ```
 
-The client never assumes references are unique. It auto-selects a side only when that side has exactly one candidate; multiple candidates require explicit selection. Selected evidence is then loaded through the existing owner-scoped activity-detail endpoint and protected content endpoint. Comparison is read-only and creates no stored pair or AI assessment.
+Consumers must not assume references are unique. Comparison is read-only and creates no stored pair or AI assessment.
 
 ### `GET /api/v1/recorder-activities/{activityId}`
 

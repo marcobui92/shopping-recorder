@@ -14,7 +14,6 @@ vi.mock('../api', () => ({
   getActivityAuditEvents: vi.fn(),
   getMediaAssetContentUrl: (assetId: string) => `http://api.test/media-assets/${assetId}/content`,
   getRecorderActivity: vi.fn(),
-  getRecorderComparisonCandidates: vi.fn(),
   listRecorderActivities: vi.fn(),
   updateRecorderActivity: vi.fn(),
 }))
@@ -49,6 +48,8 @@ describe('RecorderHistory', () => {
   it('loads owner history, applies filters, and renders evidence detail', async () => {
     render(<RecorderHistory />)
     await screen.findByText('ORDER-1042')
+    expect(screen.getByRole('heading', { name: 'Recorded handoffs' }).parentElement?.parentElement).toHaveClass('py-3')
+    expect(screen.queryByText('Compare packing and unpacking')).not.toBeInTheDocument()
     expect(screen.getByRole('form', { name: 'Filter recorder history' })).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Operation'), { target: { value: 'packing' } })
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'complete' } })
@@ -169,7 +170,8 @@ it('localizes search loading/error/empty states, retains input through retry and
   fireEvent.click(screen.getByRole('button', { name: 'Áp dụng bộ lọc' }))
   await screen.findByText('Không có bản ghi phù hợp với bộ lọc.')
   expect(listRecorderActivities).toHaveBeenLastCalledWith(expect.objectContaining({ reference: 'MÃ-GIỮ', page: 1 }))
-  fireEvent.click(screen.getByRole('button', { name: 'EN' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Language' }))
+  fireEvent.click(screen.getByRole('option', { name: 'English' }))
   expect(screen.getByLabelText('Search order or shipment reference')).toHaveValue('MÃ-GIỮ')
   expect(screen.getByText('No evidence records match these filters.')).toBeInTheDocument()
   localStorage.removeItem('shopping-recorder-locale')

@@ -7,12 +7,6 @@ interface ErrorPayload {
   }
 }
 
-interface HealthPayload {
-  data?: {
-    status?: string
-  }
-}
-
 export interface AppUser {
   email: string | null
   id: string
@@ -58,12 +52,6 @@ export interface RecorderActivityList {
     totalPages: number
     totalRecords: number
   }
-}
-
-export interface RecorderComparisonCandidates {
-  packing: RecorderActivity[]
-  unpacking: RecorderActivity[]
-  truncated: boolean
 }
 
 export interface MediaAsset {
@@ -188,18 +176,6 @@ export async function listRecorderActivities(input: ListRecorderActivitiesInput 
   return payload as RecorderActivityList
 }
 
-export async function getRecorderComparisonCandidates(reference: string): Promise<RecorderComparisonCandidates> {
-  const search = new URLSearchParams({ reference })
-  const payload = await recorderRequest<{ data?: RecorderComparisonCandidates }>(
-    `/recorder-activities/comparison-candidates?${search}`,
-  )
-  if (!payload.data || !Array.isArray(payload.data.packing) || !Array.isArray(payload.data.unpacking)
-    || typeof payload.data.truncated !== 'boolean') {
-    throw new ApiError(502, 'INVALID_RESPONSE', 'The API returned an unexpected response.')
-  }
-  return payload.data
-}
-
 export async function getRecorderActivity(activityId: string): Promise<RecorderActivityDetail> {
   const payload = await recorderRequest<{ data?: RecorderActivityDetail }>(`/recorder-activities/${activityId}`)
   if (!payload.data?.id || !Array.isArray(payload.data.assets)) {
@@ -319,29 +295,6 @@ export function uploadMedia(file: File, capability: UploadCapability, onProgress
     )))
     request.send(file)
   })
-}
-
-export async function getHealth(): Promise<{ status: string }> {
-  let response: Response
-
-  try {
-    response = await fetch(`${config.apiBaseUrl}/health`, {
-      headers: { Accept: 'application/json' },
-    })
-  } catch {
-    throw new ApiError(0, 'NETWORK_ERROR', 'Unable to reach the API. Check that the backend is running.')
-  }
-
-  if (!response.ok) {
-    throw await readError(response)
-  }
-
-  const payload = await response.json() as HealthPayload
-  if (!payload.data?.status) {
-    throw new ApiError(502, 'INVALID_RESPONSE', 'The API returned an unexpected response.')
-  }
-
-  return { status: payload.data.status }
 }
 
 export interface GoogleDriveStatus { state?: 'connected' | 'disconnected' | 'reauthorization_required' | 'unavailable'; configured: boolean; connected: boolean; updatedAt: string | null }

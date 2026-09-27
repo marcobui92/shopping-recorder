@@ -318,7 +318,6 @@ NODE
 - Live verification: `curl -sS -i -X OPTIONS --max-time 10 -H 'Origin: http://localhost:5173' -H 'Access-Control-Request-Method: PUT' -H 'Access-Control-Request-Headers: content-type' http://localhost:3000/api/v1/google-drive/uploads/00000000-0000-4000-8000-000000000001/00000000-0000-4000-8000-000000000002` now returns 204 with PUT allowed, configured origin, credentials=true, content-type allowed. This is read-only preflight, not an actual Google upload.
 - Running backend watcher reloaded the fix on localhost:3000; web uses localhost:5173 and VITE_API_BASE_URL=http://localhost:3000/api/v1. User can retry the failed file in the still-open workflow; no user activity/file was modified by diagnosis. Full browser retry remains user verification; do not refresh an unfinished form merely to test CORS.
 
-
 ## 2026-09-17 — Feature 032 reference search completed
 
 - User confirmed the Drive upload fix worked and requested the next feature. Activated only feat-032 after startup `./init.sh` passed; completed it after verification. feat-018 remains deferred, feat-033/034 remain not-started.
@@ -436,3 +435,58 @@ NODE
 - Added migration `0012_discard_failed_media_assets.sql` with additive `media_assets.discarded_at` and an active-asset index. `DELETE /api/v1/media-assets/{assetId}` soft-discards failed assets, expires nonterminal attempts, queues provider cleanup when needed, and preserves the database/audit row. Discarded assets are excluded from detail, completion counts, upload targets, retries and finalization.
 - Added localized Remove action beside Retry for failed cards. Migration applied locally. Verification: backend 86 passed/5 opt-in skipped, web 50/50, backend/web typecheck and builds passed. No commit/push/deploy performed.
 - Follow-up UX: removed the archive toggle from the recorder workspace and added a dedicated `/archive` page. The global header now exposes Workspace and Evidence archive navigation on mobile and desktop; archive checks the current session and shows login when needed. Web tests remain 50/50 with typecheck/build passing.
+
+## 2026-09-27 — Feature 048 seamless navigation and archive cleanup
+
+- Activated and completed only `feat-048`; startup and final `./init.sh` passed and `feat-018` remains blocked/deferred.
+- Removed the user-facing API health status and session-check cards. Session restoration now runs once in the shared app shell while the public page renders immediately; the resolved user is reused by Workspace and Archive.
+- Kept the profile control mounted in the shared header, fixing its disappearance in Archive and avoiding route-level session reloads. Added app-level coverage that navigation stays client-side, calls `getSession` once and retains the profile button.
+- Removed the browser packing/unpacking comparison surface, client helper, translations and focused tests. Kept the backend endpoint unchanged for compatibility and updated architecture/API/planning/testing notes accordingly.
+- Compacted the Recorded handoffs header to one title/count row and removed duplicate archive label/description chrome.
+- Verification: `npm test -- --run` in `web/` passed 43/43; `npm run typecheck` and `npm run build` in `web/` passed; `git diff --check` passed; harness validation scored 100/100. Browser runtime discovery returned `[]`, so interactive/physical visual QA remains unavailable. Backend tests were not rerun because backend code and contract behavior did not change.
+- No migration, environment, external provider, commit, push or deployment change.
+
+## 2026-09-27 — Feature 049 compact language selector
+
+- Activated and completed only `feat-049` after startup/final `./init.sh` passed; `feat-018` remains blocked/deferred.
+- Replaced the two separate VI/EN header buttons with one compact 32px-high selector containing a language icon, current locale and dropdown chevron. The accessible `Language` label, VI/EN choices and browser-local preference behavior remain unchanged.
+- Updated history/workflow language-switch tests to use the selector. `npm test -- --run` in `web/` passed 43/43; `npm run typecheck` and `npm run build` passed; `git diff --check` passed; harness validation scored 100/100.
+- Vite hot-reloaded the change and `http://localhost:5173` returned 200. Browser runtime selection remained unavailable, so interactive visual QA is left to the user on the running local app.
+- No backend, API, migration, environment, external provider, commit, push or deployment change.
+
+## 2026-09-27 — Feature 050 country-flag language menu
+
+- Activated and completed only `feat-050` after startup/final `./init.sh` passed; `feat-018` remains blocked/deferred.
+- Replaced the native locale control with the shared custom Select UI. After iterative visual feedback, the trigger was tightened from 28x44px to 24x40px and its border/shadow were removed while the menu stays 64px wide; both display only the Vietnam/United States flags and standard chevron, with no visible VI/EN text.
+- Extended shared Select to accept accessible names for icon-only triggers/options. Language choices are still announced as “Tiếng Việt” and “English”; keyboard selection and browser-local locale persistence are unchanged.
+- Updated history/workflow interactions and added an app-shell assertion that the closed control contains the selected flag but no VI/EN text. Web tests passed 43/43; typecheck and production build passed; `git diff --check` passed; harness validation scored 100/100.
+- Vite hot-reloaded the final 24px-high control on the running local app. Final `./init.sh`, `git diff --check` and harness validation (100/100) passed. No backend, API, migration, environment, external provider, commit, push or deployment change.
+
+## 2026-09-27 — Feature 051 viewport-centered compact login
+
+- Activated and completed only `feat-051` after startup `./init.sh` passed; `feat-018` remains blocked/deferred.
+- Removed the signed-out Workspace hero and AccountAccess marketing panel. Workspace and Archive now share a single max-width account card centered in `calc(100dvh - 9rem)` so username/password are visible without scrolling on a normal phone viewport. Workspace/Archive links and the private-evidence badge remain hidden until authentication.
+- Reduced form padding/gaps while retaining one concise localized sentence explaining that PackTrace records private packing/unpacking photo/video evidence. Preserved login/register switching, username/password constraints, optional registration email, errors, localization and auth API behavior. Silent session restoration remains blank rather than rendering a check status.
+- Added app-shell coverage for the centered viewport/card and immediate credential fields. Web tests passed 44/44; typecheck and production build passed; final `./init.sh`, `git diff --check` and harness validation (100/100) passed. Vite hot-reloaded all three changed surfaces on the running local app.
+- No backend, API, migration, environment, external provider, commit, push or deployment change.
+
+## 2026-09-27 — Feature 051 colorful login refinement
+
+- Reopened only `feat-051` after feedback that the compact login had become too plain. Kept the centered single-card structure and hidden signed-out Workspace/Archive navigation, but added a compact indigo/violet gradient introduction inside the card.
+- Added localized product context through the Evidence recorder badge, packing-handoff headline, workflow description, file-level verification and private-storage benefit chips. Username/password still follow immediately, and registration still adds only the optional email field.
+- Verification: startup/final `./init.sh`; web tests 44/44; web typecheck and production build; `git diff --check`; harness validation 100/100. Vite received the AccountAccess HMR update. Browser runtime discovery returned `[]`; the process still listens on `127.0.0.1:5173`, but sandboxed HTTP and automated visual inspection were unavailable, so final appearance remains for user review in the already-running local app.
+- No backend, API, migration, environment, external provider, commit, push or deployment change.
+
+## 2026-09-27 — Feature 052 compact authenticated mobile header
+
+- Activated only `feat-052` from the user's screenshot showing the Vietnamese “Không gian làm việc” label crowding and truncating the PackTrace identity on a phone-width header.
+- Workspace now has a dashboard icon and both Workspace/Archive render as consistent 36px icon-only links below `sm`; localized text labels return from `sm` upward. Explicit localized `aria-label` values preserve understandable navigation in Vietnamese and English. Tightened mobile container padding and navigation gaps while retaining profile and country-flag language controls.
+- Verification: startup `./init.sh`; web tests 45/45; web typecheck and production build. Vite hot-reloaded `App.tsx`. Browser runtime discovery returned `[]`, so final visual review remains manual on the running local app.
+- No backend, API, migration, environment, external provider, commit, push or deployment change.
+
+## 2026-09-27 — Feature 053 remembered browser login and LinhCj's identity
+
+- Activated only `feat-053` after feature 052 passed final init, diff and 100/100 harness validation. Renamed the complete user-facing web identity from PackTrace to LinhCj's across the logo text/accessibility name, document title/description, login copy, footer, not-found and legal pages. Internal npm, API, storage and browser preference identifiers remain unchanged for compatibility.
+- Added a localized “Remember username and password” choice to login/registration. The app stores only the remembered username and restores it on later form renders. Passwords stay out of localStorage and are delegated to supported browser password managers through the Credential Management API, with the existing standard username/current-password/new-password autocomplete attributes retained as the cross-browser fallback.
+- Verification: final `./init.sh`; `npm test -- --run` in `web/` passed 46/46; `npm run typecheck` and `npm run build` passed; `git diff --check`; harness validation 100/100. The focused test verifies username restoration, password-manager delegation and that the plaintext password is absent from localStorage. Vite hot-reloaded/reloaded every changed web surface.
+- No backend, API, migration, environment, external provider, commit, push or deployment change.

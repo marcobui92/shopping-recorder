@@ -1,31 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
+import { Select } from './components/ui/select'
+
 export type Locale = 'vi' | 'en'
 
 const translations: Record<string, string> = {
-  'Reload PackTrace': 'Tải lại PackTrace',
-  'Manual comparison': 'Đối chiếu thủ công',
-  'Compare packing and unpacking': 'Đối chiếu đóng gói và mở gói',
-  'Enter one exact reference, then choose each record yourself. References are not unique.': 'Nhập chính xác một mã, sau đó tự chọn từng bản ghi. Mã tham chiếu không phải là duy nhất.',
-  'Find records to compare': 'Tìm bản ghi để đối chiếu',
-  'Exact order or shipment reference': 'Mã đơn hoặc mã vận đơn chính xác',
-  'Find comparison records': 'Tìm bản ghi đối chiếu',
-  'Packing record': 'Bản ghi đóng gói',
-  'Unpacking record': 'Bản ghi mở gói',
-  'Choose one packing record': 'Chọn một bản ghi đóng gói',
-  'Choose packing record': 'Chọn bản ghi đóng gói',
-  'Choose one unpacking record': 'Chọn một bản ghi mở gói',
-  'Choose unpacking record': 'Chọn bản ghi mở gói',
-  'No packing record has this exact reference.': 'Không có bản ghi đóng gói nào có chính xác mã này.',
-  'No unpacking record has this exact reference.': 'Không có bản ghi mở gói nào có chính xác mã này.',
-  'Select a packing record to compare.': 'Chọn một bản ghi đóng gói để đối chiếu.',
-  'Select an unpacking record to compare.': 'Chọn một bản ghi mở gói để đối chiếu.',
-  'Packing evidence': 'Bằng chứng đóng gói',
-  'Unpacking evidence': 'Bằng chứng mở gói',
-  'Comparison side': 'Phía đối chiếu',
-  'Loading comparison…': 'Đang tải đối chiếu…',
-  'Unable to find comparison candidates.': 'Không thể tìm bản ghi để đối chiếu.',
-  'Unable to load comparison evidence.': 'Không thể tải bằng chứng đối chiếu.',
+  "Reload LinhCj's": "Tải lại LinhCj's",
   'Unfinished work': 'Công việc chưa hoàn tất',
   'Continue a draft or interrupted upload without creating a duplicate record.': 'Tiếp tục bản nháp hoặc lần tải lên bị gián đoạn mà không tạo bản ghi trùng.',
   'Refresh unfinished work': 'Làm mới công việc chưa hoàn tất',
@@ -52,9 +32,6 @@ const translations: Record<string, string> = {
   'Confirm': 'Xác nhận',
   'Delete unfinished activity?': 'Xóa hoạt động chưa hoàn tất?',
   'This will cancel the unfinished activity and remove uploaded evidence.': 'Hoạt động chưa hoàn tất sẽ bị hủy và bằng chứng đã tải lên sẽ bị xóa.',
-  'Sign in again to compare records.': 'Đăng nhập lại để đối chiếu bản ghi.',
-  'Evidence is not ready for comparison.': 'Bằng chứng chưa sẵn sàng để đối chiếu.',
-  'More than 50 records on one side share this reference. Only the newest 50 per side are shown.': 'Có hơn 50 bản ghi ở một phía cùng mã này. Chỉ hiển thị 50 bản ghi mới nhất cho mỗi phía.',
   "Search order or shipment reference": "Tìm mã đơn hoặc mã vận đơn",
   "Enter all or part of a reference": "Nhập toàn bộ hoặc một phần mã",
   "Clear search": "Xóa tìm kiếm",
@@ -106,17 +83,18 @@ const translations: Record<string, string> = {
   'Workspace': 'Không gian làm việc', 'Private evidence': 'Bằng chứng riêng tư',
   'Operational evidence workspace': 'Không gian bằng chứng vận hành', 'Encrypted in transit · Owner-authorized access': 'Mã hóa khi truyền · Chỉ chủ sở hữu được truy cập',
   'Packing & unpacking evidence': 'Bằng chứng đóng gói và mở gói',
-  'Checking API connection…': 'Đang kiểm tra kết nối API…', 'API unavailable': 'API không khả dụng', 'Try again': 'Thử lại',
-  'Recorder service': 'Dịch vụ ghi nhận', 'Ready for evidence': 'Sẵn sàng ghi nhận bằng chứng', 'API is': 'API đang', 'API is ok': 'API đang hoạt động', 'optional': 'không bắt buộc',
+  'optional': 'không bắt buộc',
   'Signed in as': 'Đã đăng nhập với tên', 'Session protected': 'Phiên được bảo vệ', 'Sign out': 'Đăng xuất',
   'Open profile': 'Mở hồ sơ', 'Profile menu': 'Menu hồ sơ',
   'Operator access': 'Quyền truy cập nhân viên', 'Welcome back to your evidence workspace.': 'Chào mừng trở lại không gian bằng chứng.',
   'Create your operator workspace.': 'Tạo không gian làm việc của bạn.', 'Every activity is linked to your account. Only you can review, correct, or remove the evidence you record.': 'Mọi hoạt động được liên kết với tài khoản của bạn. Chỉ bạn có thể xem, sửa hoặc xóa bằng chứng đã ghi.',
   'Persistent, owner-authorized session': 'Phiên bền vững, chỉ chủ sở hữu được cấp quyền', 'Sign in': 'Đăng nhập', 'Create account': 'Tạo tài khoản',
   'Enter your operator credentials to continue.': 'Nhập thông tin đăng nhập để tiếp tục.', 'Email is optional and only used for account recovery.': 'Email không bắt buộc và chỉ dùng để khôi phục tài khoản.',
+  "LinhCj's records packing and unpacking evidence with private photos and videos.": "LinhCj's ghi nhận bằng chứng đóng gói và mở gói bằng ảnh, video được lưu riêng tư.",
   'Username': 'Tên người dùng', 'Password': 'Mật khẩu', 'At least 6 characters': 'Ít nhất 6 ký tự', 'Please wait…': 'Vui lòng chờ…',
-  'Create an account': 'Tạo tài khoản mới', 'Use an existing account': 'Dùng tài khoản hiện có', 'Checking your session…': 'Đang kiểm tra phiên…',
-  'Unable to check the session.': 'Không thể kiểm tra phiên.', 'Authentication failed.': 'Xác thực không thành công.', 'Unable to sign out.': 'Không thể đăng xuất.',
+  'Remember username and password': 'Ghi nhớ tên đăng nhập và mật khẩu', 'Your browser password manager stores the password securely.': 'Trình quản lý mật khẩu của trình duyệt sẽ lưu mật khẩu an toàn.',
+  'Create an account': 'Tạo tài khoản mới', 'Use an existing account': 'Dùng tài khoản hiện có',
+  'Authentication failed.': 'Xác thực không thành công.', 'Unable to sign out.': 'Không thể đăng xuất.',
   'New record': 'Bản ghi mới', 'Private · Backblaze B2': 'Riêng tư · Backblaze B2', 'Document a handoff': 'Ghi nhận một lần bàn giao',
   'Add the handoff context, then review every photo and video before starting the secure upload.': 'Thêm thông tin bàn giao, sau đó xem lại từng ảnh và video trước khi tải lên an toàn.',
   'Activity details': 'Thông tin hoạt động', 'Describe what this evidence belongs to.': 'Mô tả nội dung của bằng chứng này.', 'Operation': 'Hoạt động',
@@ -142,7 +120,7 @@ const translations: Record<string, string> = {
   'Open viewer': 'Mở trình xem', 'Download original': 'Tải bản gốc', 'Evidence viewer': 'Trình xem bằng chứng', 'Activity detail': 'Chi tiết hoạt động', 'Zoom out': 'Thu nhỏ', 'Zoom in': 'Phóng to', 'Close viewer': 'Đóng trình xem', 'Previous evidence': 'Bằng chứng trước', 'Next evidence': 'Bằng chứng tiếp theo',
   'Audit trail': 'Lịch sử thay đổi', 'No corrections or lifecycle actions recorded.': 'Chưa có chỉnh sửa hoặc thao tác vòng đời nào.', 'This activity has no evidence files yet.': 'Hoạt động này chưa có tệp bằng chứng.', 'Unable to load this evidence. Check your session or storage connection.': 'Không thể tải bằng chứng. Hãy kiểm tra phiên hoặc kết nối nơi lưu.',
   'Activity deleted. Some storage cleanup remains pending.': 'Hoạt động đã xóa. Một phần dọn dẹp nơi lưu vẫn đang chờ xử lý.', 'Activity and stored evidence deleted.': 'Hoạt động và bằng chứng đã lưu đã được xóa.', 'Unable to delete the activity.': 'Không thể xóa hoạt động.', 'Unable to start this record.': 'Không thể bắt đầu bản ghi.', 'Unable to complete this record.': 'Không thể hoàn tất bản ghi.', 'Unknown type': 'Không rõ định dạng',
-  'This page does not exist.': 'Trang này không tồn tại.', 'Return to the PackTrace workspace.': 'Quay lại không gian PackTrace.', 'Go home': 'Về trang chính',
+  'This page does not exist.': 'Trang này không tồn tại.', "Return to the LinhCj's workspace.": "Quay lại không gian LinhCj's.", 'Go home': 'Về trang chính',
 }
 
 interface I18nValue { locale: Locale; setLocale: (locale: Locale) => void; t: (value: string) => string }
@@ -164,5 +142,10 @@ export function useI18n() { return useContext(I18nContext) }
 
 export function LanguageSwitcher() {
   const { locale, setLocale } = useI18n()
-  return <div className="flex items-center gap-1 rounded-lg border bg-card p-1 text-xs" aria-label="Language"><button className={`!min-h-0 h-8 min-w-8 rounded px-2 py-1 ${locale === 'vi' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`} type="button" aria-pressed={locale === 'vi'} onClick={() => setLocale('vi')}>VI</button><button className={`!min-h-0 h-8 min-w-8 rounded px-2 py-1 ${locale === 'en' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`} type="button" aria-pressed={locale === 'en'} onClick={() => setLocale('en')}>EN</button></div>
+  return <div className="[&_[role=listbox]]:right-0 [&_[role=listbox]]:w-16">
+    <Select aria-label="Language" className="h-6 w-10 border-0 px-0.5 text-base shadow-none" id="language-switcher" value={locale} onChange={(event) => setLocale(event.target.value as Locale)}>
+      <option aria-label="Tiếng Việt" value="vi">🇻🇳</option>
+      <option aria-label="English" value="en">🇺🇸</option>
+    </Select>
+  </div>
 }

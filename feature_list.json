@@ -592,6 +592,85 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-09-24. New-record evidence controls now render first after login, metadata/storage guidance follows, and archive is a separate /archive page selectable from the global header. Mobile media review spacing is compact while preserving preview/progress/retry/remove actions. Migration 0012 adds soft-discard timestamps and active-asset filtering; DELETE /api/v1/media-assets/{assetId} queues provider cleanup without deleting the audit row. Backend tests 86 passed/5 opt-in skipped, web tests 50/50, typechecks and production builds passed; migration 0012 applied locally."
+    },
+    {
+      "id": "feat-048",
+      "name": "Seamless workspace and archive navigation",
+      "description": "Remove user-facing API/session check screens and manual packing comparison, keep authentication state stable across workspace/archive navigation, preserve the profile action in the archive, and compact the recorded-handoffs header.",
+      "dependencies": ["feat-047"],
+      "acceptance_criteria": [
+        "The app checks the existing session once in the shared shell without rendering API or session-check status cards.",
+        "Workspace/archive navigation stays client-side, reuses the resolved session, and keeps the signed-in profile control available on both routes.",
+        "The archive no longer renders packing/unpacking comparison, while existing backend API compatibility is preserved.",
+        "The Recorded handoffs header uses a compact single-row presentation and focused web tests, typecheck, build, progress, and handoff evidence are updated."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-27. Removed the visible API health card and session-check card; the public shell renders immediately while one shared app-shell session request resolves silently. Workspace/archive NavLinks now reuse that state and the profile control remains mounted in the shared header on both routes. Removed the browser comparison component, translations and client helper while preserving the backend compatibility endpoint. Compacted Recorded handoffs to a single-row title/count header. Verification: startup ./init.sh passed; web 43/43 tests, typecheck and production build passed; git diff --check passed; harness validation 100/100. Browser runtime discovery returned [], so interactive visual/device QA remains unavailable. No backend, migration, environment or deployed state changed."
+    },
+    {
+      "id": "feat-049",
+      "name": "Compact language selector",
+      "description": "Replace the two-button VI/EN control in the shared header with a smaller icon-led language selection control while preserving browser-local language preference and accessibility.",
+      "dependencies": ["feat-048"],
+      "acceptance_criteria": [
+        "The header shows one compact language icon and the currently selected locale instead of two separate buttons.",
+        "Users can select Vietnamese or English with an accessible labeled control and the existing local preference behavior remains unchanged.",
+        "Focused web tests, typecheck, build, progress and handoff evidence are updated without backend or API changes."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-27. Replaced the two VI/EN header buttons with one 32px-high icon-led native language selector showing the current locale and a dropdown chevron. The control retains the existing accessible Language label, VI/EN options, I18nProvider state and browser-local preference. Updated language-switch interaction tests. Verification: startup/final ./init.sh passed; web 43/43 tests, typecheck and production build passed; git diff --check passed; harness validation 100/100; local Vite HMR applied the change and http://localhost:5173 returned 200. Browser runtime was unavailable, so interactive visual QA remains with the user on the running local app. No backend, API, migration or environment change."
+    },
+    {
+      "id": "feat-050",
+      "name": "Country-flag language menu",
+      "description": "Use the shared application Select UI for language choice and show only country-flag icons for Vietnamese and English in the compact header control.",
+      "dependencies": ["feat-049"],
+      "acceptance_criteria": [
+        "The language control uses the same custom Select interaction and styling as other app selections.",
+        "The closed control and menu show Vietnam and United States country flags without visible VI/EN text.",
+        "The control and options retain explicit accessible names, locale persistence, tests, typecheck and build coverage."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-27 after iterative visual feedback. LanguageSwitcher uses the shared custom Select UI with a borderless, shadowless 24x40px trigger that displays only the Vietnam or United States flag plus the standard dropdown chevron; the menu remains 64px wide and no visible VI/EN text remains. Extended Select so icon-only triggers and options expose explicit accessible names, then updated language interaction and app-shell assertions. Verification: startup ./init.sh passed; web 43/43 tests, typecheck and production build passed; Vite hot-reloaded the final border removal on the running local app. No backend, API, migration or environment change."
+    },
+    {
+      "id": "feat-051",
+      "name": "Viewport-centered compact login",
+      "description": "Remove nonessential marketing copy from the signed-out experience and place the login/register form in the visible viewport without requiring users to scroll to reach credentials.",
+      "dependencies": ["feat-050"],
+      "acceptance_criteria": [
+        "Signed-out Workspace and Archive center a compact account form in the available viewport below the shared header.",
+        "The login form presents username and password immediately without the hero or marketing panel; registration retains username, optional email and password.",
+        "Silent session restoration, authentication behavior, localization and focused web verification remain intact."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-27 after iterative user review. Signed-out Workspace and Archive share one centered max-width login/register card, while their navigation and private-evidence badge remain hidden until authentication. The compact card now includes a colorful indigo/violet product introduction with an evidence badge, PackTrace purpose copy, file-verification and private-storage benefits, followed immediately by username/password and account actions. Registration retains optional email. Verification: startup/final ./init.sh passed; web 44/44 tests, typecheck and production build passed; git diff --check passed; harness validation scored 100/100; Vite hot-reloaded the login refinement. Browser runtime discovery returned [], so final visual review remains with the user on the running local app. No backend, API, migration or environment change."
+    },
+    {
+      "id": "feat-052",
+      "name": "Compact authenticated mobile header",
+      "description": "Prevent the signed-in PackTrace header from becoming cramped with longer Vietnamese navigation labels on phone-width screens.",
+      "dependencies": ["feat-051"],
+      "acceptance_criteria": [
+        "Workspace and Evidence archive use recognizable icon-only navigation at phone widths while retaining explicit accessible Vietnamese and English names.",
+        "Desktop navigation continues to show the localized text labels and all profile/language actions remain available.",
+        "Mobile header spacing leaves the PackTrace identity readable without changing authentication, routing or API behavior."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-27 from the user's phone-width Vietnamese header screenshot. At mobile widths, Workspace and Evidence archive are now consistent 36px icon-only links with localized accessible names; their full labels return at the sm breakpoint. Mobile header padding and gaps are reduced so the site identity remains readable while profile and country-flag language controls remain available. Desktop routing and labels are unchanged. Verification: startup/final ./init.sh passed; web 45/45 tests, typecheck and production build passed; git diff --check passed; harness validation scored 100/100; Vite hot-reloaded App.tsx. Browser runtime discovery returned [], so final visual review remains with the user on the running local app. No backend, API, migration or environment change."
+    },
+    {
+      "id": "feat-053",
+      "name": "Remembered browser login and LinhCj's identity",
+      "description": "Offer an explicit browser-managed credential preference and rename the website's user-facing identity to LinhCj's without changing internal API identifiers.",
+      "dependencies": ["feat-052"],
+      "acceptance_criteria": [
+        "Login and registration offer a localized remember-credentials choice that restores the username and delegates password storage to the browser password manager without putting plaintext passwords in application storage.",
+        "The header identity, document metadata, login copy, footer, not-found page and legal pages use LinhCj's instead of PackTrace.",
+        "Authentication/session behavior, API/package identifiers, responsive navigation and VI/EN behavior remain compatible with focused tests, typecheck and build coverage."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-27. Login and registration now include a localized remember-credentials choice: the username is restored from browser-local preference, standard autocomplete remains enabled, and supported browsers receive the password through the Credential Management API/password manager; plaintext passwords are never written to application localStorage. The complete user-facing web identity, document metadata, login copy, footer, not-found page and legal pages now use LinhCj's, while internal package/API/storage identifiers remain unchanged. Verification: final ./init.sh passed; web 46/46 tests, typecheck and production build passed; the credential test verifies username restoration, password-manager delegation and absence of the password from localStorage; git diff --check passed; harness validation scored 100/100; Vite hot-reloaded all affected surfaces. No backend, API, migration or environment change."
     }
   ]
 }

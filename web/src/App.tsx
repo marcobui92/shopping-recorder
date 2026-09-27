@@ -1,6 +1,9 @@
-import { Archive, ShieldCheck } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Archive, LayoutDashboard, ShieldCheck } from 'lucide-react'
 import { Link, NavLink, Route, Routes } from 'react-router-dom'
 
+import { getSession, type AppUser } from './api'
+import { AccountAccess } from './components/AccountAccess'
 import { HomePage } from './pages/HomePage'
 import { ArchivePage } from './pages/ArchivePage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -14,16 +17,30 @@ export function App() {
 
 function AppContent() {
   const { t } = useI18n()
+  const [user, setUser] = useState<AppUser | null>(null)
+  const [sessionReady, setSessionReady] = useState(false)
+  const sessionRequested = useRef(false)
+
+  useEffect(() => {
+    if (sessionRequested.current) return
+    sessionRequested.current = true
+    void getSession()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setSessionReady(true))
+  }, [])
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-6 lg:px-8">
+        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-2 px-2 sm:gap-3 sm:px-6 lg:px-8">
           <BrandRefreshButton />
-          <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2">
-            <NavLink className="rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:px-3" end to="/">{t('Workspace')}</NavLink>
-            <NavLink className="inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:px-3" to="/archive"><Archive aria-hidden="true" className="size-4" /><span className="hidden sm:inline">{t('Evidence archive')}</span><span className="sr-only sm:hidden">{t('Evidence archive')}</span></NavLink>
-            <span className="hidden items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:flex"><ShieldCheck aria-hidden="true" className="size-3.5 text-primary" /> {t('Private evidence')}</span>
+          <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-1 sm:gap-2">
+            {user && <NavLink aria-label={t('Workspace')} className="inline-flex size-9 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:h-auto sm:w-auto sm:px-3 sm:py-2" end to="/"><LayoutDashboard aria-hidden="true" className="size-4" /><span aria-hidden="true" className="hidden sm:inline">{t('Workspace')}</span></NavLink>}
+            {user && <NavLink aria-label={t('Evidence archive')} className="inline-flex size-9 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:h-auto sm:w-auto sm:px-3 sm:py-2" to="/archive"><Archive aria-hidden="true" className="size-4" /><span aria-hidden="true" className="hidden sm:inline">{t('Evidence archive')}</span></NavLink>}
+            {user && <span className="hidden items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:flex"><ShieldCheck aria-hidden="true" className="size-3.5 text-primary" /> {t('Private evidence')}</span>}
             <span className="relative" id="header-profile" />
+            <AccountAccess onUserChange={setUser} showForm={false} user={user} />
             <LanguageSwitcher />
           </nav>
         </div>
@@ -31,8 +48,8 @@ function AppContent() {
       <main className="relative overflow-hidden">
         <div aria-hidden="true" className="page-grid pointer-events-none absolute inset-x-0 top-0 h-[34rem] opacity-70" />
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/archive" element={<ArchivePage />} />
+          <Route path="/" element={<HomePage onUserChange={setUser} sessionReady={sessionReady} user={user} />} />
+          <Route path="/archive" element={<ArchivePage onUserChange={setUser} sessionReady={sessionReady} user={user} />} />
           <Route path="/privacy" element={<LegalPage kind="privacy" />} />
           <Route path="/terms" element={<LegalPage kind="terms" />} />
           <Route path="*" element={<NotFoundPage />} />
@@ -40,7 +57,7 @@ function AppContent() {
       </main>
       <footer className="border-t bg-card/60">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-7 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <span>PackTrace · {t('Packing & unpacking evidence')}</span>
+          <span>LinhCj&apos;s · {t('Packing & unpacking evidence')}</span>
           <nav aria-label="Legal" className="flex gap-4"><Link className="hover:text-foreground hover:underline" to="/privacy">Privacy Policy</Link><Link className="hover:text-foreground hover:underline" to="/terms">Terms of Service</Link><span>{t('Encrypted in transit · Owner-authorized access')}</span></nav>
         </div>
       </footer>

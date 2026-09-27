@@ -1,24 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
-
 import type { AppUser } from '../api'
-import { getSession } from '../api'
 import { AccountAccess } from '../components/AccountAccess'
 import { RecorderHistory } from '../components/RecorderHistory'
-import { useI18n } from '../i18n'
 
-export function ArchivePage() {
-  const { t } = useI18n()
-  const [user, setUser] = useState<AppUser | null>(null)
-  const [loading, setLoading] = useState(true)
-  const handleUserChange = useCallback((current: AppUser | null) => setUser(current), [])
+interface ArchivePageProps {
+  onUserChange: (user: AppUser | null) => void
+  sessionReady: boolean
+  user: AppUser | null
+}
 
-  useEffect(() => {
-    let active = true
-    void getSession().then((session) => { if (active) setUser(session) }).catch(() => { if (active) setUser(null) }).finally(() => { if (active) setLoading(false) })
-    return () => { active = false }
-  }, [])
-
-  return <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
-    {loading ? <p className="rounded-xl border bg-card p-5 text-sm text-muted-foreground" role="status">{t('Loading…')}</p> : user ? <RecorderHistory /> : <section className="mx-auto max-w-xl"><AccountAccess onUserChange={handleUserChange} /></section>}
-  </div>
+export function ArchivePage({ onUserChange, sessionReady, user }: ArchivePageProps) {
+  if (!sessionReady) return <div className="min-h-[calc(100dvh-9rem)]" />
+  if (!user) return <div className="mx-auto flex min-h-[calc(100dvh-9rem)] max-w-7xl items-center justify-center px-4 py-5 sm:px-6 lg:px-8"><AccountAccess onUserChange={onUserChange} user={user} /></div>
+  return <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8"><RecorderHistory /></div>
 }

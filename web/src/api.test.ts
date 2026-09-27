@@ -1,25 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { ApiError, cancelRecorderActivity, completeRecorderActivity, createRecorderActivity, deleteRecorderActivity, getActivityAuditEvents, getHealth, getRecorderActivity, getRecorderComparisonCandidates, listRecorderActivities, login, updateRecorderActivity } from './api'
+import { ApiError, cancelRecorderActivity, completeRecorderActivity, createRecorderActivity, deleteRecorderActivity, getActivityAuditEvents, getRecorderActivity, listRecorderActivities, login, updateRecorderActivity } from './api'
 
 afterEach(() => {
   vi.unstubAllGlobals()
-})
-
-describe('getHealth', () => {
-  it('returns the status from the documented health response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: { status: 'ok' } }))))
-
-    await expect(getHealth()).resolves.toEqual({ status: 'ok' })
-  })
-
-  it('maps a standard API error response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred.' },
-    }), { status: 500 })))
-
-    await expect(getHealth()).rejects.toEqual(new ApiError(500, 'INTERNAL_ERROR', 'An unexpected error occurred.'))
-  })
 })
 
 describe('recorder API', () => {
@@ -124,18 +108,4 @@ it('encodes literal reference searches without changing special characters', asy
   expect(url.searchParams.get('reference')).toBe(reference)
   expect(url.searchParams.get('operationType')).toBe('packing')
   expect(fetchMock.mock.calls[0][1].credentials).toBe('include')
-})
-
-it('encodes an exact comparison reference and validates the candidate response', async () => {
-  const candidates = { packing: [{ id: 'packing-1' }], unpacking: [{ id: 'unpacking-1' }], truncated: false }
-  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: candidates })))
-  vi.stubGlobal('fetch', fetchMock)
-  await expect(getRecorderComparisonCandidates('ORDER %_&+')).resolves.toEqual(candidates)
-  const url = new URL(fetchMock.mock.calls[0][0])
-  expect(url.pathname).toContain('/recorder-activities/comparison-candidates')
-  expect(url.searchParams.get('reference')).toBe('ORDER %_&+')
-  expect(fetchMock.mock.calls[0][1].credentials).toBe('include')
-
-  fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ data: { packing: [], unpacking: [] } })))
-  await expect(getRecorderComparisonCandidates('BROKEN')).rejects.toMatchObject({ code: 'INVALID_RESPONSE' })
 })

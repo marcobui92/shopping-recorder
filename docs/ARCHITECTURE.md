@@ -142,6 +142,8 @@ Owner-scoped activity listing accepts an optional reference substring query. The
 
 ## Manual evidence comparison (feat-033)
 
+The browser comparison surface was retired in feat-048 to keep the archive focused on search and evidence review. The owner-scoped candidate endpoint remains available for backward compatibility, but the current web client does not call it or expose comparison controls.
+
 Comparison is a read-only projection over existing owner-scoped activities. The candidate query uses parameterized, case-insensitive exact-reference matching and independently returns at most 50 newest packing and 50 newest unpacking records. It excludes tombstones and other owners but retains visible lifecycle states so the operator can make an informed choice. The application does not persist a pairing, impose reference uniqueness, or infer which records belong together.
 
-The browser requires explicit selection when either side has multiple candidates, then reuses the existing activity-detail and protected media-content boundaries. Phone layouts switch between packing and unpacking tabs; wider layouts show both columns. B2 and Drive evidence keep their existing authorization, immutable-version and download behavior. No migration, provider change, public URL, or automated damage analysis is introduced.
+The retired browser implementation required explicit selection when either side had multiple candidates, then reused the existing activity-detail and protected media-content boundaries. No migration, provider change, public URL, or automated damage analysis was introduced.

@@ -100,6 +100,8 @@ Manual check still needed when a browser/device is available: in Evidence archiv
 
 ## Feature 033 manual comparison verification
 
+Historical only: feat-048 removed this surface from the current web client. Keep the backend/API checks below if the compatibility endpoint changes; the manual browser workflow is no longer applicable.
+
 Run the normal web/backend test, typecheck and build commands plus the recorder PostgreSQL integration command. API coverage verifies exact case-insensitive reference matching, edge trimming, missing/duplicate/overlong input, owner and tombstone isolation, newest-first ordering, public response shape, and an independent 50-candidate bound for each operation. PostgreSQL coverage verifies exact matching and owner isolation against real parameterized queries. Client coverage verifies URL encoding, no automatic selection when a side has multiple candidates, one-candidate selection, missing-side messaging, protected B2/Drive media/download URLs, phone tabs, and VI/EN state preservation.
 
 Manual device check remains required: in Evidence archive, enter a reference with one packing and one unpacking record, then a reference with multiple records on one side, and explicitly choose candidates. Verify phone tab switching, wide two-column layout, long filenames/notes, image containment, video controls, downloads, missing-side and unavailable-provider errors in both locales. Browser skill discovery returned no available instances on 2026-09-17, so no interactive or physical-device result is claimed.
