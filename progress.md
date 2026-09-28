@@ -550,4 +550,5 @@ NODE
 - Storage provider availability is now cached in the web API module for the signed-in browser session. Workspace no longer refreshes on window focus or primary-page navigation; the existing `storage-providers-changed` event and inline Refresh storage button explicitly invalidate/force-refresh the cache. Login/logout clears the cache to prevent cross-user state.
 - Removed Google Drive connection controls from the profile popup and placed the full connection/reconnect/unlink panel in Settings. The Home page no longer duplicates that provider-management panel.
 - Settings now has a general-purpose page description and a dedicated Google Drive section/card so future settings groups can be added without overloading the page header.
+- Reset and Start another record now reuse the cached provider value locally; they no longer dispatch a provider refresh or mark storage as loading. Provider refresh remains reserved for the initial session probe and explicit recovery events/actions.
 - Verification: web 51/51, typecheck and production build passed; provider cache, Settings and profile regressions pass. No backend/API/migration/provider mutation.

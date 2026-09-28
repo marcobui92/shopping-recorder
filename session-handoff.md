@@ -52,6 +52,7 @@
 - `GET /api/v1/storage-providers` is cached in the browser API module for the current signed-in session. Focus and page navigation do not refetch it; storage recovery dispatches `storage-providers-changed` or uses the inline Refresh storage action to force a new check. App login/logout clears the cache.
 - Google Drive connection/reconnect/unlink moved out of the profile popup and into Settings; the Home page no longer renders a duplicate Drive management panel.
 - Settings uses a general page description and a dedicated Google Drive card/section for provider management.
+- Reset/Start another record reuses the cached provider selection locally and does not trigger `/storage-providers`; only initial session loading and explicit recovery refreshes call the endpoint.
 - Verification: web 51/51 plus typecheck/build. Backend unchanged. Push `develop` before `main` if deploying this UI change.
 
 ## Feature 054 — Session and upload reliability completed
