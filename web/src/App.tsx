@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Archive, LayoutDashboard, Settings, ShieldCheck } from 'lucide-react'
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 
-import { getSession, type AppUser } from './api'
+import { clearStorageProvidersCache, getSession, type AppUser } from './api'
 import { AccountAccess } from './components/AccountAccess'
 import { HomePage } from './pages/HomePage'
 import { ArchivePage } from './pages/ArchivePage'
@@ -23,6 +23,10 @@ function AppContent() {
   const [sessionReady, setSessionReady] = useState(false)
   const [workspaceBusy, setWorkspaceBusy] = useState(false)
   const sessionRequested = useRef(false)
+  function handleUserChange(nextUser: AppUser | null) {
+    clearStorageProvidersCache()
+    setUser(nextUser)
+  }
 
   useEffect(() => {
     if (sessionRequested.current) return
@@ -51,9 +55,9 @@ function AppContent() {
       </header>
       <main className="relative overflow-hidden">
         <div aria-hidden="true" className="page-grid pointer-events-none absolute inset-x-0 top-0 h-[34rem] opacity-70" />
-        {(user || location.pathname === '/') && <div hidden={location.pathname !== '/'}><HomePage onBusyChange={setWorkspaceBusy} onUserChange={setUser} sessionReady={sessionReady} user={user} /></div>}
-        {(user || location.pathname === '/archive') && <div hidden={location.pathname !== '/archive'}><ArchivePage onUserChange={setUser} sessionReady={sessionReady} user={user} /></div>}
-        {(user || location.pathname === '/settings') && <div hidden={location.pathname !== '/settings'}><SettingsPage onUserChange={setUser} sessionReady={sessionReady} user={user} /></div>}
+        {(user || location.pathname === '/') && <div hidden={location.pathname !== '/'}><HomePage onBusyChange={setWorkspaceBusy} onUserChange={handleUserChange} sessionReady={sessionReady} user={user} /></div>}
+        {(user || location.pathname === '/archive') && <div hidden={location.pathname !== '/archive'}><ArchivePage onUserChange={handleUserChange} sessionReady={sessionReady} user={user} /></div>}
+        {(user || location.pathname === '/settings') && <div hidden={location.pathname !== '/settings'}><SettingsPage onUserChange={handleUserChange} sessionReady={sessionReady} user={user} /></div>}
         <Routes>
           <Route path="/" element={null} />
           <Route path="/archive" element={null} />

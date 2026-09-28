@@ -181,11 +181,11 @@ export function RecorderWorkflow({ onBusyChange, onCompleted }: { onBusyChange?:
   useEffect(() => {
     let active = true
     let version = 0
-    async function refresh() {
+    async function refresh(force = false) {
       const request = ++version
       setStorageLoading(true)
       try {
-        const next = await getStorageProviders()
+        const next = await getStorageProviders({ force })
         if (!active || request !== version) return
         setProviders(next)
         setStorageError(false)
@@ -193,10 +193,10 @@ export function RecorderWorkflow({ onBusyChange, onCompleted }: { onBusyChange?:
       } catch { if (active && request === version) setStorageError(true) }
       finally { if (active && request === version) setStorageLoading(false) }
     }
-    void refresh()
-    window.addEventListener('focus', refresh)
-    window.addEventListener('storage-providers-changed', refresh)
-    return () => { active = false; window.removeEventListener('focus', refresh); window.removeEventListener('storage-providers-changed', refresh) }
+    void refresh(storageRetry > 0)
+    const forceRefresh = () => { void refresh(true) }
+    window.addEventListener('storage-providers-changed', forceRefresh)
+    return () => { active = false; window.removeEventListener('storage-providers-changed', forceRefresh) }
   }, [activityId, storageRetry])
   const storageReady = !storageLoading && !storageError && Boolean(provider && providers?.[provider].available)
   function storageFailure(reason: unknown, fallback: string) {

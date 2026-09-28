@@ -544,3 +544,9 @@ NODE
 
 - Production could still refuse DELETE when a failed/crashed finalize left the attempt in `finalizing`. Asset discard now keeps a two-minute race guard for live finalization, then atomically expires stale finalization before normal discard and cleanup.
 - Verification: backend full suite 90 passed/5 opt-in skipped plus typecheck/build; PostgreSQL repository integration 2/2 including recent-finalize protection and stale-finalize recovery. No production token or asset was replayed.
+
+## 2026-09-28 — Feature 062 session-scoped storage status and Settings provider management
+
+- Storage provider availability is now cached in the web API module for the signed-in browser session. Workspace no longer refreshes on window focus or primary-page navigation; the existing `storage-providers-changed` event and inline Refresh storage button explicitly invalidate/force-refresh the cache. Login/logout clears the cache to prevent cross-user state.
+- Removed Google Drive connection controls from the profile popup and placed the full connection/reconnect/unlink panel in Settings. The Home page no longer duplicates that provider-management panel.
+- Verification: web 51/51, typecheck and production build passed; provider cache, Settings and profile regressions pass. No backend/API/migration/provider mutation.

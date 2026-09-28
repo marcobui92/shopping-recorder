@@ -1,12 +1,12 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
-import { getGoogleDriveStatus, login, logout, registerAccount } from '../api'
+import { login, logout, registerAccount } from '../api'
 import { I18nProvider } from '../i18n'
 import { AccountAccess } from './AccountAccess'
 
 vi.mock('../api', () => ({
-  getGoogleDriveStatus: vi.fn(), login: vi.fn(), logout: vi.fn(), registerAccount: vi.fn(),
+  login: vi.fn(), logout: vi.fn(), registerAccount: vi.fn(),
 }))
 
 beforeEach(() => {
@@ -34,17 +34,13 @@ it('contains Vietnamese profile actions and dismisses the popup outside or with 
   const target = document.createElement('span')
   target.id = 'header-profile'
   document.body.append(target)
-  vi.mocked(getGoogleDriveStatus).mockResolvedValue({ configured: true, connected: true, state: 'connected', updatedAt: null })
   render(<I18nProvider><AccountAccess onUserChange={vi.fn()} user={{ email: null, id: 'user-1', username: 'operator' }} /></I18nProvider>)
 
   const trigger = await screen.findByRole('button', { name: 'Mở hồ sơ' })
   fireEvent.click(trigger)
   const dialog = await screen.findByRole('dialog', { name: 'Menu hồ sơ' })
-  const reconnect = await screen.findByRole('button', { name: 'Kết nối lại hoặc đổi tài khoản Google' })
   expect(dialog).toHaveClass('max-w-[calc(100vw-1.5rem)]')
-  expect(reconnect).toHaveClass('max-w-full', 'whitespace-normal', 'break-words')
-  fireEvent.pointerDown(reconnect)
-  expect(screen.getByRole('dialog', { name: 'Menu hồ sơ' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Kết nối lại hoặc đổi tài khoản Google' })).not.toBeInTheDocument()
   fireEvent.pointerDown(document.body)
   expect(screen.queryByRole('dialog', { name: 'Menu hồ sơ' })).not.toBeInTheDocument()
 

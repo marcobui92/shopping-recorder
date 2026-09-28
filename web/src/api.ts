@@ -305,8 +305,23 @@ export interface StorageProviders {
   s3: { available: boolean }
   google_drive: { available: boolean; configured: boolean; state: 'connected' | 'disconnected' | 'reauthorization_required' | 'unavailable' }
 }
-export async function getStorageProviders(): Promise<StorageProviders> {
-  return (await recorderRequest<{ data: StorageProviders }>('/storage-providers')).data
+let storageProvidersCache: StorageProviders | null = null
+let storageProvidersRequest: Promise<StorageProviders> | null = null
+
+export function clearStorageProvidersCache() {
+  storageProvidersCache = null
+  storageProvidersRequest = null
+}
+
+export async function getStorageProviders(options: { force?: boolean } = {}): Promise<StorageProviders> {
+  if (!options.force && storageProvidersCache) return storageProvidersCache
+  if (!options.force && storageProvidersRequest) return storageProvidersRequest
+  const request = recorderRequest<{ data: StorageProviders }>('/storage-providers').then(({ data }) => {
+    storageProvidersCache = data
+    return data
+  })
+  storageProvidersRequest = request
+  try { return await request } finally { if (storageProvidersRequest === request) storageProvidersRequest = null }
 }
 
 export async function getSettings(): Promise<UserSettings> {

@@ -47,6 +47,12 @@
 - DELETE now protects a recently updated `finalizing` attempt, but expires one older than two minutes inside the same locked transaction before discarding the asset. This recovers assets stranded by a crashed finalize worker while preserving live-request race safety.
 - Verification: backend 90 passed/5 skipped plus typecheck/build; PostgreSQL repository integration 2/2. Push `develop` before `main`, then retry the reported DELETE after deployment.
 
+## Feature 062 — Session-scoped storage status and Settings provider management completed
+
+- `GET /api/v1/storage-providers` is cached in the browser API module for the current signed-in session. Focus and page navigation do not refetch it; storage recovery dispatches `storage-providers-changed` or uses the inline Refresh storage action to force a new check. App login/logout clears the cache.
+- Google Drive connection/reconnect/unlink moved out of the profile popup and into Settings; the Home page no longer renders a duplicate Drive management panel.
+- Verification: web 51/51 plus typecheck/build. Backend unchanged. Push `develop` before `main` if deploying this UI change.
+
 ## Feature 054 — Session and upload reliability completed
 
 - Workspace and Archive use `SessionLoadingSkeleton` while the one shared session request is pending; the loading state is visually useful, localized, and announced as “Loading your workspace”.

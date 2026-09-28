@@ -1,12 +1,24 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { ApiError, cancelRecorderActivity, completeRecorderActivity, createRecorderActivity, deleteRecorderActivity, getActivityAuditEvents, getRecorderActivity, listRecorderActivities, login, updateRecorderActivity } from './api'
+import { ApiError, cancelRecorderActivity, clearStorageProvidersCache, completeRecorderActivity, createRecorderActivity, deleteRecorderActivity, getActivityAuditEvents, getRecorderActivity, getStorageProviders, listRecorderActivities, login, updateRecorderActivity } from './api'
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  clearStorageProvidersCache()
 })
 
 describe('recorder API', () => {
+  it('caches storage provider status until an explicit refresh', async () => {
+    const providers = { s3: { available: true }, google_drive: { available: false, configured: true, state: 'disconnected' as const } }
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ data: providers }))))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(getStorageProviders()).resolves.toEqual(providers)
+    await expect(getStorageProviders()).resolves.toEqual(providers)
+    await expect(getStorageProviders({ force: true })).resolves.toEqual(providers)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   it('uses credentialed session requests for login and the activity lifecycle', async () => {
     const user = { email: null, id: 'user-1', username: 'operator' }
     const activity = { id: 'activity-1', operationType: 'packing', status: 'draft', storageProvider: 's3' }

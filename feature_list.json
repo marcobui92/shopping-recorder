@@ -777,6 +777,19 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-09-28. Asset discard still protects a recently updated finalizing attempt, but atomically expires a finalizing attempt older than two minutes before soft-discard, recovering assets stranded by a crashed worker. Verification: backend full suite 90 passed/5 opt-in skipped plus typecheck/build; PostgreSQL repository integration 2/2 including stale-finalization recovery; API contract, progress and handoff updated."
+    },
+    {
+      "id": "feat-062",
+      "name": "Session-scoped storage status and settings provider management",
+      "description": "Avoid repeated storage provider probes during a signed-in session and move Google Drive connection controls into Settings.",
+      "dependencies": ["feat-061"],
+      "acceptance_criteria": [
+        "Storage provider availability is fetched once per authenticated browser session and reused across page navigation and focus changes.",
+        "The existing inline Refresh storage action force-refreshes the cached provider status and preserves selected files.",
+        "Google Drive connection/reconnect/unlink controls are shown in Settings rather than the profile popup, with UI tests and build evidence updated."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-28. Storage provider availability is cached in the browser API module for the authenticated session, while the existing storage-providers-changed event and inline Refresh storage action force an explicit refresh; focus and page navigation no longer probe the endpoint repeatedly. Google Drive connection/reconnect/unlink controls were removed from the profile popup and added to Settings. Verification: web 51/51 plus typecheck/build; provider cache and Settings/profile regressions pass."
     }
   ]
 }
