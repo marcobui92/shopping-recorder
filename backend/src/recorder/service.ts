@@ -274,37 +274,6 @@ export class RecorderMediaService {
     }
   }
 
-  async retryAsset(
-    ownerUserId: string,
-    assetId: string,
-  ): Promise<{ asset: PublicMediaAsset; upload: import('./domain.js').UploadCapability }> {
-    const retryStatus = await this.repository.getAssetRetryStatus(ownerUserId, assetId)
-    if (!retryStatus) throw new AppError(404, 'ASSET_NOT_FOUND', 'The media asset does not exist.')
-    if (retryStatus === 'ready') throw new AppError(409, 'ASSET_ALREADY_READY', 'The media asset is already ready.')
-    if (retryStatus === 'active') {
-      throw new AppError(409, 'UPLOAD_ALREADY_ACTIVE', 'The media asset already has an active upload attempt.')
-    }
-    const target = await this.repository.getAssetUploadTarget(ownerUserId, assetId)
-    if (!target) throw new AppError(404, 'ASSET_NOT_FOUND', 'The media asset does not exist.')
-    const adapter = this.adapter(target.storageProvider)
-    const attemptId = randomUUID()
-    const issued = await this.issueUpload(adapter, asStorageInput(target), attemptId)
-    try {
-      const asset = await this.repository.createRetryAttempt({
-        assetId,
-        attemptId,
-        expiresAt: issued.capability.expiresAt,
-        ownerUserId,
-        providerObjectRef: issued.providerObjectRef,
-        providerUploadRef: issued.providerUploadRef,
-      })
-      if (!asset) throw new AppError(404, 'ASSET_NOT_FOUND', 'The media asset does not exist.')
-      return { asset: publicAsset(asset), upload: issued.capability }
-    } catch (error) {
-      mapRepositoryConflict(error)
-    }
-  }
-
   async finalizeAsset(ownerUserId: string, assetId: string, attemptId: string): Promise<PublicMediaAsset> {
     let begin
     try {

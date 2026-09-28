@@ -7,6 +7,12 @@ import type { GoogleConnectionStore } from './repository.js'
 export class GoogleDriveService {
   constructor(private readonly config: GoogleDriveConfig, private readonly repository: GoogleConnectionStore, private readonly fetchImpl: typeof fetch = fetch) {}
 
+  private rootNamespace(): string { return this.config.folderSuffix ?? 'production' }
+  private rootMatchesEnvironment(properties?: Record<string, string>): boolean {
+    const namespace = properties?.recorderEnvironment
+    return this.config.folderSuffix ? namespace === this.rootNamespace() : !namespace || namespace === 'production'
+  }
+
   async connectionState(userId: string): Promise<'disconnected' | 'connected' | 'reauthorization_required' | 'unavailable'> {
     const connection = await this.repository.get(userId)
     if (!connection) return 'disconnected'
@@ -37,20 +43,29 @@ export class GoogleDriveService {
     if (!refreshToken) throw new Error('GOOGLE_REFRESH_TOKEN_MISSING')
     let rootFolderId = sameAccount ? existing!.rootFolderId : null
     if (rootFolderId) {
-      const root = await this.fetchImpl(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(rootFolderId)}?fields=id,trashed`, { headers: { authorization: `Bearer ${token.access_token}` }, signal: AbortSignal.timeout(10_000) })
-      if (root.status === 404 || (root.ok && (await root.json() as { trashed?: boolean }).trashed)) rootFolderId = null
+      const root = await this.fetchImpl(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(rootFolderId)}?fields=id,trashed,appProperties`, { headers: { authorization: `Bearer ${token.access_token}` }, signal: AbortSignal.timeout(10_000) })
+      if (root.status === 404) rootFolderId = null
       else if (!root.ok) throw new Error('GOOGLE_FOLDER_LOOKUP_FAILED')
+      else {
+        const metadata = await root.json() as { appProperties?: Record<string, string>; trashed?: boolean }
+        if (metadata.trashed || !this.rootMatchesEnvironment(metadata.appProperties)) rootFolderId = null
+      }
     }
     if (!rootFolderId) {
       const q = `trashed = false and mimeType = 'application/vnd.google-apps.folder' and appProperties has { key='recorderOwner' and value='${state.userId.replace(/'/g, "\\'")}' }`
-      const lookup = await this.fetchImpl(`https://www.googleapis.com/drive/v3/files?${new URLSearchParams({ q, fields: 'files(id)', pageSize: '1' })}`, { headers: { authorization: `Bearer ${token.access_token}` }, signal: AbortSignal.timeout(10_000) })
+      const lookup = await this.fetchImpl(`https://www.googleapis.com/drive/v3/files?${new URLSearchParams({ q, fields: 'files(id,appProperties)', pageSize: '100' })}`, { headers: { authorization: `Bearer ${token.access_token}` }, signal: AbortSignal.timeout(10_000) })
       if (!lookup.ok) throw new Error('GOOGLE_FOLDER_LOOKUP_FAILED')
-      rootFolderId = (await lookup.json() as { files?: { id: string }[] }).files?.[0]?.id ?? null
+      rootFolderId = (await lookup.json() as { files?: { appProperties?: Record<string, string>; id: string }[] }).files
+        ?.find((folder) => this.rootMatchesEnvironment(folder.appProperties))?.id ?? null
     }
     if (!rootFolderId) {
       const folder = await this.fetchImpl('https://www.googleapis.com/drive/v3/files', {
         signal: AbortSignal.timeout(10_000), method: 'POST', headers: { authorization: `Bearer ${token.access_token}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ name: 'Shopping Recorder', mimeType: 'application/vnd.google-apps.folder', appProperties: { recorderOwner: state.userId } }),
+        body: JSON.stringify({
+          name: `Shopping Recorder${this.config.folderSuffix ? ` - ${this.config.folderSuffix}` : ''}`,
+          mimeType: 'application/vnd.google-apps.folder',
+          appProperties: { recorderEnvironment: this.rootNamespace(), recorderOwner: state.userId },
+        }),
       })
       if (!folder.ok) throw new Error(`GOOGLE_FOLDER_CREATE_FAILED:${folder.status}`)
       const folderPayload = await folder.json() as { id?: string }

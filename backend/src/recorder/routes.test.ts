@@ -146,9 +146,11 @@ class MemoryRecorderRepository implements RecorderRepository {
     const activity = asset ? this.activities.get(asset.activityId) : undefined
     if (!asset || !activity || activity.ownerUserId !== userId) return null
     if (activity.status === 'complete' || activity.status === 'cancelled') throw new Error('ACTIVITY_IMMUTABLE')
-    if (this.activeAttemptAssets.has(assetId)) throw new Error('UPLOAD_ALREADY_ACTIVE')
+    this.activeAttemptAssets.delete(assetId)
     this.assets.delete(assetId)
-    return { cleanupTargets: this.pendingCleanup(activity.id) }
+    const cleanupTargets = this.pendingCleanup(activity.id)
+    this.targets.delete(assetId)
+    return { cleanupTargets }
   }
 
   async deleteActivity(userId: string, activityId: string) {
@@ -214,27 +216,6 @@ class MemoryRecorderRepository implements RecorderRepository {
     const target = this.targets.get(assetId)
     const activity = target ? this.activities.get(target.activityId) : null
     return target?.ownerUserId === userId && activity?.status !== 'cancelled' && !this.deleted.has(target.activityId) ? target : null
-  }
-
-  async getAssetRetryStatus(userId: string, assetId: string): Promise<'active' | 'ready' | 'retryable' | null> {
-    const target = await this.getAssetUploadTarget(userId, assetId)
-    if (!target) return null
-    if (this.assets.get(assetId)?.status === 'ready') return 'ready'
-    return this.activeAttemptAssets.has(assetId) ? 'active' : 'retryable'
-  }
-
-  async createRetryAttempt(input: Parameters<RecorderRepository['createRetryAttempt']>[0]): Promise<MediaAsset | null> {
-    const target = await this.getAssetUploadTarget(input.ownerUserId, input.assetId)
-    if (!target) return null
-    const asset = this.assets.get(input.assetId)!
-    if (asset.status === 'ready') throw new Error('ASSET_ALREADY_READY')
-    if (this.activeAttemptAssets.has(input.assetId)) throw new Error('UPLOAD_ALREADY_ACTIVE')
-    this.attempts.set(input.attemptId, input.assetId)
-    this.activeAttemptAssets.add(input.assetId)
-    this.targets.set(input.assetId, { ...target, providerObjectRef: input.providerObjectRef, providerVersionRef: null })
-    const updated = { ...asset, status: 'pending_upload' as const, updatedAt: new Date().toISOString() }
-    this.assets.set(asset.id, updated)
-    return updated
   }
 
   async beginFinalize(userId: string, assetId: string, attemptId: string): Promise<BeginFinalizeResult | null> {
@@ -465,7 +446,7 @@ test('upload abuse is rejected before a provider capability is issued', async ()
   await app.close()
 })
 
-test('a second upload capability is rejected before provider access while an attempt is active', async () => {
+test('upload retry endpoint is removed after an interrupted attempt', async () => {
   const { app, storage } = fixture()
   const headers = { cookie: 'recorder_session=valid', origin: allowedOrigin }
   const activity = await app.inject({
@@ -478,9 +459,33 @@ test('a second upload capability is rejected before provider access while an att
   const duplicate = await app.inject({
     method: 'POST', url: `/api/v1/media-assets/${created.json().data.asset.id}/upload-attempts`, headers, payload: {},
   })
-  assert.equal(duplicate.statusCode, 409)
-  assert.equal(duplicate.json().error.code, 'UPLOAD_ALREADY_ACTIVE')
+  assert.equal(duplicate.statusCode, 404)
   assert.equal(storage.issueCalls, 1)
+  await app.close()
+})
+
+test('owner can discard an asset after an interrupted upload leaves its attempt active', async () => {
+  const { app, storage } = fixture()
+  const headers = { cookie: 'recorder_session=valid', origin: allowedOrigin }
+  const activity = await app.inject({
+    method: 'POST', url: '/api/v1/recorder-activities', headers,
+    payload: { operationType: 'packing', storageProvider: 's3' },
+  })
+  const created = await app.inject({
+    method: 'POST', url: `/api/v1/recorder-activities/${activity.json().data.id}/media-assets`, headers, payload: mediaPayload,
+  })
+
+  const discarded = await app.inject({
+    method: 'DELETE', url: `/api/v1/media-assets/${created.json().data.asset.id}`, headers,
+  })
+
+  assert.equal(discarded.statusCode, 200)
+  assert.equal(discarded.json().data.cleanupPending, 0)
+  assert.equal(storage.deleteCalls, 1)
+  const retry = await app.inject({
+    method: 'POST', url: `/api/v1/media-assets/${created.json().data.asset.id}/upload-attempts`, headers, payload: {},
+  })
+  assert.equal(retry.statusCode, 404)
   await app.close()
 })
 
@@ -563,34 +568,6 @@ test('finalization fails closed and removes an unverifiable S3 object', async ()
   assert.equal(finalized.statusCode, 422)
   assert.equal(finalized.json().error.code, 'UPLOAD_VERIFICATION_FAILED')
   assert.equal(storage.deleteCalls, 1)
-  await app.close()
-})
-
-test('retry retains the asset identity and rotates the provider object reference', async () => {
-  const { app, repository, storage } = fixture()
-  const headers = { cookie: 'recorder_session=valid', origin: allowedOrigin }
-  const activity = await app.inject({
-    method: 'POST', url: '/api/v1/recorder-activities', headers,
-    payload: { operationType: 'packing', storageProvider: 's3' },
-  })
-  const created = await app.inject({
-    method: 'POST', url: `/api/v1/recorder-activities/${activity.json().data.id}/media-assets`, headers, payload: mediaPayload,
-  })
-  const first = created.json().data
-  const firstObjectRef = repository.targets.get(first.asset.id)?.providerObjectRef
-  storage.verifyResult = 'mismatch'
-  await app.inject({
-    method: 'POST', url: `/api/v1/media-assets/${first.asset.id}/upload-attempts/${first.upload.attemptId}/finalize`,
-    headers, payload: {},
-  })
-
-  const retried = await app.inject({
-    method: 'POST', url: `/api/v1/media-assets/${first.asset.id}/upload-attempts`, headers, payload: {},
-  })
-  assert.equal(retried.statusCode, 201)
-  assert.equal(retried.json().data.asset.id, first.asset.id)
-  assert.notEqual(retried.json().data.upload.attemptId, first.upload.attemptId)
-  assert.notEqual(repository.targets.get(first.asset.id)?.providerObjectRef, firstObjectRef)
   await app.close()
 })
 

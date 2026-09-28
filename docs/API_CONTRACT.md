@@ -9,7 +9,7 @@
 - Protected recorder endpoints belong to application users authenticated by username and password. The browser sends an opaque persistent session cookie managed and revocable by the backend; sessions expire after 30 days of inactivity or 90 days absolutely.
 - Registration and login are application-owned flows. Users may self-register without administrator provisioning; registration accepts optional email account metadata. Self-service password reset is available only when the account has an email on file. Registration, login, and reset are rate-limited and reset responses must not disclose account existence.
 - Google OAuth is not a login endpoint. Link, replace, status, and revoke operations require an existing authenticated application session and only manage optional Drive storage authorization.
-- Google linking requests only `drive.file`, permits one connected Google account per application user, and uses an app-managed Drive folder. OAuth access and refresh tokens are never returned by the API.
+- Google linking requests only `drive.file`, permits one connected Google account per application user, and uses an app-managed Drive folder. An optional server-only folder suffix namespaces non-production roots; it never changes the public provider/API identifiers. OAuth access and refresh tokens are never returned by the API.
 - Recorder authorization uses the internal application user ID. Only the owner may access an activity or its media in the MVP.
 - API responses send `nosniff`, frame denial, no-referrer, and restrictive API content-security headers. Authentication, recorder, and media responses use `Cache-Control: no-store`.
 - Authentication and recorder mutations are rate-limited. Limit responses use the standard error shape with `429 RATE_LIMITED` and a `Retry-After` header.
@@ -21,7 +21,11 @@
 
 ## Recorder Contract Status
 
-The recorder contract supports packing/unpacking activities and verified image/video evidence. Authentication, S3 activity creation, media intent/retry/finalize, explicit completion, owner-authorized activity history/detail, and authorized content retrieval are implemented. Google Drive connection and server-mediated storage are implemented in feat-013, with authorized live Google verification completed on 2026-09-16. Provider selection and Drive-first defaults are implemented in feat-031.
+The recorder contract supports packing/unpacking activities and verified image/video evidence. Authentication, S3 activity creation, media intent/finalize, explicit completion, owner-authorized activity history/detail, and authorized content retrieval are implemented. Google Drive connection and server-mediated storage are implemented in feat-013, with authorized live Google verification completed on 2026-09-16. Provider selection and Drive-first defaults are implemented in feat-031.
+
+### `GET /api/v1/settings` and `PATCH /api/v1/settings`
+
+Settings are authenticated and owner-scoped. The response is `{ "data": { "retentionDays": 30 } }` by default. `PATCH` accepts only an integer `retentionDays` from 1 through 3650. The value applies when the owner completes future activities; existing completed activities keep their assigned expiry deadline. Stored evidence is deleted when that deadline is reached while record metadata remains available as expired.
 
 | Capability | Planned responsibility | Owning feature |
 | --- | --- | --- |
@@ -285,19 +289,13 @@ Returns `201`:
 
 The response fields use the Media asset and Upload capability schemas above. A completed activity rejects new assets with `409 ACTIVITY_IMMUTABLE`.
 
-### `POST /api/v1/media-assets/{assetId}/upload-attempts`
-
-Creates a retry capability for a failed, expired, or pending asset when it has no nonterminal attempt. The existing asset ID and ordinal are retained. Returns `201` with `{ "data": { "asset": MediaAsset, "upload": UploadCapability } }`.
-
-Returns `409 UPLOAD_ALREADY_ACTIVE` when an `issued` or `finalizing` attempt already exists, and `409 ASSET_ALREADY_READY` when verification previously succeeded.
-
 ### `DELETE /api/v1/media-assets/{assetId}`
 
-Soft-discard a failed media asset while retaining its database record for audit/history. If a provider object exists, cleanup is queued and processed by the backend.
+Soft-discard a media asset from an unfinished activity while retaining its database record for audit/history. Any issued upload attempt is expired first. If a provider object exists, cleanup is queued and processed by the backend. The browser disables discard/reset controls while its upload or verification request is still running, but an interrupted request can be discarded after control returns to the operator. A concurrently finalizing attempt remains protected from deletion until verification returns.
 
 Response: `{ "data": { "cleanupPending": 0 } }`.
 
-Possible errors include `ASSET_NOT_FOUND`, `UPLOAD_ALREADY_ACTIVE`, and `ACTIVITY_IMMUTABLE`.
+Possible errors include `ASSET_NOT_FOUND`, `UPLOAD_ALREADY_ACTIVE` (only while finalization is running), and `ACTIVITY_IMMUTABLE`.
 
 ### `POST /api/v1/media-assets/{assetId}/upload-attempts/{attemptId}/finalize`
 
@@ -309,7 +307,7 @@ Returns `200` with `{ "data": MediaAsset }`. Repeating finalization for the same
 
 Completes an activity only when it has at least one asset and every asset is `ready`. The request body is an empty object. Returns `200` with `{ "data": Activity }`; repeated completion is idempotent. Otherwise returns `409 ACTIVITY_NOT_COMPLETABLE`.
 
-The S3-backed browser workflow computes SHA-256 before declaring each asset, follows the returned upload capability with per-file progress, finalizes every upload, and enables completion only when every selected file is ready. If the provider response is interrupted, the client first finalizes the same attempt to distinguish a committed object from a failed upload; a verified failure can then obtain a new attempt under the same asset.
+The S3-backed browser workflow computes SHA-256 before declaring each asset, follows the returned upload capability with per-file progress, finalizes every upload, and enables completion only when every selected file is ready. If an upload is interrupted or cannot be verified, the failed asset can be removed; the client does not create a replacement attempt for an unfinished record.
 
 ### `GET /api/v1/media-assets/{assetId}/content`
 
@@ -376,7 +374,7 @@ All routes below require the application session, return `Cache-Control: no-stor
 | `DELETE /api/v1/google-drive/connection` | Origin-checked; revokes token, removes credentials and pending OAuth states, returns 204. Provider revocation outage returns 503 and retains credentials for retry. Does not delete Drive files or recorder metadata. |
 | `PUT /api/v1/google-drive/uploads/{assetId}/{attemptId}` | Origin-checked, session-protected `application/octet-stream` with exact Content-Length. Streams to an encrypted server-only Google resumable session and returns 204. Its route body limit matches the largest configured media limit so camera payloads are not rejected by the framework default. Uses the shared 60/minute upload group. Wrong owner returns 404, expired/unavailable attempt 410, reuse 409. |
 
-Drive media intents/retries return the existing upload shape with additive `strategy: "server"`, an application API URL on the configured web origin and `Content-Type: application/octet-stream`. Keeping the upload URL on the web origin is required when the API is reverse-proxied: the browser's session cookie must accompany the cross-origin backend forwarding request. The web sends cookies for this strategy only. Existing `strategy: "direct"` B2 uploads stay credential-free. Default limits without B2 configuration are 25 MiB/image and 500 MiB/video; when B2 limits are configured, both providers share them. Upload intents expire after 15 minutes. The server checks ownership, provider-account binding, lifecycle, attempt expiry and expected length before forwarding bytes. A one-use transfer guard survives interrupted responses; callers finalize to reconcile state before creating another attempt. Provider sessions are encrypted at rest. Upload retries allocate distinct Drive file IDs.
+Drive media intents return the existing upload shape with additive `strategy: "server"`, an application API URL on the configured web origin and `Content-Type: application/octet-stream`. Keeping the upload URL on the web origin is required when the API is reverse-proxied: the browser's session cookie must accompany the cross-origin backend forwarding request. The web sends cookies for this strategy only. Existing `strategy: "direct"` B2 uploads stay credential-free. Default limits without B2 configuration are 25 MiB/image and 500 MiB/video; when B2 limits are configured, both providers share them. Upload intents expire after 15 minutes. The server checks ownership, provider-account binding, lifecycle, attempt expiry and expected length before forwarding bytes. A one-use transfer guard survives interrupted responses; callers may finalize to reconcile the same attempt or remove the failed asset, but cannot create a replacement attempt for an unfinished record. Provider sessions are encrypted at rest.
 
 Finalization checks the file's activity/asset binding, metadata size/type, streamed byte count, SHA-256 and byte signature. It marks the binary revision Keep Forever and reads that exact revision before storing its server-only reference. No ready evidence is created on mismatch. Download uses that verified revision even if the user later edits the Drive file; removed/trashed files, removed revisions, changed-account connections and lost permissions fail closed with a retryable provider-unavailable response. Reconnect the original Google account to regain access; no migration or ownership reassignment occurs.
 

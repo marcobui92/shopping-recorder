@@ -7,11 +7,11 @@ import {
   completeRecorderActivity,
   createMediaAsset,
   createRecorderActivity,
+  discardMediaAsset,
   finalizeMediaAsset,
   getStorageProviders,
   getGoogleDriveStatus,
   connectGoogleDrive,
-  retryMediaAsset,
   uploadMedia,
 } from '../api'
 import { I18nProvider, LanguageSwitcher } from '../i18n'
@@ -24,11 +24,11 @@ vi.mock('../api', () => ({
   },
   createMediaAsset: vi.fn(),
   createRecorderActivity: vi.fn(),
+  discardMediaAsset: vi.fn(),
   finalizeMediaAsset: vi.fn(),
   getStorageProviders: vi.fn(),
   getGoogleDriveStatus: vi.fn(),
   connectGoogleDrive: vi.fn(),
-  retryMediaAsset: vi.fn(),
   uploadMedia: vi.fn(),
 }))
 
@@ -52,6 +52,7 @@ beforeEach(() => {
   vi.stubGlobal('crypto', { subtle: { digest: vi.fn().mockResolvedValue(new Uint8Array(32).buffer) } })
   vi.mocked(createRecorderActivity).mockResolvedValue(activity)
   vi.mocked(createMediaAsset).mockResolvedValue({ asset, upload })
+  vi.mocked(discardMediaAsset).mockResolvedValue({ cleanupPending: 0 })
   vi.mocked(uploadMedia).mockImplementation(async (_file, _capability, onProgress) => { onProgress(100) })
   vi.mocked(finalizeMediaAsset).mockResolvedValue({ ...asset, readyAt: activity.createdAt, status: 'ready' })
   vi.mocked(completeRecorderActivity).mockResolvedValue({ ...activity, completedAt: activity.createdAt, evidenceExpiresAt: '2026-10-05T00:00:00.000Z', status: 'complete' })
@@ -176,29 +177,31 @@ describe('RecorderWorkflow', () => {
     expect(URL.revokeObjectURL).not.toHaveBeenCalledWith('blob:active-preview')
   })
 
-  it('creates a new attempt under the same asset after verification confirms an interrupted upload failed', async () => {
-    vi.mocked(createMediaAsset).mockResolvedValueOnce({
-      asset,
-      upload: { ...upload, expiresAt: '2026-10-01T00:00:00.000Z', strategy: 'server', url: 'https://shopping-recorder.onrender.com/api/v1/google-drive/uploads/asset-1/attempt-1' },
-    })
-    vi.mocked(uploadMedia).mockRejectedValueOnce(new Error('Upload interrupted.'))
-    vi.mocked(finalizeMediaAsset)
-      .mockRejectedValueOnce(new ApiError(422, 'UPLOAD_VERIFICATION_FAILED', 'The uploaded media could not be verified.'))
-      .mockResolvedValueOnce({ ...asset, readyAt: activity.createdAt, status: 'ready' })
-    vi.mocked(retryMediaAsset).mockResolvedValue({
-      asset: { ...asset, status: 'pending_upload' }, upload: { ...upload, attemptId: 'attempt-2' },
-    })
+  it('discards a failed upload and releases reload protection after reconciliation returns', async () => {
+    const onBusyChange = vi.fn()
+    vi.mocked(uploadMedia).mockRejectedValueOnce(new ApiError(400, 'UPLOAD_FAILED', 'Upload rejected.'))
+    vi.mocked(finalizeMediaAsset).mockRejectedValueOnce(new ApiError(503, 'STORAGE_PROVIDER_UNAVAILABLE', 'Storage unavailable.'))
+    render(<RecorderWorkflow onBusyChange={onBusyChange} />)
+    selectEvidence()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Review complete · Upload' })).toBeEnabled())
+    fireEvent.click(screen.getByRole('button', { name: 'Review complete · Upload' }))
+
+    await waitFor(() => expect(onBusyChange).toHaveBeenCalledWith(true))
+    const remove = await screen.findByRole('button', { name: 'Remove seal.jpg' })
+    await waitFor(() => expect(onBusyChange).toHaveBeenLastCalledWith(false))
+    fireEvent.click(remove)
+    await waitFor(() => expect(discardMediaAsset).toHaveBeenCalledWith('asset-1'))
+    expect(screen.queryByAltText('Preview of seal.jpg')).not.toBeInTheDocument()
+  })
+
+  it('disables form reset while activity creation is still in progress', async () => {
+    vi.mocked(createRecorderActivity).mockReturnValueOnce(new Promise<typeof activity>(() => undefined))
     render(<RecorderWorkflow />)
     selectEvidence()
     await waitFor(() => expect(screen.getByRole('button', { name: 'Review complete · Upload' })).toBeEnabled())
-    fireEvent.submit(screen.getByRole('button', { name: 'Review complete · Upload' }).closest('form')!)
+    fireEvent.click(screen.getByRole('button', { name: 'Review complete · Upload' }))
 
-    await screen.findByRole('button', { name: 'Retry' })
-    expect(screen.getByText('Upload interrupted.')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
-    await waitFor(() => expect(screen.getByText(/ready/)).toBeInTheDocument())
-    expect(retryMediaAsset).toHaveBeenCalledWith('asset-1')
-    expect(finalizeMediaAsset).toHaveBeenLastCalledWith('asset-1', 'attempt-2')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Reset form' })).toBeDisabled())
   })
 })
 
@@ -258,7 +261,16 @@ it('keeps an explicit revoked Drive selection and requires a deliberate alternat
   expect(screen.getByRole('button', { name: 'Review complete · Upload' })).toBeEnabled()
 })
 
-it('locks Drive after creation and retries provider errors without creating a B2 record', async () => {
+it('shows an inline storage retry when the Google status check fails', async () => {
+  vi.mocked(getStorageProviders).mockRejectedValueOnce(new Error('network'))
+  render(<RecorderWorkflow />)
+  const retry = await screen.findByRole('button', { name: 'Refresh storage' })
+  vi.mocked(getStorageProviders).mockResolvedValue(linkedStorage)
+  fireEvent.click(retry)
+  await waitFor(() => expect(screen.getByLabelText('Storage')).toHaveValue('google_drive'))
+})
+
+it('locks Drive after creation and does not offer interrupted-upload retry', async () => {
   vi.mocked(getStorageProviders).mockResolvedValue(linkedStorage)
   vi.mocked(createRecorderActivity).mockResolvedValue({ ...activity, storageProvider: 'google_drive' })
   vi.mocked(createMediaAsset).mockRejectedValueOnce(new ApiError(503, 'STORAGE_PROVIDER_UNAVAILABLE', 'Provider failed'))
@@ -272,8 +284,7 @@ it('locks Drive after creation and retries provider errors without creating a B2
   fireEvent(window, new Event('focus'))
   await waitFor(() => expect(screen.getByLabelText('Storage')).toHaveValue('google_drive'))
   expect(screen.getByLabelText('Storage')).toHaveValue('google_drive')
-  fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
-  await screen.findByText(/^ready$/i)
+  expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument()
   expect(createRecorderActivity).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ storageProvider: 'google_drive' }))
 })
 

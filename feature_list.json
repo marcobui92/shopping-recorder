@@ -671,6 +671,86 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-09-27. Login and registration now include a localized remember-credentials choice: the username is restored from browser-local preference, standard autocomplete remains enabled, and supported browsers receive the password through the Credential Management API/password manager; plaintext passwords are never written to application localStorage. The complete user-facing web identity, document metadata, login copy, footer, not-found page and legal pages now use LinhCj's, while internal package/API/storage identifiers remain unchanged. Verification: final ./init.sh passed; web 46/46 tests, typecheck and production build passed; the credential test verifies username restoration, password-manager delegation and absence of the password from localStorage; git diff --check passed; harness validation scored 100/100; Vite hot-reloaded all affected surfaces. No backend, API, migration or environment change."
+    },
+    {
+      "id": "feat-054",
+      "name": "Reliable session loading and failed-upload recovery",
+      "description": "Show an informative skeleton while the initial session request is pending, correct Backblaze B2 presigned PUT checksum behavior, make failed assets removable, and prevent accidental workspace reload/reset while uploads are active.",
+      "dependencies": ["feat-053"],
+      "acceptance_criteria": [
+        "Workspace and archive routes show an accessible layout skeleton instead of a blank page until the shared session request settles.",
+        "Application-storage upload capabilities do not bind an empty-payload SDK checksum and remain compatible with browser file PUTs to Backblaze B2.",
+        "A file shown as failed can be discarded without an active-attempt conflict, with provider cleanup retained and no unfinished asset blocking completion.",
+        "Reload/reset controls are unavailable during active hashing, upload, verification, retry, discard, or completion work; focused tests, typechecks, builds, docs, progress, and handoff evidence are updated."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-28. Workspace/archive now render an accessible responsive skeleton while the shared auth session request is pending. Backblaze B2 S3 clients use WHEN_REQUIRED checksum settings, and a real presigner regression test proves upload URLs omit the erroneous empty-payload CRC32 query parameters while existing server SHA-256 verification remains mandatory. Interrupted issued attempts can be expired and soft-discarded with provider cleanup; concurrently finalizing attempts remain protected. Recorder busy state disables the header reload control, existing reset/remove actions, and installs beforeunload protection until work returns. Verification: startup/final ./init.sh passed; backend 87 passed/5 opt-in skipped plus typecheck/build; web 50/50 plus typecheck/build; PostgreSQL auth/recorder integration 3/3; focused regressions, JSON validation and git diff checks passed. Live B2 upload was unavailable because local B2 endpoint/bucket configuration is absent; no deployment or external data mutation was performed."
+    },
+    {
+      "id": "feat-055",
+      "name": "Environment-scoped Google Drive root folder",
+      "description": "Separate local-development Google Drive evidence from production by applying a validated development suffix and namespace to the app-managed root folder without changing production naming or existing evidence ownership.",
+      "dependencies": ["feat-054"],
+      "acceptance_criteria": [
+        "Local Google Drive setup uses a visible `Shopping Recorder - dev` root folder and an environment namespace property, while production keeps the existing visible root name.",
+        "Reconnect validates the stored root namespace and discovers only a matching environment folder, preventing local development from reusing a production root with the same application user.",
+        "Local Drive upload capabilities target the backend origin instead of the Vite origin, while production keeps using the same-origin web proxy.",
+        "Existing production roots without an environment property remain compatible; configuration validation, focused Google tests, backend regression checks, documentation and handoff evidence are updated."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-28. Diagnosed the local 409 path: OAuth refresh remained valid (200), but the stored Drive root returned 404 so provider availability failed closed. Added validated GOOGLE_DRIVE_FOLDER_SUFFIX, configured local development as dev, and namespaced root discovery/creation with recorderEnvironment. Development reconnect rejects production roots, finds only dev roots, or creates visible Shopping Recorder - dev; production retains Shopping Recorder and legacy roots without a namespace remain compatible. After reconnect, a read-only provider check confirmed the single stored root is reachable and tagged with both dev environment and owner. Live logs exposed a second local path issue: issued Drive capabilities used the Vite origin, so PUT never reached backend and finalize returned 422. Development capabilities now derive their origin from GOOGLE_REDIRECT_URI; production retains the web-origin reverse proxy. Backend rebuilt/restarted and health returned 200. Verification: startup/final ./init.sh; focused Google/config/Drive tests 36/36; full backend 90 passed/5 opt-in skipped plus typecheck/build; git diff/feature/API JSON checks. Browser runtime discovery returned no instances, so one disposable browser upload remains documented manual verification; no provider folder or production data was mutated by the agent."
+    },
+    {
+      "id": "feat-056",
+      "name": "Remove interrupted upload retry",
+      "description": "Stop offering replacement upload attempts for unfinished or interrupted recorder activities; failed evidence can be removed and the record can be started again explicitly.",
+      "dependencies": ["feat-055"],
+      "acceptance_criteria": [
+        "The web no longer renders unfinished-activity recovery or Retry upload controls for interrupted/failed evidence.",
+        "The upload-attempt retry API and service/repository creation path are removed; finalization of the same attempt and asset discard remain available.",
+        "Focused UI/API tests, contract documentation, progress and handoff evidence are updated."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-28. Removed the unfinished-activity recovery panel, retry buttons, retry client helper, POST upload-attempt retry route, service method, and repository retry-attempt creation/status methods. Failed in-progress evidence now exposes Remove only; same-attempt finalize, cancellation and cleanup remain intact. Updated API/ testing documentation and regression tests. Verification: web 47/47 plus typecheck/build; backend 89 passed/5 opt-in skipped plus typecheck/build; local backend restarted on 127.0.0.1:3000; no deployment or provider mutation."
+    },
+    {
+      "id": "feat-057",
+      "name": "Inline Google storage status retry",
+      "description": "Expose an inline retry action beside Google Drive/storage availability errors so operators can recover storage status without opening the user/profile controls.",
+      "dependencies": ["feat-056"],
+      "acceptance_criteria": [
+        "Storage status request errors show a visible inline Refresh storage action while preserving selected files.",
+        "Configured but unavailable Google Drive states show the same inline action beside the status message.",
+        "The action reruns the existing storage-provider check and is covered by focused UI tests, typecheck/build and session evidence."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-28. Added an inline Refresh storage button for storage-check failures and configured Google Drive disconnected/unavailable/reauthorization states; it reruns the existing storage-provider request and does not require opening User/Profile. Verification: web 48/48 plus typecheck/build; backend remains 89 passed/5 opt-in skipped plus typecheck/build; local services remain healthy on ports 5173/3000."
+    },
+    {
+      "id": "feat-058",
+      "name": "Configurable evidence auto-delete period",
+      "description": "Add an authenticated Settings screen where each user controls the number of days before completed evidence is automatically deleted.",
+      "dependencies": ["feat-057"],
+      "acceptance_criteria": [
+        "Settings navigation and screen expose a validated retention period from 1 to 3650 days with a 30-day default.",
+        "The authenticated settings API persists the owner value and future completed activities calculate evidence expiry from it; existing deadlines remain unchanged.",
+        "Migration, API/UI tests, documentation, typechecks/builds and local migration evidence are updated."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-28. Added migration 0013 with per-user retention_days (default 30, bounded 1–3650), authenticated GET/PATCH settings API, future-completion expiry calculation, Settings navigation/page and localized validated form. Local migration applied successfully. Verification: backend 90 passed/5 opt-in skipped plus typecheck/build; PostgreSQL integration 3/3 including a seven-day expiry assertion; settings route regression passes; web 50/50 plus typecheck/build; no deployment or provider mutation."
+    },
+    {
+      "id": "feat-059",
+      "name": "Preserve state across primary pages",
+      "description": "Keep Workspace, Archive and Settings mounted during SPA navigation so in-progress user interactions are not reset when switching pages.",
+      "dependencies": ["feat-058"],
+      "acceptance_criteria": [
+        "Authenticated Workspace, Archive and Settings pages remain mounted while another primary page is active.",
+        "Switching pages through the header does not reload the document or discard workspace drafts, archive filters/details or settings form state.",
+        "Navigation/state-preservation regression coverage, typecheck/build, progress and handoff evidence are updated."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-28. App now keeps the three authenticated primary pages mounted and toggles visibility from the SPA location, while unauthenticated users render only the active page to avoid duplicate login forms. Header navigation remains React Router SPA navigation. App regression coverage proves a Workspace draft survives Archive → Workspace navigation. Web 50/50 plus typecheck/build passed; no backend, migration, provider or deployment change."
     }
   ]
 }

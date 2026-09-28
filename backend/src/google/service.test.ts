@@ -67,6 +67,53 @@ test('reconnect keeps the existing folder and omitted refresh token only for the
   assert.equal(calls.some(call => call.url.endsWith('/files')), false)
 })
 
+test('development reconnect ignores a production root and discovers only its dev namespace', async () => {
+  const repository = new MemoryGoogleStore()
+  await existing(repository)
+  const devConfig = { ...config, folderSuffix: 'dev' }
+  const service = new GoogleDriveService(devConfig, repository, (async (url: string) => {
+    if (url.endsWith('/token')) return Response.json({ access_token: 'access', expires_in: 3600, token_type: 'Bearer' })
+    if (url.includes('/about?')) return Response.json({ user: { permissionId: 'google-one' } })
+    if (url.includes('/files/existing-root?')) return Response.json({ id: 'existing-root', trashed: false, appProperties: { recorderEnvironment: 'production', recorderOwner: 'owner' } })
+    if (url.includes('/files?')) return Response.json({ files: [
+      { id: 'production-root', appProperties: { recorderEnvironment: 'production', recorderOwner: 'owner' } },
+      { id: 'development-root', appProperties: { recorderEnvironment: 'dev', recorderOwner: 'owner' } },
+    ] })
+    throw new Error(`Unexpected request: ${url}`)
+  }) as typeof fetch)
+
+  await service.complete(await begin(service), 'code', 'owner')
+
+  assert.equal((await repository.get('owner'))?.rootFolderId, 'development-root')
+})
+
+test('development reconnect creates a visibly suffixed and namespaced root when none exists', async () => {
+  const repository = new MemoryGoogleStore()
+  await existing(repository)
+  const devConfig = { ...config, folderSuffix: 'dev' }
+  let createdBody: { appProperties?: Record<string, string>; name?: string } | undefined
+  const service = new GoogleDriveService(devConfig, repository, (async (url: string, init?: RequestInit) => {
+    if (url.endsWith('/token')) return Response.json({ access_token: 'access', expires_in: 3600, token_type: 'Bearer' })
+    if (url.includes('/about?')) return Response.json({ user: { permissionId: 'google-one' } })
+    if (url.includes('/files/existing-root?')) return new Response(null, { status: 404 })
+    if (url.includes('/files?')) return Response.json({ files: [] })
+    if (url.endsWith('/files') && init?.method === 'POST') {
+      createdBody = JSON.parse(String(init.body)) as typeof createdBody
+      return Response.json({ id: 'new-development-root' })
+    }
+    throw new Error(`Unexpected request: ${url}`)
+  }) as typeof fetch)
+
+  await service.complete(await begin(service), 'code', 'owner')
+
+  assert.equal((await repository.get('owner'))?.rootFolderId, 'new-development-root')
+  assert.deepEqual(createdBody, {
+    name: 'Shopping Recorder - dev',
+    mimeType: 'application/vnd.google-apps.folder',
+    appProperties: { recorderEnvironment: 'dev', recorderOwner: 'owner' },
+  })
+})
+
 test('changing Google accounts without a new refresh token preserves the previous connection', async () => {
   const repository = new MemoryGoogleStore()
   await existing(repository)

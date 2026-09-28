@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { Readable } from 'node:stream'
-import type { GoogleDriveConfig } from '../config.js'
+import type { AppConfig, GoogleDriveConfig } from '../config.js'
 import type { GoogleConnectionStore } from '../google/repository.js'
 import { GoogleDriveClient } from '../google/client.js'
 import { detectedContentType } from './s3.js'
@@ -9,6 +9,9 @@ import { StorageUnavailableError, StorageVerificationError, type MediaStorageAda
 
 interface DriveRef { owner: string; account: string; file: string }
 interface DriveVersion { revision: string; contentType: string; size: number }
+export function resolveDriveUploadOrigin(config: GoogleDriveConfig, corsOrigin: string, nodeEnv: AppConfig['nodeEnv']): string {
+  return nodeEnv === 'production' ? corsOrigin : new URL(config.redirectUri).origin
+}
 export class DriveMediaStorage implements MediaStorageAdapter {
   readonly provider = 'google_drive' as const
   constructor(

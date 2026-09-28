@@ -1,4 +1,4 @@
-import { DriveMediaStorage } from './storage/drive.js'
+import { DriveMediaStorage, resolveDriveUploadOrigin } from './storage/drive.js'
 import { DriveUploadService } from './google/upload.js'
 import 'dotenv/config'
 
@@ -14,6 +14,7 @@ import { RecorderMediaService } from './recorder/service.js'
 import { B2MediaStorage } from './storage/s3.js'
 import { GoogleConnectionRepository } from './google/repository.js'
 import { GoogleDriveService } from './google/service.js'
+import { PostgresSettingsRepository } from './settings/repository.js'
 
 async function start() {
   const config = loadConfig()
@@ -22,8 +23,11 @@ async function start() {
   const authRepository = pool ? new PostgresAuthRepository(pool) : undefined
   const s3Storage = config.s3 ? new B2MediaStorage(config.s3) : undefined
   const googleRepository = pool ? new GoogleConnectionRepository(pool) : undefined
+  const settingsRepository = pool ? new PostgresSettingsRepository(pool) : undefined
   const googleService = config.googleDrive && googleRepository ? new GoogleDriveService(config.googleDrive, googleRepository) : undefined
-  const driveStorage = config.googleDrive && googleRepository ? new DriveMediaStorage(config.googleDrive, googleRepository, undefined, config.corsOrigin) : undefined
+  const driveStorage = config.googleDrive && googleRepository
+    ? new DriveMediaStorage(config.googleDrive, googleRepository, undefined, resolveDriveUploadOrigin(config.googleDrive, config.corsOrigin, config.nodeEnv))
+    : undefined
   const recorderService = recorderRepository
     ? new RecorderMediaService(recorderRepository, [...(s3Storage ? [s3Storage] : []), ...(driveStorage ? [driveStorage] : [])], config.s3)
     : undefined
@@ -42,6 +46,7 @@ async function start() {
       repository: googleRepository,
       service: googleService,
     },
+    settings: { authenticate: pool ? createPostgresSessionAuthenticator(pool) : undefined, repository: settingsRepository },
     readiness: async () => {
       if (!pool || !s3Storage) throw new Error('Required production dependencies are unavailable.')
       await pool.query('SELECT 1')

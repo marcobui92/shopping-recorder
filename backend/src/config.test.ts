@@ -21,14 +21,17 @@ test('loadConfig validates optional Google Drive settings and decodes the encryp
   const key = Buffer.alloc(32, 7).toString('base64')
   const config = loadConfig({
     GOOGLE_CLIENT_ID: 'client-id', GOOGLE_CLIENT_SECRET: 'client-secret',
+    GOOGLE_DRIVE_FOLDER_SUFFIX: 'dev',
     GOOGLE_REDIRECT_URI: 'http://localhost:3000/api/v1/google-drive/callback',
     GOOGLE_TOKEN_ENCRYPTION_KEY: key,
   })
   assert.equal(config.googleDrive?.clientId, 'client-id')
+  assert.equal(config.googleDrive?.folderSuffix, 'dev')
   assert.equal(config.googleDrive?.tokenEncryptionKey.length, 32)
   assert.equal(config.googleDrive?.oauthStateTtlSeconds, 600)
   assert.throws(() => loadConfig({ GOOGLE_CLIENT_ID: 'only-one' }), /all required/)
   assert.throws(() => loadConfig({ GOOGLE_CLIENT_ID: 'id', GOOGLE_CLIENT_SECRET: 'secret', GOOGLE_REDIRECT_URI: 'ftp://bad', GOOGLE_TOKEN_ENCRYPTION_KEY: key }), /valid HTTP/)
+  assert.throws(() => loadConfig({ GOOGLE_CLIENT_ID: 'id', GOOGLE_CLIENT_SECRET: 'secret', GOOGLE_DRIVE_FOLDER_SUFFIX: 'Dev!', GOOGLE_REDIRECT_URI: 'http://localhost/callback', GOOGLE_TOKEN_ENCRYPTION_KEY: key }), /FOLDER_SUFFIX/)
 })
 
 test('loadConfig validates and normalizes Backblaze B2 settings', () => {

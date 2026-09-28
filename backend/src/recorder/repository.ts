@@ -61,21 +61,12 @@ export interface RecorderRepository {
     providerObjectRef: string
     providerUploadRef: string | null
   }): Promise<MediaAsset | null>
-  createRetryAttempt(input: {
-    assetId: string
-    attemptId: string
-    expiresAt: string
-    ownerUserId: string
-    providerObjectRef: string
-    providerUploadRef: string | null
-  }): Promise<MediaAsset | null>
   discardAsset(ownerUserId: string, assetId: string): Promise<LifecycleMutationResult | null>
   failFinalize(assetId: string, attemptId: string, failureCode: string): Promise<void>
   finishFinalize(assetId: string, attemptId: string, verified: VerifiedStorageObject): Promise<MediaAsset>
   getActivity(ownerUserId: string, activityId: string): Promise<RecorderActivity | null>
   getActivityWithAssets(ownerUserId: string, activityId: string): Promise<{ activity: RecorderActivity; assets: MediaAsset[] } | null>
   getAssetUploadTarget(ownerUserId: string, assetId: string): Promise<UploadTarget | null>
-  getAssetRetryStatus(ownerUserId: string, assetId: string): Promise<'active' | 'ready' | 'retryable' | null>
   getReadyAsset(ownerUserId: string, assetId: string): Promise<UploadTarget | null>
   deleteActivity(ownerUserId: string, activityId: string): Promise<LifecycleMutationResult | null>
   finishCleanup(cleanupId: string, succeeded: boolean): Promise<void>
@@ -327,7 +318,7 @@ export class PostgresRecorderRepository implements RecorderRepository {
 
       const completed = await client.query<ActivityRow>(`
         UPDATE recorder_activities
-        SET status = 'complete', completed_at = now(), evidence_expires_at = now() + interval '30 days', updated_at = now()
+        SET status = 'complete', completed_at = now(), evidence_expires_at = now() + COALESCE((SELECT retention_days FROM app_users WHERE id = recorder_activities.owner_user_id), 30) * interval '1 day', updated_at = now()
         WHERE id = $1
         RETURNING ${activityColumns}
       `, [activityId])
@@ -583,64 +574,6 @@ export class PostgresRecorderRepository implements RecorderRepository {
     return result.rows[0] ? toUploadTarget(result.rows[0]) : null
   }
 
-  async getAssetRetryStatus(ownerUserId: string, assetId: string): Promise<'active' | 'ready' | 'retryable' | null> {
-    const result = await this.pool.query<{ active: boolean; status: MediaAsset['status'] }>(`
-      SELECT a.status, EXISTS (
-        SELECT 1 FROM media_upload_attempts u
-        WHERE u.asset_id = a.id AND u.status IN ('issued', 'finalizing')
-      ) AS active
-      FROM media_assets a JOIN recorder_activities r ON r.id = a.activity_id
-      WHERE a.id = $1 AND a.discarded_at IS NULL AND r.owner_user_id = $2 AND r.status NOT IN ('cancelled', 'deleted')
-    `, [assetId, ownerUserId])
-    const row = result.rows[0]
-    if (!row) return null
-    if (row.status === 'ready') return 'ready'
-    return row.active ? 'active' : 'retryable'
-  }
-
-  async createRetryAttempt(input: {
-    assetId: string; attemptId: string; expiresAt: string; ownerUserId: string; providerUploadRef: string | null
-    providerObjectRef: string
-  }): Promise<MediaAsset | null> {
-    return transaction(this.pool, async (client) => {
-      const result = await client.query<AssetRow & { owner_user_id: string }>(`
-        SELECT ${assetColumns.split(',').map((column) => `a.${column.trim()}`).join(', ')}, r.owner_user_id
-        FROM media_assets a JOIN recorder_activities r ON r.id = a.activity_id
-        WHERE a.id = $1 AND a.discarded_at IS NULL AND r.owner_user_id = $2 AND r.status NOT IN ('cancelled', 'deleted') FOR UPDATE OF a
-      `, [input.assetId, input.ownerUserId])
-      const asset = result.rows[0]
-      if (!asset) return null
-      if (asset.status === 'ready') throw new Error('ASSET_ALREADY_READY')
-
-      await client.query(`
-        UPDATE media_upload_attempts SET status = 'expired', updated_at = now()
-        WHERE asset_id = $1 AND status = 'issued' AND expires_at <= now()
-      `, [input.assetId])
-      const active = await client.query(`
-        SELECT 1 FROM media_upload_attempts WHERE asset_id = $1 AND status IN ('issued', 'finalizing')
-      `, [input.assetId])
-      if (active.rowCount) throw new Error('UPLOAD_ALREADY_ACTIVE')
-
-      const attemptNumber = await client.query<{ next_attempt: number }>(`
-        SELECT COALESCE(MAX(attempt_number), 0)::integer + 1 AS next_attempt
-        FROM media_upload_attempts WHERE asset_id = $1
-      `, [input.assetId])
-      await client.query(`
-        INSERT INTO media_upload_attempts
-          (id, asset_id, attempt_number, provider_upload_ref, expires_at)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [input.attemptId, input.assetId, attemptNumber.rows[0].next_attempt, input.providerUploadRef, input.expiresAt])
-      await client.query(`
-        UPDATE media_assets
-        SET status = 'pending_upload', provider_object_ref = $2, provider_version_ref = NULL,
-            verified_content_type = NULL, verified_size_bytes = NULL, verified_sha256 = NULL,
-            updated_at = now()
-        WHERE id = $1
-      `, [input.assetId, input.providerObjectRef])
-      return toAsset({ ...asset, status: 'pending_upload', updated_at: new Date() })
-    })
-  }
-
   async discardAsset(ownerUserId: string, assetId: string): Promise<LifecycleMutationResult | null> {
     return transaction(this.pool, async (client) => {
       const result = await client.query<{
@@ -655,10 +588,10 @@ export class PostgresRecorderRepository implements RecorderRepository {
       const asset = result.rows[0]
       if (!asset) return null
       if (['complete', 'cancelled', 'expired', 'deleted'].includes(asset.activity_status)) throw new Error('ACTIVITY_IMMUTABLE')
-      const active = await client.query(`
-        SELECT 1 FROM media_upload_attempts WHERE asset_id = $1 AND status IN ('issued', 'finalizing')
+      const finalizing = await client.query(`
+        SELECT 1 FROM media_upload_attempts WHERE asset_id = $1 AND status = 'finalizing'
       `, [assetId])
-      if (active.rowCount) throw new Error('UPLOAD_ALREADY_ACTIVE')
+      if (finalizing.rowCount) throw new Error('UPLOAD_ALREADY_ACTIVE')
       await client.query(`
         UPDATE media_upload_attempts SET status = 'expired', updated_at = now()
         WHERE asset_id = $1 AND status NOT IN ('succeeded', 'failed', 'expired')

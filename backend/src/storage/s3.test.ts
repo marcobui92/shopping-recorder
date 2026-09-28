@@ -78,6 +78,8 @@ test('B2 storage uses the Backblaze endpoint and signing region', async () => {
   assert.equal(url.hostname, 'recorder-media.s3.us-west-004.backblazeb2.com')
   assert.match(url.searchParams.get('X-Amz-Credential') ?? '', /\/us-west-004\/s3\/aws4_request$/)
   assert.match(url.searchParams.get('X-Amz-SignedHeaders') ?? '', /content-type/)
+  assert.equal(url.searchParams.has('x-amz-checksum-crc32'), false)
+  assert.equal(url.searchParams.has('x-amz-sdk-checksum-algorithm'), false)
 })
 
 test('B2 storage verifies object version, size, content type, and SHA-256', async () => {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash, randomBytes } from 'node:crypto'
 import test from 'node:test'
-import { DriveMediaStorage } from './drive.js'
+import { DriveMediaStorage, resolveDriveUploadOrigin } from './drive.js'
 import { GoogleDriveClient } from '../google/client.js'
 import type { GoogleConnection, GoogleConnectionStore } from '../google/repository.js'
 import { decryptSecret } from './secret.js'
@@ -36,6 +36,11 @@ test('Drive capabilities contain only the authenticated application upload URL; 
   assert.doesNotMatch(JSON.stringify(issued.capability), /secret-session|refresh|Bearer/)
   assert.doesNotMatch(issued.providerUploadRef!, /secret-session/)
   assert.equal(decryptSecret(JSON.parse(issued.providerUploadRef!), key), 'https://www.googleapis.com/upload/secret-session')
+})
+
+test('Drive upload origin uses the backend locally and the same-origin web proxy in production', () => {
+  assert.equal(resolveDriveUploadOrigin(config, 'http://localhost:5173', 'development'), 'http://localhost:3001')
+  assert.equal(resolveDriveUploadOrigin(config, 'https://shopping-recorder-web.vercel.app', 'production'), 'https://shopping-recorder-web.vercel.app')
 })
 
 test('Drive verification hashes and pins a revision; retrieval never follows a changed head', async () => {

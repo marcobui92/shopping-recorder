@@ -2,8 +2,48 @@
 
 ## Current Objective
 
-- Goal: Deliver the LinhCj's packing/unpacking evidence recorder with application storage and optional linked Google Drive. Feature 053's browser-managed remembered login and identity rename are complete locally; no deployment was requested in this turn.
-- feat-041 thirty-day evidence retention and logo reload is deployed from commit `64da323`; production migration `0011` is applied. Features 042–045 and 048–053 are complete locally on `develop` and are not committed or deployed. No active feature; feat-018 remains blocked/deferred.
+- Goal: Deliver the LinhCj's packing/unpacking evidence recorder with application storage and optional linked Google Drive. Feature 055's environment-scoped Drive root is complete locally; no deployment was requested.
+- feat-041 thirty-day evidence retention and logo reload is deployed from commit `64da323`; production migration `0011` is applied. Features 042–055 are complete locally on `develop` and are not committed or deployed. No active feature; feat-018 remains blocked/deferred.
+
+## Feature 055 — Environment-scoped Drive root completed
+
+- Local Drive diagnosis found a valid refresh grant but a missing stored root, which caused provider availability to fail closed with 409. `GOOGLE_DRIVE_FOLDER_SUFFIX=dev` is configured locally; reconnect rejects production roots, selects only `recorderEnvironment=dev`, or creates `Shopping Recorder - dev`. Production naming and legacy unnamespaced roots remain compatible.
+- The user completed reconnect. A read-only provider check confirmed the single stored root is reachable, dev-namespaced, and owner-tagged; no provider data was changed by the agent.
+- Live logs exposed a second local issue: capabilities targeted Vite port 5173, so upload PUT never reached the backend and finalize returned 422. Development capabilities now use the backend origin from `GOOGLE_REDIRECT_URI`; production retains the web-origin reverse proxy required for same-origin cookies.
+- Verification: focused Google/config/Drive tests 36/36; full backend 90 passed/5 skipped plus typecheck/build; final init/diff/JSON checks passed. Backend is rebuilt/restarted and healthy on port 3000; Vite remains on 5173.
+- Browser skill discovery returned `[]`, so the remaining user check is one disposable Drive upload. Confirm the PUT reaches port 3000 and returns 204 before finalize. No migration, production mutation, commit, push or deployment was performed.
+
+## Feature 056 — Remove interrupted upload retry completed
+
+- The unfinished-activity recovery panel and all “Retry upload”/failed-file Retry controls are removed. Failed evidence can be discarded; the user must start a new record instead of creating a replacement attempt under the interrupted record.
+- Removed `retryMediaAsset`, the upload-attempt retry route, and the service/repository retry-attempt/status code. Original-attempt finalization, discard, cancellation and provider cleanup remain.
+- Verification: web 47/47 plus typecheck/build; backend 89 passed/5 skipped plus typecheck/build; local backend rebuilt/restarted on port 3000. No deployment or provider mutation.
+
+## Feature 057 — Inline Google storage status retry completed
+
+- The storage selector now renders `Refresh storage` next to storage request errors and configured Google Drive unavailable/disconnected/reauthorization messages. It reruns `/api/v1/storage-providers` inline and preserves selected evidence/form state; no User/Profile tap is required.
+- Verification: web 48/48 plus typecheck/build; backend 89 passed/5 skipped plus typecheck/build; local frontend/backend remain healthy on 5173/3000. No deployment or provider mutation.
+
+## Feature 058 — Configurable evidence auto-delete period completed
+
+- Settings now has a user-owned retention period (`1–3650` days, default `30`). `GET/PATCH /api/v1/settings` persists it, and future completed activities calculate their evidence expiry from the saved value; old completed activities retain their existing deadline.
+- Migration `0013_add_retention_settings.sql` was applied locally. The Settings page is authenticated, localized, validates the range and gives inline save/error feedback.
+- Verification: backend 90 passed/5 skipped plus typecheck/build; PostgreSQL integration 3/3 including a seven-day expiry assertion; web 50/50 plus typecheck/build; local services remain on 3000/5173. No deployment or provider mutation.
+
+## Feature 059 — Preserve state across primary pages completed
+
+- Authenticated Workspace, Archive and Settings remain mounted while switching header navigation; only visibility follows the React Router location. This preserves drafts, filters/detail state and settings form state without a document reload. Unauthenticated routes render only the active login page.
+- App regression proves a Workspace draft survives Archive → Workspace navigation. Web 50/50 plus typecheck/build passed. No backend, migration, provider or deployment change.
+- Follow-up added explicit primary route placeholders so the wildcard 404 route does not render behind Workspace, Archive or Settings. Web 50/50, typecheck and build pass.
+
+## Feature 054 — Session and upload reliability completed
+
+- Workspace and Archive use `SessionLoadingSkeleton` while the one shared session request is pending; the loading state is visually useful, localized, and announced as “Loading your workspace”.
+- `B2MediaStorage` configures AWS SDK checksum calculation/validation as `WHEN_REQUIRED`. Its real presigned PUT test asserts no empty-payload CRC32/sdk-algorithm query parameters are emitted. Existing metadata, size, content signature, SHA-256 and B2 version verification remain intact.
+- `DELETE /api/v1/media-assets/{assetId}` now expires an interrupted `issued` attempt before soft-discard and provider cleanup. It still blocks a concurrent `finalizing` attempt. PostgreSQL integration covers both cases and verifies discarded assets cannot be retried or block completion.
+- `RecorderWorkflow` reports `busy` to the shared app shell, disables the logo reload path, retains existing disabled reset/remove/complete controls, and installs a `beforeunload` guard until the async operation returns.
+- Verification: baseline/final `./init.sh`; backend 87 passed/5 skipped plus typecheck/build; web 50/50 plus typecheck/build; PostgreSQL auth/recorder integration 3/3; focused regressions 30/30 backend and 27/27 web; JSON/diff validation passed. Live B2 smoke was unavailable because local endpoint/bucket settings are absent. No migration, production mutation, commit, push or deploy.
+- Next action: deploy both web and backend together only if requested, then run the disposable production checks in `docs/TESTING.md`. The session token pasted in the report should be rotated by signing out/in because it was exposed in chat; it is not stored in the repository.
 
 ## Feature 053 — Remembered browser login and LinhCj's identity completed
 

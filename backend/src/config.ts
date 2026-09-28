@@ -15,6 +15,7 @@ export interface S3Config {
 export interface GoogleDriveConfig {
   clientId: string
   clientSecret: string
+  folderSuffix?: string
   redirectUri: string
   tokenEncryptionKey: Buffer
   oauthStateTtlSeconds: number
@@ -120,6 +121,7 @@ function readGoogleDriveConfig(environment: NodeJS.ProcessEnv): GoogleDriveConfi
   const clientSecret = environment.GOOGLE_CLIENT_SECRET?.trim()
   const redirectUri = environment.GOOGLE_REDIRECT_URI?.trim()
   const encodedKey = environment.GOOGLE_TOKEN_ENCRYPTION_KEY?.trim()
+  const folderSuffix = environment.GOOGLE_DRIVE_FOLDER_SUFFIX?.trim()
   if (!clientId && !clientSecret && !redirectUri && !encodedKey) return undefined
   if (!clientId || !clientSecret || !redirectUri || !encodedKey) {
     throw new Error('GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI, and GOOGLE_TOKEN_ENCRYPTION_KEY are all required when Google Drive is configured.')
@@ -127,6 +129,9 @@ function readGoogleDriveConfig(environment: NodeJS.ProcessEnv): GoogleDriveConfi
   let tokenEncryptionKey: Buffer
   try { tokenEncryptionKey = Buffer.from(encodedKey, 'base64') } catch { throw new Error('GOOGLE_TOKEN_ENCRYPTION_KEY must be base64 encoded.') }
   if (tokenEncryptionKey.length !== 32) throw new Error('GOOGLE_TOKEN_ENCRYPTION_KEY must decode to exactly 32 bytes.')
+  if (folderSuffix && !/^[a-z0-9][a-z0-9-]{0,31}$/.test(folderSuffix)) {
+    throw new Error('GOOGLE_DRIVE_FOLDER_SUFFIX must contain 1-32 lowercase letters, numbers, or hyphens.')
+  }
   try {
     const url = new URL(redirectUri)
     if (!['http:', 'https:'].includes(url.protocol)) throw new Error()
@@ -134,6 +139,7 @@ function readGoogleDriveConfig(environment: NodeJS.ProcessEnv): GoogleDriveConfi
   return {
     clientId,
     clientSecret,
+    folderSuffix: folderSuffix || undefined,
     redirectUri,
     tokenEncryptionKey,
     oauthStateTtlSeconds: readInteger(environment.GOOGLE_OAUTH_STATE_TTL_SECONDS, 'GOOGLE_OAUTH_STATE_TTL_SECONDS', 600, 60, 1800),

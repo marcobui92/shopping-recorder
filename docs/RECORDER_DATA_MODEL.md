@@ -93,7 +93,7 @@ The API never returns credential or provider-reference columns. Unlink revokes G
 | `notes` | `text` | Nullable; maximum 2,000 characters at the API boundary |
 | `occurred_at` | `timestamptz` | Required operational timestamp; defaults to server time |
 | `completed_at` | `timestamptz` | Nullable; set exactly once on completion |
-| `evidence_expires_at` / `expired_at` | `timestamptz` | Completion plus 30 days, and the actual logical expiry time; introduced by migration `0011` |
+| `evidence_expires_at` / `expired_at` | `timestamptz` | Completion plus the owner's configured retention days, and the actual logical expiry time; introduced by migrations `0011`/`0013` |
 | `cancelled_at` / `deleted_at` | `timestamptz` | Nullable lifecycle timestamps introduced by migration `0007` |
 | `created_at` / `updated_at` | `timestamptz` | Required |
 
@@ -165,7 +165,7 @@ Only one nonterminal attempt may exist per asset. This is enforced by a partial 
 - `draft` may have no assets.
 - `uploading` begins when the first upload attempt is issued and may contain pending, failed, or ready assets.
 - `complete` requires at least one asset and requires every asset to be `ready`.
-- Completing sets a deterministic evidence deadline 30 days later. The retention sweep marks the record `expired`, denies content access, appends an audit event, and queues exact-object provider deletion. Cleanup failures stay retryable and never restore access.
+- Completing sets a deterministic evidence deadline using the owner's retention setting (default 30 days). The retention sweep marks the record `expired`, denies content access, appends an audit event, and queues exact-object provider deletion. Cleanup failures stay retryable and never restore access. Changing the setting affects future completions only.
 - Metadata (`operation_type`, `reference`, `notes`, and `occurred_at`) may be corrected before or after completion and every correction is audited; storage choice and evidence bytes remain immutable.
 - `draft` and `uploading` activities may become `cancelled`; `complete` activities cannot be cancelled.
 - Only `complete` activities may become internal-only `deleted`. Deleted activities are immediately absent from list/detail/content APIs.

@@ -13,6 +13,8 @@ export interface AppUser {
   username: string
 }
 
+export interface UserSettings { retentionDays: number }
+
 export interface RecorderActivity {
   completedAt: string | null
   createdAt: string
@@ -241,15 +243,6 @@ export async function createMediaAsset(activityId: string, input: {
   return payload.data as { asset: MediaAsset; upload: UploadCapability }
 }
 
-export async function retryMediaAsset(assetId: string): Promise<{ asset: MediaAsset; upload: UploadCapability }> {
-  const payload = await recorderRequest<{ data?: { asset?: MediaAsset; upload?: UploadCapability } }>(
-    `/media-assets/${assetId}/upload-attempts`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' },
-  )
-  if (!payload.data?.asset?.id || !payload.data.upload?.attemptId) throw new ApiError(502, 'INVALID_RESPONSE', 'The API returned an unexpected response.')
-  return payload.data as { asset: MediaAsset; upload: UploadCapability }
-}
-
 export async function discardMediaAsset(assetId: string): Promise<{ cleanupPending: number }> {
   const payload = await recorderRequest<{ data?: { cleanupPending?: number } }>(`/media-assets/${assetId}`, { method: 'DELETE' })
   if (!Number.isInteger(payload.data?.cleanupPending)) throw new ApiError(500, 'INVALID_RESPONSE', 'The service returned an invalid discard response.')
@@ -314,4 +307,12 @@ export interface StorageProviders {
 }
 export async function getStorageProviders(): Promise<StorageProviders> {
   return (await recorderRequest<{ data: StorageProviders }>('/storage-providers')).data
+}
+
+export async function getSettings(): Promise<UserSettings> {
+  return (await recorderRequest<{ data: UserSettings }>('/settings')).data
+}
+
+export async function updateSettings(retentionDays: number): Promise<UserSettings> {
+  return (await recorderRequest<{ data: UserSettings }>('/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ retentionDays }) })).data
 }

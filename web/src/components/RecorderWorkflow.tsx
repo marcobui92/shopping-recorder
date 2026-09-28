@@ -10,7 +10,6 @@ import {
   finalizeMediaAsset,
   getStorageProviders,
   type StorageProviders,
-  retryMediaAsset,
   uploadMedia,
   type UploadCapability,
 } from '../api'
@@ -102,20 +101,6 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
-function canReuseCapability(capability: UploadCapability): boolean {
-  if (new Date(capability.expiresAt).getTime() <= Date.now()) return false
-  if (capability.strategy !== 'server' || typeof window === 'undefined') return true
-  try {
-    const target = new URL(capability.url, window.location.href)
-    const current = new URL(window.location.href)
-    if (target.origin === current.origin) return true
-    // Local development may intentionally run the API on a separate port. In
-    // production, server capabilities must use the web origin so its session
-    // cookie survives the Vercel rewrite.
-    return current.hostname === 'localhost' || current.hostname === '127.0.0.1'
-  } catch { return false }
-}
-
 function EvidencePreview({ file, mediaType, eager = false }: { file: File; mediaType: SupportedMediaType; eager?: boolean }) {
   const [failed, setFailed] = useState(false)
   const [previewUrl, setPreviewUrl] = useState(() => eager && typeof URL.createObjectURL === 'function' ? URL.createObjectURL(file) : '')
@@ -145,7 +130,7 @@ function EvidencePreview({ file, mediaType, eager = false }: { file: File; media
   return <a aria-label={`Open full preview of ${file.name}`} className="group/preview relative block max-w-full overflow-hidden bg-secondary" href={previewUrl} rel="noreferrer" target="_blank"><img alt={`Preview of ${file.name}`} className="aspect-[4/3] w-full max-w-full object-cover transition-transform duration-300 group-hover/preview:scale-[1.02]" src={previewUrl} onError={() => setFailed(true)} /><span className="absolute bottom-2 right-2 grid size-8 place-items-center rounded-lg bg-slate-950/75 text-white opacity-0 backdrop-blur transition-opacity group-hover/preview:opacity-100"><Expand aria-hidden="true" className="size-4" /></span></a>
 }
 
-export function RecorderWorkflow({ onCompleted }: { onCompleted?: () => void }) {
+export function RecorderWorkflow({ onBusyChange, onCompleted }: { onBusyChange?: (busy: boolean) => void; onCompleted?: () => void }) {
   const { t } = useI18n()
   const formRef = useRef<HTMLFormElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -166,8 +151,21 @@ export function RecorderWorkflow({ onCompleted }: { onCompleted?: () => void }) 
   const explicitProvider = useRef(false)
   const [storageError, setStorageError] = useState(false)
   const [storageLoading, setStorageLoading] = useState(true)
+  const [storageRetry, setStorageRetry] = useState(0)
   const [addToolbarVisible, setAddToolbarVisible] = useState(true)
   const [floatingAddOpen, setFloatingAddOpen] = useState(false)
+
+  useEffect(() => {
+    onBusyChange?.(busy)
+    return () => onBusyChange?.(false)
+  }, [busy, onBusyChange])
+
+  useEffect(() => {
+    if (!busy) return
+    const protectActiveUpload = (event: BeforeUnloadEvent) => event.preventDefault()
+    window.addEventListener('beforeunload', protectActiveUpload)
+    return () => window.removeEventListener('beforeunload', protectActiveUpload)
+  }, [busy])
 
   useEffect(() => {
     const toolbar = addToolbarRef.current
@@ -199,7 +197,7 @@ export function RecorderWorkflow({ onCompleted }: { onCompleted?: () => void }) 
     window.addEventListener('focus', refresh)
     window.addEventListener('storage-providers-changed', refresh)
     return () => { active = false; window.removeEventListener('focus', refresh); window.removeEventListener('storage-providers-changed', refresh) }
-  }, [activityId])
+  }, [activityId, storageRetry])
   const storageReady = !storageLoading && !storageError && Boolean(provider && providers?.[provider].available)
   function storageFailure(reason: unknown, fallback: string) {
     if (reason instanceof ApiError && reason.code === 'UPLOAD_NETWORK_ERROR') return t(reason.message)
@@ -262,25 +260,15 @@ export function RecorderWorkflow({ onCompleted }: { onCompleted?: () => void }) 
     } finally { setBusy(false) }
   }
 
-  async function uploadItem(item: FileItem, currentActivityId: string, retry = false) {
+  async function uploadItem(item: FileItem, currentActivityId: string) {
     try {
-      let assetId = item.assetId
-      let upload: UploadCapability
-      if (retry && assetId && item.capability && canReuseCapability(item.capability)) {
-        upload = item.capability
-        update(item.key, { error: undefined, progress: 0, stage: 'preparing' })
-      } else if (retry && assetId) {
-        update(item.key, { error: undefined, progress: 0, stage: 'preparing' })
-        upload = (await retryMediaAsset(assetId)).upload
-      } else {
-        update(item.key, { error: undefined, progress: 0, stage: 'hashing' })
-        const hash = await sha256(item.file)
-        update(item.key, { stage: 'preparing' })
-        const prepared = await createMediaAsset(currentActivityId, { contentType: item.contentType, mediaType: item.mediaType, originalFilename: item.file.name, sha256: hash, sizeBytes: item.file.size })
-        assetId = prepared.asset.id
-        upload = prepared.upload
-        update(item.key, { assetId, capability: upload })
-      }
+      update(item.key, { error: undefined, progress: 0, stage: 'hashing' })
+      const hash = await sha256(item.file)
+      update(item.key, { stage: 'preparing' })
+      const prepared = await createMediaAsset(currentActivityId, { contentType: item.contentType, mediaType: item.mediaType, originalFilename: item.file.name, sha256: hash, sizeBytes: item.file.size })
+      const assetId = prepared.asset.id
+      const upload = prepared.upload
+      update(item.key, { assetId, capability: upload })
       update(item.key, { capability: upload, stage: 'uploading' })
       let uploadFailure: unknown
       try { await uploadMedia(item.file, upload, (progress) => update(item.key, { progress })) } catch (reason) { uploadFailure = reason }
@@ -361,9 +349,9 @@ export function RecorderWorkflow({ onCompleted }: { onCompleted?: () => void }) 
                   </Select>
                   {activityId ? <p className="text-xs text-muted-foreground">{t('This record keeps its storage location. Retry here after restoring access.')}</p> : <>
                     {storageLoading && <p role="status">{t('Checking storage…')}</p>}
-                    {storageError && <p role="alert">{t('Unable to check storage. Retry without losing your selected files.')}</p>}
+                    {storageError && <div className="flex flex-wrap items-center gap-2"><p role="alert">{t('Unable to check storage. Retry without losing your selected files.')}</p><Button type="button" size="sm" variant="outline" disabled={storageLoading} onClick={() => setStorageRetry((value) => value + 1)}><RotateCcw aria-hidden="true" className="size-3.5" /> {t('Refresh storage')}</Button></div>}
                     {!storageLoading && !storageError && !storageReady && <p role="alert">{t('Selected storage is unavailable. Connect Google Drive or choose available application storage. Your files are kept here.')}</p>}
-                    {providers && !providers.google_drive.available && <p className="text-sm text-muted-foreground">{t(!providers.google_drive.configured ? 'Google Drive is not configured.' : providers.google_drive.state === 'reauthorization_required' ? 'Reconnect Google Drive to restore access.' : providers.google_drive.state === 'unavailable' ? 'Google Drive is temporarily unavailable.' : 'Google Drive is not connected.')}</p>}
+                    {providers && !providers.google_drive.available && <div className="flex flex-wrap items-center gap-2"><p className="text-sm text-muted-foreground">{t(!providers.google_drive.configured ? 'Google Drive is not configured.' : providers.google_drive.state === 'reauthorization_required' ? 'Reconnect Google Drive to restore access.' : providers.google_drive.state === 'unavailable' ? 'Google Drive is temporarily unavailable.' : 'Google Drive is not connected.')}</p>{providers.google_drive.configured && <Button type="button" size="sm" variant="outline" disabled={storageLoading} onClick={() => setStorageRetry((value) => value + 1)}><RotateCcw aria-hidden="true" className="size-3.5" /> {t('Refresh storage')}</Button>}</div>}
                   </>}
                 </div>
                 <div className="space-y-2"><Label htmlFor="record-operation">{t('Operation')}</Label><Select id="record-operation" name="operationType" disabled={Boolean(activityId)}><option value="packing">{t('Packing')}</option><option value="unpacking">{t('Unpacking')}</option></Select></div>
@@ -399,7 +387,7 @@ export function RecorderWorkflow({ onCompleted }: { onCompleted?: () => void }) 
                 <div className="p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><strong className="block truncate text-sm">{item.file.name}</strong><span className="mt-1 block text-xs text-muted-foreground">{formatBytes(item.file.size)} · {item.contentType}</span></div>{item.stage === 'ready' && <Badge variant="success"><Check aria-hidden="true" className="size-3" /> {t('Verified')}</Badge>}</div><p className="mt-3 text-xs font-medium text-muted-foreground">{stageLabel(item.stage, t)}</p>
                   {(item.stage === 'uploading' || item.stage === 'finalizing') && <Progress className="mt-3" aria-label={`${item.file.name} upload progress`} value={item.progress}>{item.progress}%</Progress>}
                   {item.error && <p className="mt-2 text-sm text-red-700" role="alert">{item.error}</p>}
-                  {item.stage === 'failed' && activityId && <div className="mt-3 flex flex-wrap gap-2"><Button disabled={busy} size="sm" type="button" variant="outline" onClick={() => void uploadItem(item, activityId, Boolean(item.assetId))}><RotateCcw aria-hidden="true" className="size-3.5" /> {t('Retry')}</Button><Button aria-label={`Remove ${item.file.name}`} disabled={busy} size="sm" type="button" variant="ghost" onClick={() => void discardFailedFile(item)}><Trash2 aria-hidden="true" className="size-3.5" /> {t('Remove')}</Button></div>}
+                  {item.stage === 'failed' && activityId && <div className="mt-3 flex flex-wrap gap-2"><Button aria-label={`Remove ${item.file.name}`} disabled={busy} size="sm" type="button" variant="ghost" onClick={() => void discardFailedFile(item)}><Trash2 aria-hidden="true" className="size-3.5" /> {t('Remove')}</Button></div>}
                 </div>
               </li>)}
             </ul>

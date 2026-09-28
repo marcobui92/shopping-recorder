@@ -490,3 +490,46 @@ NODE
 - Added a localized “Remember username and password” choice to login/registration. The app stores only the remembered username and restores it on later form renders. Passwords stay out of localStorage and are delegated to supported browser password managers through the Credential Management API, with the existing standard username/current-password/new-password autocomplete attributes retained as the cross-browser fallback.
 - Verification: final `./init.sh`; `npm test -- --run` in `web/` passed 46/46; `npm run typecheck` and `npm run build` passed; `git diff --check`; harness validation 100/100. The focused test verifies username restoration, password-manager delegation and that the plaintext password is absent from localStorage. Vite hot-reloaded/reloaded every changed web surface.
 - No backend, API, migration, environment, external provider, commit, push or deployment change.
+
+## 2026-09-28 — Feature 054 session and upload reliability fixes
+
+- Activated only `feat-054` after startup `./init.sh` passed. The reported production session cookie/presigned signature was not used, copied into source, or replayed.
+- Replaced the blank Workspace/Archive body during the shared `/auth/session` request with an accessible, localized, responsive skeleton. Session restore still executes once in the app shell and does not flash login state prematurely.
+- Root cause of the application-storage PUT failure matched the supplied URL: AWS SDK 3.1125 generated `x-amz-checksum-crc32=AAAAAA==` and `x-amz-sdk-checksum-algorithm=CRC32` for the empty presign command, then the browser supplied a non-empty file. The B2 S3 client now sets request and response checksum handling to `WHEN_REQUIRED`; post-upload byte-signature and SHA-256 verification are unchanged. The real presigner test proves both query parameters are absent.
+- Failed/interrupted issued upload attempts can now be expired and soft-discarded immediately, retaining the existing cleanup queue and audit row. A genuinely concurrent `finalizing` attempt still returns `UPLOAD_ALREADY_ACTIVE` to prevent verification/cleanup races. PostgreSQL integration proves issued discard, attempt expiry, hidden/disallowed retry behavior, and finalization protection.
+- Recorder busy state is reported to the shared shell. The logo reload and form reset/remove controls cannot activate during hashing, upload, verification, retry, discard, or completion, and `beforeunload` protection covers browser reload/navigation while the operation is running.
+- Verification: backend `npm run test && npm run typecheck && npm run build` passed (87 passed, 5 opt-in skipped); web `npm run test -- --run && npm run typecheck && npm run build` passed (50/50); `RUN_DATABASE_INTEGRATION=1 node --env-file=.env --import tsx --test src/auth/repository.integration.test.ts src/recorder/repository.integration.test.ts` passed 3/3. Focused B2/recorder tests passed 30/30 and focused app/workflow/reload tests passed 27/27.
+- Live B2 smoke was unavailable because `backend/.env` has no B2 endpoint or bucket, although region/application-key fields are present. No provider object, production data, migration, environment setting, commit, push, or deployment was changed. Exact post-deploy manual verification is in `docs/TESTING.md`.
+
+## 2026-09-28 — Feature 055 environment-scoped Drive root
+
+- Activated only `feat-055` after `./init.sh` passed. Read-only diagnosis proved the stored connection exists and refresh-token exchange succeeds with HTTP 200, but metadata for its stored root folder returns 404. This makes `/storage-providers` mark Drive unavailable and causes a Drive activity request to fail closed with 409; recent successful local uploads were application-storage records, not Drive proxy uploads.
+- Added optional validated `GOOGLE_DRIVE_FOLDER_SUFFIX`. Local `.env` now uses `dev`; the safe example documents it, while production can leave it unset. Backend startup confirms `folderSuffix=dev`, the unchanged localhost callback/CORS origins, and health 200.
+- Root reconnect now validates `appProperties.recorderEnvironment`, ignores a stored production root in development, filters owner matches by environment, and creates `Shopping Recorder - dev` with owner plus `dev` namespace when necessary. Production keeps the visible `Shopping Recorder` name and accepts both legacy unnamespaced and explicit production roots.
+- After the user reconnected, a read-only provider check confirmed the single configured root is reachable, has `recorderEnvironment=dev`, and carries the owner tag. No identifier, credential, or provider content was logged.
+- Live backend logs then exposed a second failure after asset issuance: the Drive capability targeted Vite on port 5173, so no PUT reached the backend and finalize returned 422. Development now derives the capability origin from `GOOGLE_REDIRECT_URI` (port 3000 locally); production continues using the configured web origin and Vercel API rewrite so cookies remain same-origin.
+- Verification: focused config/Google routes/service/Drive storage checks passed 36/36. Full backend `npm run test && npm run typecheck && npm run build` passed with 90 tests and 5 opt-in skips. The rebuilt backend was restarted on `127.0.0.1:3000`, health returned 200, and the existing Vite frontend remains on `localhost:5173`.
+- Applied the Browser skill for the live OAuth/UI check, but discovery returned no browser instances (`[]`). One disposable Drive upload remains the exact manual gate in `docs/TESTING.md`; its PUT must reach port 3000 and return 204 before finalize. No provider folder, token, production data, migration, commit, push or deployment was modified by the agent.
+
+## 2026-09-28 — Feature 056 remove interrupted upload retry
+
+- Activated and completed only `feat-056` at the user's request. Removed the `RecorderRecovery` unfinished-activity panel and the Retry controls for failed evidence; an interrupted asset can be removed, while same-attempt finalize/cancel/cleanup behavior remains.
+- Removed the browser retry helper, backend `POST /api/v1/media-assets/{assetId}/upload-attempts` route, service retry method, and PostgreSQL repository retry-attempt/status methods. Existing upload-attempt finalize remains available for reconciliation of the original attempt.
+- Verification: web tests 47/47 plus typecheck/build; backend 89 passed/5 opt-in skipped plus typecheck/build; backend restarted and health remains available on `127.0.0.1:3000`. API contract, testing notes and handoff were updated. No migration, provider mutation, deployment or commit was performed.
+
+## 2026-09-28 — Feature 057 inline Google storage retry
+
+- Activated and completed only `feat-057` after the user requested recovery directly in the storage selector. Storage-check failures now show an inline `Refresh storage` button, and configured Google Drive unavailable/disconnected/reauthorization states show the same action beside the status text.
+- The button reruns the existing `/api/v1/storage-providers` check, keeps selected files/form values, and avoids requiring a User/Profile interaction. Web verification: 48/48 tests, typecheck and production build. Backend contract/tests were unchanged; local backend/frontend remain healthy on ports 3000/5173.
+
+## 2026-09-28 — Feature 058 configurable evidence auto-delete period
+
+- Activated and completed only `feat-058`. Added migration `0013_add_retention_settings.sql` with per-user `retention_days` defaulting to 30 and constrained to 1–3650 days; applied locally with `npm run migrate`.
+- Added authenticated `GET/PATCH /api/v1/settings`, applied the setting only when future activities complete, and kept existing completed deadlines unchanged. Added a Settings navigation item/page with localized validation and save feedback.
+- Verification: backend 90 passed/5 opt-in skipped plus typecheck/build; PostgreSQL integration 3/3 including a seven-day expiry assertion; settings route regression passed; web 50/50 plus typecheck/build; local backend restarted on port 3000 and health remains 200. No deployment or provider mutation.
+
+## 2026-09-28 — Feature 059 preserve state across primary pages
+
+- Activated and completed only `feat-059`. Workspace, Archive and Settings are now kept mounted for authenticated sessions and hidden/shown from the current React Router location, so navigation does not recreate their local interaction state. Unauthenticated sessions still render only the active page.
+- App regression coverage fills a Workspace draft, navigates Archive → Workspace and verifies the draft remains. Web verification: 50/50 tests, typecheck and production build. No backend, migration, provider or deployment change.
+- Follow-up fixed the keep-mounted shell's wildcard route: `/`, `/archive`, and `/settings` now have explicit null routes so the 404 page cannot render behind an active primary page. Web 50/50, typecheck and build pass again.

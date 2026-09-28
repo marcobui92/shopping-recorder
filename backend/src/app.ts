@@ -9,6 +9,7 @@ import type { AppConfig } from './config.js'
 import { AppError } from './errors.js'
 import { registerRecorderRoutes, type RecorderRouteDependencies } from './recorder/routes.js'
 import { registerGoogleRoutes, type GoogleRouteDependencies } from './google/routes.js'
+import { registerSettingsRoutes, type SettingsRouteDependencies } from './settings/routes.js'
 
 interface AppDependencies {
   auth?: AuthRouteDependencies
@@ -16,6 +17,7 @@ interface AppDependencies {
   recorder?: RecorderRouteDependencies
   driveUpload?: Pick<DriveUploadService, 'upload'>
   google?: GoogleRouteDependencies
+  settings?: SettingsRouteDependencies
 }
 
 export function buildApp(config: AppConfig, dependencies: AppDependencies = {}): FastifyInstance {
@@ -43,6 +45,7 @@ export function buildApp(config: AppConfig, dependencies: AppDependencies = {}):
       || request.url.startsWith('/api/v1/recorder-activities')
       || request.url.startsWith('/api/v1/media-assets')
       || request.url.startsWith('/api/v1/google-drive')
+      || request.url.startsWith('/api/v1/settings')
       || request.url.startsWith('/api/v1/storage-providers')) {
       reply.header('cache-control', 'no-store')
     }
@@ -54,6 +57,7 @@ export function buildApp(config: AppConfig, dependencies: AppDependencies = {}):
     registerAuthRoutes(guarded, config, dependencies.auth ?? {})
     registerRecorderRoutes(guarded, config, dependencies.recorder ?? {})
     registerGoogleRoutes(guarded, config, dependencies.google ?? {})
+    registerSettingsRoutes(guarded, config, dependencies.settings ?? {})
     registerDriveUploadRoute(guarded, config, dependencies.google?.authenticate, dependencies.driveUpload)
   })
 

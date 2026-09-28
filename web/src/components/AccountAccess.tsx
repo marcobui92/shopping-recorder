@@ -101,9 +101,9 @@ export function AccountAccess({ onUserChange, showForm = true, user }: AccountAc
   if (user) {
     const profile = (
       <div className="relative" ref={profileRef}>
-        <Button aria-expanded={profileOpen} aria-haspopup="dialog" aria-label={t('Open profile')} className="grid size-10 !min-h-0 place-items-center rounded-full bg-primary p-0 text-primary-foreground shadow-sm" type="button" onClick={() => setProfileOpen((open) => !open)}><UserRound aria-hidden="true" className="size-5" /></Button>
+        <Button aria-expanded={profileOpen} aria-haspopup="dialog" aria-label={t('Open profile')} className="grid size-10 !min-h-0 place-items-center rounded-full bg-primary p-0 text-primary-foreground shadow-sm" type="button" onClick={() => setProfileOpen((open) => !open)}><UserRound aria-hidden="true" className="size-4" /></Button>
         {profileOpen && <div className="absolute right-0 top-12 z-50 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl border bg-card p-4 text-left shadow-xl" role="dialog" aria-label={t('Profile menu')}>
-          <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-full bg-primary/10 text-primary"><UserRound aria-hidden="true" className="size-5" /></span><div className="min-w-0"><span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('Signed in as')}</span><p className="truncate font-semibold">{user.username}</p></div></div>
+          <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-full bg-primary/10 text-primary"><UserRound aria-hidden="true" className="size-4" /></span><div className="min-w-0"><span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('Signed in as')}</span><p className="truncate font-semibold">{user.username}</p></div></div>
           <div className="mt-4 flex items-center gap-2 rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground"><ShieldCheck aria-hidden="true" className="size-4 shrink-0 text-primary" /> {t('Session protected')}</div>
           {error && <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
           <GoogleDriveConnection onUnlinked={() => { setProfileOpen(false); window.location.reload() }} />
@@ -116,7 +116,7 @@ export function AccountAccess({ onUserChange, showForm = true, user }: AccountAc
     return (
       <Card className="border-primary/20 bg-gradient-to-r from-card to-accent/40">
         <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-full bg-primary text-primary-foreground"><UserRound aria-hidden="true" className="size-5" /></span><div><span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('Signed in as')}</span><p className="font-semibold">{user.username}</p></div><Badge className="hidden sm:inline-flex" variant="success"><ShieldCheck aria-hidden="true" className="size-3" /> {t('Session protected')}</Badge></div>
+          <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-full bg-primary text-primary-foreground"><UserRound aria-hidden="true" className="size-4" /></span><div><span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('Signed in as')}</span><p className="font-semibold">{user.username}</p></div><Badge className="hidden sm:inline-flex" variant="success"><ShieldCheck aria-hidden="true" className="size-3" /> {t('Session protected')}</Badge></div>
           <Button disabled={submitting} variant="outline" onClick={() => void signOut()}><LogOut aria-hidden="true" className="size-4" /> {t('Sign out')}</Button>
           {error && <p className="basis-full rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{error}</p>}
         </CardContent>

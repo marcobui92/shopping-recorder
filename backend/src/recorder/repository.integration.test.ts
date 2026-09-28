@@ -54,8 +54,6 @@ test('PostgreSQL repository persists and finalizes an S3 media attempt', {
       providerUploadRef: objectRef,
     })
     assert.equal(asset?.status, 'pending_upload')
-    assert.equal(await repository.getAssetRetryStatus(userId, assetId), 'active')
-
     const beginning = await repository.beginFinalize(userId, assetId, attemptId)
     assert.equal(beginning?.kind, 'started')
     const ready = await repository.finishFinalize(assetId, attemptId, {
@@ -65,14 +63,63 @@ test('PostgreSQL repository persists and finalizes an S3 media attempt', {
       sizeBytes: 256,
     })
     assert.equal(ready.status, 'ready')
-    assert.equal(await repository.getAssetRetryStatus(userId, assetId), 'ready')
     const retrieval = await repository.getReadyAsset(userId, assetId)
     assert.equal(retrieval?.providerObjectRef, objectRef)
     assert.equal(retrieval?.providerVersionRef, 'integration-version')
     assert.equal(await repository.getReadyAsset(randomUUID(), assetId), null)
+
+    const interruptedAssetId = randomUUID()
+    const interruptedAttemptId = randomUUID()
+    const interruptedObjectRef = `integration/${userId}/${interruptedAssetId}/${interruptedAttemptId}`
+    await repository.createAssetWithAttempt({
+      activityId,
+      assetId: interruptedAssetId,
+      assetInput: {
+        contentType: 'image/jpeg', mediaType: 'image', originalFilename: 'interrupted.jpg', sha256, sizeBytes: 256,
+      },
+      attemptId: interruptedAttemptId,
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      ownerUserId: userId,
+      providerObjectRef: interruptedObjectRef,
+      providerUploadRef: interruptedObjectRef,
+    })
+    const discarded = await repository.discardAsset(userId, interruptedAssetId)
+    assert.equal(discarded?.cleanupTargets.length, 1)
+    assert.equal(discarded?.cleanupTargets[0].providerObjectRef, interruptedObjectRef)
+    const interruptedAttempt = await pool.query<{ status: string }>('SELECT status FROM media_upload_attempts WHERE id = $1', [interruptedAttemptId])
+    assert.equal(interruptedAttempt.rows[0].status, 'expired')
+    assert.deepEqual((await repository.getActivityWithAssets(userId, activityId))?.assets.map((entry) => entry.id), [assetId])
+    await repository.finishCleanup(discarded!.cleanupTargets[0].cleanupId, true)
+
+    const finalizingAssetId = randomUUID()
+    const finalizingAttemptId = randomUUID()
+    const finalizingObjectRef = `integration/${userId}/${finalizingAssetId}/${finalizingAttemptId}`
+    await repository.createAssetWithAttempt({
+      activityId,
+      assetId: finalizingAssetId,
+      assetInput: {
+        contentType: 'image/jpeg', mediaType: 'image', originalFilename: 'finalizing.jpg', sha256, sizeBytes: 256,
+      },
+      attemptId: finalizingAttemptId,
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+      ownerUserId: userId,
+      providerObjectRef: finalizingObjectRef,
+      providerUploadRef: finalizingObjectRef,
+    })
+    assert.equal((await repository.beginFinalize(userId, finalizingAssetId, finalizingAttemptId))?.kind, 'started')
+    await assert.rejects(() => repository.discardAsset(userId, finalizingAssetId), /UPLOAD_ALREADY_ACTIVE/)
+    await repository.failFinalize(finalizingAssetId, finalizingAttemptId, 'INTERRUPTED')
+    const discardedAfterFinalize = await repository.discardAsset(userId, finalizingAssetId)
+    assert.equal(discardedAfterFinalize?.cleanupTargets.length, 1)
+    await repository.finishCleanup(discardedAfterFinalize!.cleanupTargets[0].cleanupId, true)
+
+    await pool.query('UPDATE app_users SET retention_days = 7 WHERE id = $1', [userId])
     const completed = await repository.completeActivity(userId, activityId)
     assert.equal(completed?.status, 'complete')
     assert.ok(completed?.completedAt)
+    assert.ok(completed?.evidenceExpiresAt)
+    const retentionMs = Date.parse(completed!.evidenceExpiresAt!) - Date.parse(completed!.completedAt!)
+    assert.ok(retentionMs > 6.9 * 24 * 60 * 60 * 1000 && retentionMs < 7.1 * 24 * 60 * 60 * 1000)
     const history = await repository.listActivities(userId, {
       operationType: 'packing', page: 1, pageSize: 20, sortDirection: 'desc', status: 'complete', storageProvider: 's3',
     })

@@ -37,7 +37,7 @@ This replaces the earlier shopping-expense-tracker product direction. Its legacy
 - Google authorization is optional and is used only to connect Google Drive storage.
 - A user must already have an authenticated application account before starting, replacing, or revoking a Google Drive connection.
 - Each application user may connect at most one Google account. The integration requests only the Drive `drive.file` scope through a server-side authorization-code flow with offline access.
-- Google Drive uses one visible app-managed `Shopping Recorder` folder with activity-specific children. The MVP does not support selecting an arbitrary Drive folder.
+- Google Drive uses one visible app-managed `Shopping Recorder` folder with activity-specific children. Non-production environments may add a configured suffix and namespace (local development uses `Shopping Recorder - dev`) to prevent accidental sharing with production. The MVP does not support selecting an arbitrary Drive folder.
 - A user chooses S3 or a linked Google Drive for each activity; all assets in one activity use that one provider.
 - Private Backblaze B2 and optionally linked Google Drive are implemented. A valid available Drive connection is the default for new activities, with configured B2 still selectable. Each activity keeps one provider; failures do not trigger automatic switching and existing records never migrate automatically.
 - The internal application user ID owns each activity and its media. Only the owner has access in the MVP.

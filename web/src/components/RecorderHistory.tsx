@@ -23,7 +23,6 @@ import { Label } from './ui/label'
 import { Select } from './ui/select'
 import { Textarea } from './ui/textarea'
 import { useI18n } from '../i18n'
-import { RecorderRecovery } from './RecorderRecovery'
 
 interface RecorderHistoryProps { refreshKey?: number }
 
@@ -180,7 +179,6 @@ export function RecorderHistory({ refreshKey = 0 }: RecorderHistoryProps) {
         </div>
       </CardHeader>
       <CardContent className="p-6">
-        <RecorderRecovery />
         <form aria-label={t('Filter recorder history')} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" onSubmit={applyFilters}>
           <div className="space-y-2 sm:col-span-2 lg:col-span-3">
             <Label htmlFor="filter-reference">{t('Search order or shipment reference')}</Label>

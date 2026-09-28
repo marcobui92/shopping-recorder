@@ -79,6 +79,8 @@ export class B2MediaStorage implements MediaStorageAdapter {
       },
       endpoint: config.endpoint,
       region: config.region,
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     }) as S3ClientLike,
     private readonly presign: Presign = getSignedUrl as unknown as Presign,
   ) {}
