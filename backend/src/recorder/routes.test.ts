@@ -262,7 +262,7 @@ class FakeS3Storage implements MediaStorageAdapter {
   readonly provider = 's3' as const
   deleteCalls = 0
   downloadVersionRef: string | null | undefined
-  verifyResult: 'ok' | 'mismatch' | 'outage' = 'ok'
+  verifyResult: 'ok' | 'mismatch' | 'outage' | 'unexpected' = 'ok'
   cleanupFails = false
   downloadFails = false
   issueCalls = 0
@@ -282,6 +282,7 @@ class FakeS3Storage implements MediaStorageAdapter {
   async verify(_providerObjectRef: string, expected: StorageObjectInput): Promise<VerifiedStorageObject> {
     if (this.verifyResult === 'mismatch') throw new StorageVerificationError('CHECKSUM_MISMATCH', 'mismatch')
     if (this.verifyResult === 'outage') throw new StorageUnavailableError()
+    if (this.verifyResult === 'unexpected') throw new Error('provider sdk failure')
     return {
       contentType: expected.contentType, providerVersionRef: 'verified-version', sha256: expected.sha256, sizeBytes: expected.sizeBytes,
     }
@@ -507,6 +508,14 @@ test('provider outages retain retryable state and return stable errors without p
   assert.equal(unavailable.statusCode, 503)
   assert.equal(unavailable.json().error.code, 'STORAGE_PROVIDER_UNAVAILABLE')
   assert.doesNotMatch(unavailable.body, /signature|providerObjectRef|test-secret-key/)
+
+  storage.verifyResult = 'unexpected'
+  const unexpected = await app.inject({
+    method: 'POST', url: `/api/v1/media-assets/${asset.id}/upload-attempts/${upload.attemptId}/finalize`, headers, payload: {},
+  })
+  assert.equal(unexpected.statusCode, 503)
+  assert.equal(unexpected.json().error.code, 'STORAGE_PROVIDER_UNAVAILABLE')
+  assert.doesNotMatch(unexpected.body, /provider sdk failure|signature|providerObjectRef/)
 
   storage.verifyResult = 'ok'
   const retried = await app.inject({

@@ -533,3 +533,9 @@ NODE
 - Activated and completed only `feat-059`. Workspace, Archive and Settings are now kept mounted for authenticated sessions and hidden/shown from the current React Router location, so navigation does not recreate their local interaction state. Unauthenticated sessions still render only the active page.
 - App regression coverage fills a Workspace draft, navigates Archive → Workspace and verifies the draft remains. Web verification: 50/50 tests, typecheck and production build. No backend, migration, provider or deployment change.
 - Follow-up fixed the keep-mounted shell's wildcard route: `/`, `/archive`, and `/settings` now have explicit null routes so the 404 page cannot render behind an active primary page. Web 50/50, typecheck and build pass again.
+
+## 2026-09-28 — Feature 060 stable upload finalization provider errors
+
+- The reported production finalize response could not be replayed without the user's authenticated cookie; an unauthenticated diagnostic request correctly returned 401 with a request ID. Source inspection found unexpected storage SDK/provider errors escaping `finalizeAsset` and becoming the generic 500 envelope.
+- Finalization now releases the attempt and maps both wrapped and unexpected provider verification failures to sanitized `503 STORAGE_PROVIDER_UNAVAILABLE`, preserving same-attempt retryability and hiding provider internals.
+- Added a regression for an unexpected provider SDK error. Verification: recorder routes 21/21; backend full test suite 90 passed/5 opt-in skipped, typecheck and build passed. No production token, object or data was replayed or mutated.

@@ -751,6 +751,19 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-09-28. App now keeps the three authenticated primary pages mounted and toggles visibility from the SPA location, while unauthenticated users render only the active page to avoid duplicate login forms. Header navigation remains React Router SPA navigation. App regression coverage proves a Workspace draft survives Archive → Workspace navigation. Web 50/50 plus typecheck/build passed; no backend, migration, provider or deployment change."
+    },
+    {
+      "id": "feat-060",
+      "name": "Stable upload finalization provider errors",
+      "description": "Prevent unexpected storage SDK/provider errors during upload finalization from becoming opaque 500 responses and preserve a retryable attempt state.",
+      "dependencies": ["feat-059"],
+      "acceptance_criteria": [
+        "Unexpected storage verification errors return the stable STORAGE_PROVIDER_UNAVAILABLE 503 envelope without provider internals.",
+        "The upload attempt is released so the same finalize request can be retried after the provider recovers.",
+        "Backend regression tests, typecheck/build, progress and handoff evidence are updated."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-28. Finalization now releases the attempt and returns a sanitized 503 STORAGE_PROVIDER_UNAVAILABLE envelope for unexpected storage SDK/provider errors instead of leaking an opaque 500; callers can retry the same attempt after recovery. Regression coverage exercises both explicit and unexpected provider failures and verifies provider details are absent. Verification: recorder routes 21/21; full backend 90 passed/5 opt-in skipped plus typecheck/build; no production token or object was replayed."
     }
   ]
 }

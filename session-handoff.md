@@ -36,6 +36,12 @@
 - App regression proves a Workspace draft survives Archive → Workspace navigation. Web 50/50 plus typecheck/build passed. No backend, migration, provider or deployment change.
 - Follow-up added explicit primary route placeholders so the wildcard 404 route does not render behind Workspace, Archive or Settings. Web 50/50, typecheck and build pass.
 
+## Feature 060 — Stable upload finalization provider errors completed
+
+- Production finalize could not be replayed without the authenticated cookie; an unauthenticated diagnostic returned 401. Source review found unexpected storage SDK/provider verification errors escaping as generic 500s.
+- Finalization now releases the attempt and returns sanitized `503 STORAGE_PROVIDER_UNAVAILABLE` for unexpected provider failures, so the same attempt remains retryable without exposing provider details.
+- Verification: recorder routes 21/21; backend full suite 90 passed/5 skipped plus typecheck/build. No production token, object or data was replayed or mutated. Push the fix to `develop` before `main` and rerun the authenticated production finalize flow.
+
 ## Feature 054 — Session and upload reliability completed
 
 - Workspace and Archive use `SessionLoadingSkeleton` while the one shared session request is pending; the loading state is visually useful, localized, and announced as “Loading your workspace”.

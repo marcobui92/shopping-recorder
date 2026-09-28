@@ -299,7 +299,10 @@ export class RecorderMediaService {
       if (error instanceof StorageUnavailableError) {
         throw new AppError(503, 'STORAGE_PROVIDER_UNAVAILABLE', 'The storage provider is temporarily unavailable.')
       }
-      throw error
+      // Provider SDKs can surface transport/configuration errors that are not
+      // wrapped by the adapter. Do not leak those as an opaque 500; the
+      // original attempt is released and the caller can retry the operation.
+      throw new AppError(503, 'STORAGE_PROVIDER_UNAVAILABLE', 'The storage provider is temporarily unavailable.')
     }
   }
 
