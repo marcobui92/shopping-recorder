@@ -42,6 +42,11 @@
 - Finalization now releases the attempt and returns sanitized `503 STORAGE_PROVIDER_UNAVAILABLE` for unexpected provider failures, so the same attempt remains retryable without exposing provider details.
 - Verification: recorder routes 21/21; backend full suite 90 passed/5 skipped plus typecheck/build. No production token, object or data was replayed or mutated. Push the fix to `develop` before `main` and rerun the authenticated production finalize flow.
 
+## Feature 061 — Recover stale finalization on asset removal completed
+
+- DELETE now protects a recently updated `finalizing` attempt, but expires one older than two minutes inside the same locked transaction before discarding the asset. This recovers assets stranded by a crashed finalize worker while preserving live-request race safety.
+- Verification: backend 90 passed/5 skipped plus typecheck/build; PostgreSQL repository integration 2/2. Push `develop` before `main`, then retry the reported DELETE after deployment.
+
 ## Feature 054 — Session and upload reliability completed
 
 - Workspace and Archive use `SessionLoadingSkeleton` while the one shared session request is pending; the loading state is visually useful, localized, and announced as “Loading your workspace”.

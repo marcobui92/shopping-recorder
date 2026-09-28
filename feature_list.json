@@ -764,6 +764,19 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-09-28. Finalization now releases the attempt and returns a sanitized 503 STORAGE_PROVIDER_UNAVAILABLE envelope for unexpected storage SDK/provider errors instead of leaking an opaque 500; callers can retry the same attempt after recovery. Regression coverage exercises both explicit and unexpected provider failures and verifies provider details are absent. Verification: recorder routes 21/21; full backend 90 passed/5 opt-in skipped plus typecheck/build; no production token or object was replayed."
+    },
+    {
+      "id": "feat-061",
+      "name": "Recover stale finalization on asset removal",
+      "description": "Allow failed uploads whose finalization worker died to be removed while preserving protection for a currently running finalization.",
+      "dependencies": ["feat-060"],
+      "acceptance_criteria": [
+        "DELETE keeps rejecting a recently active finalization to avoid races.",
+        "DELETE atomically expires a finalizing attempt older than two minutes and discards its asset with normal provider cleanup.",
+        "Repository integration coverage, API documentation, typecheck/build, progress and handoff evidence are updated."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-28. Asset discard still protects a recently updated finalizing attempt, but atomically expires a finalizing attempt older than two minutes before soft-discard, recovering assets stranded by a crashed worker. Verification: backend full suite 90 passed/5 opt-in skipped plus typecheck/build; PostgreSQL repository integration 2/2 including stale-finalization recovery; API contract, progress and handoff updated."
     }
   ]
 }

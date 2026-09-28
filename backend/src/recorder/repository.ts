@@ -588,10 +588,22 @@ export class PostgresRecorderRepository implements RecorderRepository {
       const asset = result.rows[0]
       if (!asset) return null
       if (['complete', 'cancelled', 'expired', 'deleted'].includes(asset.activity_status)) throw new Error('ACTIVITY_IMMUTABLE')
-      const finalizing = await client.query(`
-        SELECT 1 FROM media_upload_attempts WHERE asset_id = $1 AND status = 'finalizing'
+      const finalizing = await client.query<{ updated_at: Date }>(`
+        SELECT updated_at FROM media_upload_attempts WHERE asset_id = $1 AND status = 'finalizing'
       `, [assetId])
-      if (finalizing.rowCount) throw new Error('UPLOAD_ALREADY_ACTIVE')
+      const activeFinalize = finalizing.rows[0]
+      if (activeFinalize && activeFinalize.updated_at.getTime() > Date.now() - 2 * 60 * 1000) {
+        throw new Error('UPLOAD_ALREADY_ACTIVE')
+      }
+      // A crashed worker can leave a finalizing attempt behind forever. The
+      // asset row is locked above, so stale finalization can be safely expired
+      // before discard while a live finalize remains protected by the guard.
+      if (activeFinalize) {
+        await client.query(`
+          UPDATE media_upload_attempts SET status = 'expired', updated_at = now()
+          WHERE asset_id = $1 AND status = 'finalizing'
+        `, [assetId])
+      }
       await client.query(`
         UPDATE media_upload_attempts SET status = 'expired', updated_at = now()
         WHERE asset_id = $1 AND status NOT IN ('succeeded', 'failed', 'expired')

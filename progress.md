@@ -539,3 +539,8 @@ NODE
 - The reported production finalize response could not be replayed without the user's authenticated cookie; an unauthenticated diagnostic request correctly returned 401 with a request ID. Source inspection found unexpected storage SDK/provider errors escaping `finalizeAsset` and becoming the generic 500 envelope.
 - Finalization now releases the attempt and maps both wrapped and unexpected provider verification failures to sanitized `503 STORAGE_PROVIDER_UNAVAILABLE`, preserving same-attempt retryability and hiding provider internals.
 - Added a regression for an unexpected provider SDK error. Verification: recorder routes 21/21; backend full test suite 90 passed/5 opt-in skipped, typecheck and build passed. No production token, object or data was replayed or mutated.
+
+## 2026-09-28 — Feature 061 recover stale finalization on asset removal
+
+- Production could still refuse DELETE when a failed/crashed finalize left the attempt in `finalizing`. Asset discard now keeps a two-minute race guard for live finalization, then atomically expires stale finalization before normal discard and cleanup.
+- Verification: backend full suite 90 passed/5 opt-in skipped plus typecheck/build; PostgreSQL repository integration 2/2 including recent-finalize protection and stale-finalize recovery. No production token or asset was replayed.

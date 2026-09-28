@@ -295,7 +295,7 @@ Soft-discard a media asset from an unfinished activity while retaining its datab
 
 Response: `{ "data": { "cleanupPending": 0 } }`.
 
-Possible errors include `ASSET_NOT_FOUND`, `UPLOAD_ALREADY_ACTIVE` (only while finalization is running), and `ACTIVITY_IMMUTABLE`.
+Possible errors include `ASSET_NOT_FOUND`, `UPLOAD_ALREADY_ACTIVE` (only while a recent finalization is running), and `ACTIVITY_IMMUTABLE`. If a worker crashed and left finalization stale for more than two minutes, the server expires that attempt atomically before discarding the asset.
 
 ### `POST /api/v1/media-assets/{assetId}/upload-attempts/{attemptId}/finalize`
 
