@@ -803,6 +803,19 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-09-29. Primary pages mount only on first visit, then retain their state during authenticated navigation; logout/user changes reset retained pages and visit history. Header logout now uses the shared storage-cache reset handler. Verification: ./init.sh passed; focused App navigation tests 9/9; full web tests 55/55; web typecheck/build and git diff --check passed. Covers deferred Settings/Drive mounting, direct Archive/Settings entry, preserved drafts/filters/settings, and logout followed by fresh login. No backend/API/migration change or deployment."
+    },
+    {
+      "id": "feat-064",
+      "name": "Copy and open Google Drive evidence links",
+      "description": "Add on-demand copy and open actions for ready Google Drive images/videos while preserving owner authorization and existing file permissions.",
+      "dependencies": ["feat-063"],
+      "acceptance_criteria": [
+        "Ready Drive evidence exposes copy/open actions in history, viewer and completion previews without eager link requests.",
+        "Owner-authorized endpoints return a validated Google webViewLink or redirect to it; unavailable, non-ready and foreign assets fail closed.",
+        "Clipboard fallback, VI/EN copy, API/storage/UI regressions, checks and documentation are complete; existing verified downloads and Drive permissions remain unchanged."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-29. Added on-demand owner-authorized Drive webViewLink JSON/redirect API with live original-account/file checks and safe HTTPS origin validation. Ready Drive image/video actions appear in archive detail/viewer and completion previews; copy has clipboard-denial/unavailability fallback and VI/EN text. Drive permissions and pinned content downloads are unchanged. Verification: ./init.sh; web 63/63 plus typecheck/build; backend 93 passed/5 opt-in skipped plus typecheck/build; git diff --check. Backend restarted locally; health ok, frontend 200, new unauthenticated endpoint 401. Live signed-in Google and physical mobile app handoff were not exercised. No migration, commit, push or deployment."
     }
   ]
 }

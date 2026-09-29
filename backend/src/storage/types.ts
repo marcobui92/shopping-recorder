@@ -30,6 +30,7 @@ export interface MediaStorageAdapter {
   deleteObject(providerObjectRef: string, providerVersionRef?: string | null): Promise<void>
   deleteUnverified(providerObjectRef: string, providerVersionRef?: string | null): Promise<void>
   issueDownload(providerObjectRef: string, providerVersionRef?: string | null): Promise<MediaDownload>
+  getExternalViewUrl?(providerObjectRef: string): Promise<string>
   issueUpload(input: StorageObjectInput, attemptId: string): Promise<IssuedUpload>
   readonly provider: StorageProvider
   verify(providerObjectRef: string, expected: StorageObjectInput): Promise<VerifiedStorageObject>

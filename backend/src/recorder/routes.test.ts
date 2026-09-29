@@ -300,10 +300,10 @@ class FakeS3Storage implements MediaStorageAdapter {
   }
 }
 
-function fixture() {
+function fixture(extraStorage: MediaStorageAdapter[] = []) {
   const repository = new MemoryRecorderRepository()
   const storage = new FakeS3Storage()
-  const service = new RecorderMediaService(repository, [storage], s3)
+  const service = new RecorderMediaService(repository, [storage, ...extraStorage], s3)
   const app = buildApp(config, {
     recorder: {
       authenticate: async (request) => request.headers.cookie === 'recorder_session=valid' ? ownerId : null,
@@ -317,6 +317,56 @@ const mediaPayload = {
   contentType: 'image/jpeg', mediaType: 'image', originalFilename: 'seal.jpg',
   sha256: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', sizeBytes: 256,
 } as const
+
+test('Drive links require ready owner evidence and support JSON and no-store redirects', async () => {
+  const fake = new FakeS3Storage()
+  let unavailable = false
+  const url = 'https://drive.google.com/file/d/file-123/view?resourcekey=key'
+  const drive: MediaStorageAdapter = {
+    provider: 'google_drive',
+    issueUpload: fake.issueUpload.bind(fake), verify: fake.verify.bind(fake),
+    issueDownload: fake.issueDownload.bind(fake), deleteObject: fake.deleteObject.bind(fake),
+    deleteUnverified: fake.deleteUnverified.bind(fake),
+    getExternalViewUrl: async () => { if (unavailable) throw new Error('private-provider-details'); return url },
+  }
+  const { app, repository } = fixture([drive])
+  const headers = { cookie: 'recorder_session=valid', origin: allowedOrigin }
+  try {
+    const activity = (await app.inject({ method: 'POST', url: '/api/v1/recorder-activities', headers, payload: { operationType: 'packing', storageProvider: 'google_drive' } })).json().data
+    const { asset, upload } = (await app.inject({ method: 'POST', url: `/api/v1/recorder-activities/${activity.id}/media-assets`, headers, payload: mediaPayload })).json().data
+    const endpoint = `/api/v1/media-assets/${asset.id}/drive-link`
+    assert.equal((await app.inject(endpoint)).statusCode, 401)
+    assert.equal((await app.inject({ url: endpoint, headers })).statusCode, 404)
+    await app.inject({ method: 'POST', url: `/api/v1/media-assets/${asset.id}/upload-attempts/${upload.attemptId}/finalize`, headers, payload: {} })
+    const response = await app.inject({ url: endpoint, headers })
+    assert.equal(response.statusCode, 200)
+    assert.deepEqual(response.json(), { data: { url } })
+    assert.equal(response.headers['cache-control'], 'no-store')
+    const redirect = await app.inject({ url: `${endpoint}?redirect=1`, headers })
+    assert.equal(redirect.statusCode, 307)
+    assert.equal(redirect.headers.location, url)
+    assert.equal(redirect.headers['cache-control'], 'no-store')
+    assert.equal((await app.inject({ url: `${endpoint}?redirect=https://evil.example`, headers })).statusCode, 400)
+    unavailable = true
+    const failed = await app.inject({ url: endpoint, headers })
+    assert.equal(failed.statusCode, 503)
+    assert.doesNotMatch(failed.body, /private-provider-details/)
+    unavailable = false
+    const target = repository.targets.get(asset.id)!
+    repository.targets.set(asset.id, { ...target, ownerUserId: otherOwnerId })
+    assert.equal((await app.inject({ url: endpoint, headers })).statusCode, 404)
+    repository.targets.set(asset.id, { ...target, storageProvider: 's3' })
+    assert.equal((await app.inject({ url: endpoint, headers })).json().error.code, 'DRIVE_LINK_UNAVAILABLE')
+    repository.targets.set(asset.id, target)
+    for (const status of ['expired', 'cancelled'] as const) {
+      repository.activities.set(activity.id, { ...repository.activities.get(activity.id)!, status })
+      assert.equal((await app.inject({ url: endpoint, headers })).statusCode, 404)
+    }
+    repository.activities.set(activity.id, { ...repository.activities.get(activity.id)!, status: 'complete' })
+    repository.deleted.add(activity.id)
+    assert.equal((await app.inject({ url: endpoint, headers })).statusCode, 404)
+  } finally { await app.close() }
+})
 
 test('recorder mutations require authentication and the configured origin', async () => {
   const { app } = fixture()

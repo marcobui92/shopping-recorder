@@ -27,6 +27,8 @@ vi.mock('../api', () => ({
   discardMediaAsset: vi.fn(),
   finalizeMediaAsset: vi.fn(),
   getStorageProviders: vi.fn(),
+  getMediaAssetDriveLink: vi.fn(),
+  getMediaAssetDriveOpenUrl: (id: string) => `http://api.test/media-assets/${id}/drive-link?redirect=1`,
   getGoogleDriveStatus: vi.fn(),
   connectGoogleDrive: vi.fn(),
   uploadMedia: vi.fn(),
@@ -298,11 +300,26 @@ it('recalculates the default for the next record after completing an explicit B2
   await screen.findByText(/^ready$/i)
   fireEvent.click(screen.getByRole('button', { name: 'Complete record' }))
   await screen.findByText('Submitted evidence')
+  expect(screen.queryByRole('button', { name: 'Copy Drive link' })).not.toBeInTheDocument()
   expect(screen.getByLabelText('Reference')).toHaveValue('')
   expect(screen.getByAltText('Preview of seal.jpg')).toBeInTheDocument()
   fireEvent.click(await screen.findByRole('button', { name: 'Start another record' }))
   await waitFor(() => expect(screen.getByLabelText('Storage')).toHaveValue('google_drive'))
   expect(screen.queryByAltText('Preview of seal.jpg')).not.toBeInTheDocument()
+})
+
+it('offers Drive copy/open actions after completing a Drive upload', async () => {
+  vi.mocked(getStorageProviders).mockResolvedValue(linkedStorage)
+  vi.mocked(createRecorderActivity).mockResolvedValue({ ...activity, storageProvider: 'google_drive' })
+  vi.mocked(completeRecorderActivity).mockResolvedValue({ ...activity, storageProvider: 'google_drive', status: 'complete', completedAt: activity.createdAt })
+  render(<RecorderWorkflow />)
+  await waitFor(() => expect(screen.getByLabelText('Storage')).toHaveValue('google_drive'))
+  selectEvidence()
+  fireEvent.click(screen.getByRole('button', { name: 'Review complete · Upload' }))
+  await screen.findByText(/^ready$/i)
+  fireEvent.click(screen.getByRole('button', { name: 'Complete record' }))
+  expect(await screen.findByRole('button', { name: 'Copy Drive link' })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Open in Drive' })).toHaveAttribute('href', 'http://api.test/media-assets/asset-1/drive-link?redirect=1')
 })
 
 it('localizes storage controls and preserves form/files when switching languages or cancelling OAuth', async () => {

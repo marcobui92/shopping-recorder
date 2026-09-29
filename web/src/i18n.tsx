@@ -5,6 +5,13 @@ import { Select } from './components/ui/select'
 export type Locale = 'vi' | 'en'
 
 const translations: Record<string, string> = {
+  'Copy Drive link': 'Sao chép liên kết Drive',
+  'Open in Drive': 'Mở trong Drive',
+  'Getting link…': 'Đang lấy liên kết…',
+  'Drive link copied.': 'Đã sao chép liên kết Drive.',
+  'Copy this link manually': 'Sao chép liên kết này thủ công',
+  'Drive opens the current file. Google access is required.': 'Drive mở phiên bản hiện tại. Cần tài khoản Google có quyền truy cập.',
+  'Unable to get the Drive link. Check the connection and try again.': 'Không thể lấy liên kết Drive. Kiểm tra kết nối rồi thử lại.',
   "Reload LinhCj's": "Tải lại LinhCj's",
   'Loading your workspace': 'Đang tải không gian làm việc',
   'Unfinished work': 'Công việc chưa hoàn tất',

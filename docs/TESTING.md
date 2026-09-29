@@ -2,6 +2,8 @@
 
 ## Automated release gate
 
+For Drive copy/open actions, run the standard web/backend suites below. Coverage includes on-demand link requests, clipboard success/denial/unavailability, Vietnamese copy, Drive-only image/video actions, completion previews, owner/lifecycle guards, redirect/cache headers, Google account replacement/disconnection, missing/trashed files and unsafe link rejection. Manual phone follow-up: use Copy Drive link and Open in Drive on a disposable ready image/video; verify the Google account has access and observe whether the device opens the installed app or browser. This flow must not make the file public. The external viewer follows the current file; Download original still retrieves the pinned revision.
+
 Run from the repository root:
 
 ```bash

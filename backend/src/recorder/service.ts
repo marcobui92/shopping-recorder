@@ -306,6 +306,19 @@ export class RecorderMediaService {
     }
   }
 
+  async getDriveLink(ownerUserId: string, assetId: string): Promise<string> {
+    const target = await this.repository.getReadyAsset(ownerUserId, assetId)
+    if (!target) throw new AppError(404, 'ASSET_NOT_FOUND', 'The media asset does not exist.')
+    if (target.storageProvider !== 'google_drive') throw new AppError(409, 'DRIVE_LINK_UNAVAILABLE', 'This evidence is not stored in Google Drive.')
+    try {
+      const adapter = this.adapter(target.storageProvider)
+      if (!adapter.getExternalViewUrl) throw new StorageUnavailableError()
+      return await adapter.getExternalViewUrl(target.providerObjectRef)
+    } catch {
+      throw new AppError(503, 'STORAGE_PROVIDER_UNAVAILABLE', 'The Google Drive link is unavailable.')
+    }
+  }
+
   async retrieveAsset(ownerUserId: string, assetId: string): Promise<MediaDownload> {
     const target = await this.repository.getReadyAsset(ownerUserId, assetId)
     if (!target) throw new AppError(404, 'ASSET_NOT_FOUND', 'The media asset does not exist.')

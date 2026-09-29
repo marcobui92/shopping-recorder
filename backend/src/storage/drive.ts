@@ -80,6 +80,17 @@ export class DriveMediaStorage implements MediaStorageAdapter {
       return { body: Readable.fromWeb(response.body as import('node:stream/web').ReadableStream), contentType: version.contentType, sizeBytes: version.size }
     } catch { throw new StorageUnavailableError('The verified Drive revision is unavailable.') }
   }
+  async getExternalViewUrl(objectRef: string): Promise<string> {
+    try {
+      const ref = JSON.parse(objectRef) as DriveRef
+      const metadata = await this.client.metadata(await this.connection(ref), ref.file)
+      if (metadata.trashed || metadata.id !== ref.file || !metadata.webViewLink) throw new StorageUnavailableError()
+      const url = new URL(metadata.webViewLink)
+      if (url.origin !== 'https://drive.google.com' || url.username || url.password) throw new StorageUnavailableError()
+      return url.href
+    } catch { throw new StorageUnavailableError('The Google Drive link is unavailable.') }
+  }
+
   async deleteObject(objectRef: string): Promise<void> {
     const ref = JSON.parse(objectRef) as DriveRef
     await this.client.delete(await this.connection(ref), ref.file)

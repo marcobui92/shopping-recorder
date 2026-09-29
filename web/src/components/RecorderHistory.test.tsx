@@ -10,6 +10,8 @@ vi.mock('../api', () => ({
   cancelRecorderActivity: vi.fn(),
   deleteRecorderActivity: vi.fn(),
   getActivityAuditEvents: vi.fn(),
+  getMediaAssetDriveLink: vi.fn(),
+  getMediaAssetDriveOpenUrl: (id: string) => `http://api.test/media-assets/${id}/drive-link?redirect=1`,
   getMediaAssetContentUrl: (assetId: string) => `http://api.test/media-assets/${assetId}/content`,
   getRecorderActivity: vi.fn(),
   listRecorderActivities: vi.fn(),
@@ -43,6 +45,26 @@ beforeEach(() => {
 afterEach(() => cleanup())
 
 describe('RecorderHistory', () => {
+  it.each(['image', 'video'] as const)('shows Drive actions for ready %s evidence in detail and viewer', async (mediaType) => {
+    vi.mocked(getRecorderActivity).mockResolvedValue({ ...activity, storageProvider: 'google_drive', assets: [{ ...image, mediaType }] })
+    render(<RecorderHistory />)
+    await screen.findByText('ORDER-1042')
+    fireEvent.click(screen.getByRole('button', { name: 'View evidence' }))
+    expect(await screen.findByRole('button', { name: 'Copy Drive link' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Open in Drive' })).toHaveAttribute('href', 'http://api.test/media-assets/asset-1/drive-link?redirect=1')
+    fireEvent.click(screen.getByRole('button', { name: 'Open viewer' }))
+    expect(screen.getAllByRole('button', { name: 'Copy Drive link' })).toHaveLength(2)
+  })
+
+  it('hides Drive actions for expired evidence', async () => {
+    vi.mocked(getRecorderActivity).mockResolvedValue({ ...activity, status: 'expired', storageProvider: 'google_drive', assets: [image] })
+    render(<RecorderHistory />)
+    await screen.findByText('ORDER-1042')
+    fireEvent.click(screen.getByRole('button', { name: 'View evidence' }))
+    await screen.findByText('seal.jpg')
+    expect(screen.queryByRole('button', { name: 'Copy Drive link' })).not.toBeInTheDocument()
+  })
+
   it('loads owner history, applies filters, and renders evidence detail', async () => {
     render(<RecorderHistory />)
     await screen.findByText('ORDER-1042')
@@ -59,6 +81,7 @@ describe('RecorderHistory', () => {
     expect(vi.mocked(listRecorderActivities).mock.lastCall?.[0]).not.toHaveProperty('storageProvider')
     fireEvent.click(screen.getByRole('button', { name: 'View evidence' }))
     const preview = await screen.findByAltText('seal.jpg')
+    expect(screen.queryByRole('button', { name: 'Copy Drive link' })).not.toBeInTheDocument()
     const detail = screen.getByRole('dialog', { name: 'ORDER-1042' })
     expect(detail).toHaveClass('max-h-[calc(100dvh-1.5rem)]', 'max-w-5xl', 'overflow-y-auto')
     expect(screen.getByRole('form', { name: 'Correct activity metadata' })).toBeInTheDocument()

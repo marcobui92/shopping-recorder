@@ -13,6 +13,8 @@ The browser client communicates only with versioned API endpoints under `/api/v1
 
 Workspace, Archive and Settings mount on their first visit, so unopened pages do not start data requests. After opening, authenticated pages remain mounted and are hidden during navigation to preserve drafts, filters and settings edits. Logout or a change of user discards all retained pages and their visit history; signed-out users render only the active page. The shared session check still runs once when the application starts.
 
+Ready Drive evidence offers on-demand copy/open actions in completion previews and archive detail/viewer. An owner-authorized endpoint obtains Google's `webViewLink` after checking the original linked account and live file metadata; its JSON or redirect response is never cached. This is the explicit exception allowing a Drive file identifier inside a viewer URL; credentials and internal storage references stay server-side. Drive permissions are unchanged and the external viewer follows the current file, while in-app evidence retrieval remains pinned to the verified revision. Mobile app handoff is delegated to normal HTTPS link handling with browser fallback.
+
 The web design system uses Tailwind CSS v4 through its Vite plugin and theme tokens defined in `web/src/styles.css`. Reusable shadcn/ui-style primitives are source-owned under `web/src/components/ui/`, configured by `web/components.json`, and composed by the application rather than introduced as a separate runtime UI service. The interface remains responsive and preserves semantic labels, live status announcements, alert states, keyboard focus treatments, and native form behavior.
 
 ## Recorder Product Architecture

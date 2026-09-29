@@ -89,3 +89,33 @@ test('Drive missing pinned revisions are unavailable and cleanup deletes the bou
   await adapter.deleteObject(issued.providerObjectRef)
   assert.deepEqual(deleted, ['file'])
 })
+
+test('Drive view links preserve resource keys without downloading or changing permissions', async () => {
+  const { adapter, client, downloaded, deleted, replace } = fixture()
+  const issued = await adapter.issueUpload(input, 'attempt')
+  const url = 'https://drive.google.com/file/d/file/view?resourcekey=key'
+  client.metadata = async () => ({ id: 'file', webViewLink: url })
+  assert.equal(await adapter.getExternalViewUrl(issued.providerObjectRef), url)
+  assert.deepEqual(downloaded, [])
+  assert.deepEqual(deleted, [])
+  replace()
+  await assert.rejects(adapter.getExternalViewUrl(issued.providerObjectRef), /link is unavailable/)
+})
+
+test('Drive view links reject missing, trashed, foreign and unsafe provider responses', async () => {
+  const { adapter, client, disconnect } = fixture()
+  const issued = await adapter.issueUpload(input, 'attempt')
+  for (const metadata of [
+    { id: 'file' },
+    { id: 'file', trashed: true, webViewLink: 'https://drive.google.com/file/d/file/view' },
+    { id: 'different-file', webViewLink: 'https://drive.google.com/file/d/file/view' },
+    ...['https://evil.example/file', 'http://drive.google.com/file', 'javascript:alert(1)', 'https://secret@drive.google.com/file'].map(webViewLink => ({ id: 'file', webViewLink })),
+  ]) {
+    client.metadata = async () => metadata
+    await assert.rejects(adapter.getExternalViewUrl(issued.providerObjectRef), /link is unavailable/)
+  }
+  client.metadata = async () => { throw new Error('provider-secret') }
+  await assert.rejects(adapter.getExternalViewUrl(issued.providerObjectRef), error => error instanceof Error && !error.message.includes('provider-secret'))
+  disconnect()
+  await assert.rejects(adapter.getExternalViewUrl(issued.providerObjectRef), /link is unavailable/)
+})

@@ -297,4 +297,18 @@ export function registerRecorderRoutes(
     }
     return reply.status(307).header('location', download.url).header('cache-control', 'no-store').send()
   })
+
+  app.get('/api/v1/media-assets/:assetId/drive-link', {
+    schema: {
+      params: uuidParams,
+      querystring: { type: 'object', additionalProperties: false, properties: { redirect: { type: 'string', enum: ['1'] } } },
+    },
+  }, async (request, reply) => {
+    const ownerUserId = await requireOwner(request, config, dependencies, false)
+    const { assetId } = request.params as { assetId: string }
+    const url = await service(dependencies).getDriveLink(ownerUserId, assetId)
+    reply.header('cache-control', 'no-store')
+    if ((request.query as { redirect?: string }).redirect === '1') return reply.status(307).header('location', url).send()
+    return { data: { url } }
+  })
 }

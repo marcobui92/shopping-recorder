@@ -5,7 +5,7 @@ import { StorageUnavailableError, StorageVerificationError } from '../storage/ty
 import type { GoogleConnection } from './repository.js'
 import type { StorageObjectInput } from '../storage/types.js'
 
-export interface DriveFileMetadata { id: string; mimeType?: string; size?: string; trashed?: boolean; headRevisionId?: string; appProperties?: Record<string, string> }
+export interface DriveFileMetadata { id: string; mimeType?: string; size?: string; trashed?: boolean; headRevisionId?: string; appProperties?: Record<string, string>; webViewLink?: string }
 export class GoogleReauthorizationError extends StorageUnavailableError {}
 const filesUrl = 'https://www.googleapis.com/drive/v3/files'
 
@@ -75,7 +75,7 @@ export class GoogleDriveClient {
   }
 
   async metadata(connection: GoogleConnection, fileId: string): Promise<DriveFileMetadata> {
-    return await (await this.request(`${filesUrl}/${encodeURIComponent(fileId)}?fields=id,mimeType,size,trashed,headRevisionId,appProperties`, { headers: await this.headers(connection) })).json() as DriveFileMetadata
+    return await (await this.request(`${filesUrl}/${encodeURIComponent(fileId)}?fields=id,mimeType,size,trashed,headRevisionId,appProperties,webViewLink`, { headers: await this.headers(connection) })).json() as DriveFileMetadata
   }
 
   async download(connection: GoogleConnection, fileId: string, revisionId: string): Promise<Response> {

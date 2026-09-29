@@ -564,3 +564,15 @@ NODE
 
 - Rebuilt the backend with `npm run build --prefix backend`; started backend with `npm run start` in `backend/` and frontend with `npm run dev -- --host localhost --port 5173 --strictPort` in `web/`. HTTP checks returned backend `status: ok` and frontend 200. Existing local PostgreSQL listens on port 5432.
 - User requested commit on the development branch, merge to `main`, and push. `git fetch origin` confirmed `origin/develop` and `main` share the same starting commit `82e1a6c`; the stale local `develop` was fast-forwarded and checked out without losing the six changed files. Preparing `feat: load primary pages on first visit` using the already-passing web test/typecheck/build evidence above. Production deployment verification is not included in this request.
+
+## 2026-09-29 — Feature 064 copy and open Drive evidence links
+
+- Previous release completed: feat-063 committed as `ad517ef` on `develop`, fast-forwarded into `main`, and pushed successfully to both remote branches.
+- Added `GET /api/v1/media-assets/{assetId}/drive-link` with JSON and optional `redirect=1` modes. Ready-owner/lifecycle checks precede live Google original-account and file metadata checks. Only HTTPS `drive.google.com` webViewLink values are returned; missing/trashed/foreign-account and provider failures are sanitized. Existing Drive permissions and verified-revision `/content` behavior are unchanged.
+- Added copy/open actions to Drive image/video detail, viewer and completion previews without eager link fetches. Clipboard failures expose a selectable manual-copy field. Completion previews preserve the completed record's provider separately from the reset form. VI/EN labels explain current-file viewing and Google access.
+- Verification: `./init.sh`; `npm run test --prefix backend` (93 passed, 5 opt-in integration/live skips), `npm run typecheck --prefix backend`, `npm run build --prefix backend`; `npm run test --prefix web` (63/63), `npm run typecheck --prefix web`, `npm run build --prefix web`; `git diff --check`. A new completion-preview regression first failed because the form clears its provider; the snapshot fix passed the final suite.
+- Restarted the known local backend with the rebuilt API. `curl -sS --max-time 10 http://localhost:3000/api/v1/health` returned status ok; unauthenticated GET of the new endpoint returned 401 AUTH_REQUIRED; frontend localhost:5173 returned 200. Live authenticated Google links and physical mobile app handoff remain manual checks; OS/browser configuration determines app versus web opening. No migration, provider permission changes, commit, push or deployment for feat-064.
+
+## 2026-09-29 — Feature 064 release preparation
+
+- User authorized commit and push, following the existing `develop` → `main` workflow. `git fetch origin` completed; reviewed changes are limited to the Drive-link implementation, tests and documentation. Existing verification remains web 63/63, backend 93 passed/5 opt-in skipped, both typechecks/builds and local HTTP smoke checks. Preparing commit `feat: copy and open Google Drive evidence links`; production deployment and physical-device checks remain unverified.

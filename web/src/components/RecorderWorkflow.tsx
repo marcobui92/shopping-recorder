@@ -13,6 +13,7 @@ import {
   uploadMedia,
   type UploadCapability,
 } from '../api'
+import { DriveFileActions } from './DriveFileActions'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
@@ -145,6 +146,7 @@ export function RecorderWorkflow({ onBusyChange, onCompleted }: { onBusyChange?:
   const [message, setMessage] = useState('')
   const [complete, setComplete] = useState(false)
   const [submittedItems, setSubmittedItems] = useState<FileItem[]>([])
+  const [submittedProvider, setSubmittedProvider] = useState<'s3' | 'google_drive' | null>(null)
   const [submittedReference, setSubmittedReference] = useState('')
   const [providers, setProviders] = useState<StorageProviders | null>(null)
   const [provider, setProvider] = useState<'s3' | 'google_drive' | ''>('')
@@ -305,7 +307,8 @@ export function RecorderWorkflow({ onBusyChange, onCompleted }: { onBusyChange?:
     setBusy(true)
     setMessage('')
     try {
-      await completeRecorderActivity(activityId)
+      const completedActivity = await completeRecorderActivity(activityId)
+      setSubmittedProvider(completedActivity.storageProvider)
       const formData = formRef.current ? new FormData(formRef.current) : null
       setSubmittedItems(items)
       setSubmittedReference(String(formData?.get('reference') ?? '').trim())
@@ -393,7 +396,7 @@ export function RecorderWorkflow({ onBusyChange, onCompleted }: { onBusyChange?:
 
           <div className="flex flex-col gap-3 border-t bg-card p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-7"><div><p className="text-sm font-semibold">{items.length ? `${items.length} ${t(items.length === 1 ? 'file' : 'files')} · ${formatBytes(selectedBytes)}` : t('No evidence selected yet')}</p><p className="mt-1 hidden text-xs text-muted-foreground sm:block">{t('Files are hashed, uploaded privately, then verified before completion.')}</p></div>{!activityId && <div className="flex w-full gap-2 sm:w-auto"><Button aria-label={t('Reset form')} className="flex-1 sm:flex-none" disabled={busy} size="lg" type="button" variant="outline" onClick={resetDraft}><RotateCcw aria-hidden="true" className="size-4" /> <span className="hidden sm:inline">{t('Reset form')}</span></Button><Button className="flex-1 sm:min-w-48 sm:flex-none" disabled={busy || !items.length || !storageReady} size="lg" type="submit">{busy ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <Upload aria-hidden="true" className="size-4" />}{busy ? t('Starting…') : t('Review complete · Upload')}</Button></div>}{activityId && !complete && <Button className="sm:min-w-48" disabled={busy || !allReady} size="lg" type="button" onClick={() => void finish()}><Check aria-hidden="true" className="size-4" /> {t('Complete record')}</Button>}</div>
         </form>
-        {complete && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/55 p-4 backdrop-blur-sm" role="presentation"><div className="w-full max-w-2xl rounded-3xl border bg-card p-5 shadow-2xl sm:p-7" role="dialog" aria-modal="true" aria-labelledby="submitted-evidence-heading"><div className="flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><Check aria-hidden="true" className="size-6" /></span><div><h3 className="text-xl font-semibold" id="submitted-evidence-heading">{t('Submitted evidence')}</h3><p className="mt-1 text-sm text-muted-foreground">{submittedReference || t('Record completed')} · {t('Evidence verified and secured')}</p></div></div><ul className="mt-5 grid max-h-[55vh] gap-4 overflow-y-auto sm:grid-cols-2" aria-label={t('Submitted evidence preview')}>{submittedItems.map((item) => <li className="overflow-hidden rounded-2xl border bg-card" key={item.key}><EvidencePreview eager file={item.file} mediaType={item.mediaType} /><div className="flex items-center justify-between gap-2 p-3"><span className="truncate text-sm font-medium">{item.file.name}</span><Badge variant="success"><Check aria-hidden="true" className="size-3" /> {t('Verified')}</Badge></div></li>)}</ul><Button className="mt-6 w-full sm:w-auto" type="button" onClick={() => { setActivityId(null); setAllowAdditionalFiles(false); setItems([]); setSubmittedItems([]); setSubmittedReference(''); setComplete(false); setMessage(''); explicitProvider.current = false; setProvider(providers?.google_drive.available ? 'google_drive' : providers?.s3.available ? 's3' : ''); formRef.current?.reset() }}>{t('Start another record')}</Button></div></div>}
+        {complete && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/55 p-4 backdrop-blur-sm" role="presentation"><div className="w-full max-w-2xl rounded-3xl border bg-card p-5 shadow-2xl sm:p-7" role="dialog" aria-modal="true" aria-labelledby="submitted-evidence-heading"><div className="flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><Check aria-hidden="true" className="size-6" /></span><div><h3 className="text-xl font-semibold" id="submitted-evidence-heading">{t('Submitted evidence')}</h3><p className="mt-1 text-sm text-muted-foreground">{submittedReference || t('Record completed')} · {t('Evidence verified and secured')}</p></div></div><ul className="mt-5 grid max-h-[55vh] gap-4 overflow-y-auto sm:grid-cols-2" aria-label={t('Submitted evidence preview')}>{submittedItems.map((item) => <li className="overflow-hidden rounded-2xl border bg-card" key={item.key}><EvidencePreview eager file={item.file} mediaType={item.mediaType} /><div className="flex items-center justify-between gap-2 p-3"><span className="truncate text-sm font-medium">{item.file.name}</span><Badge variant="success"><Check aria-hidden="true" className="size-3" /> {t('Verified')}</Badge></div>{submittedProvider === 'google_drive' && item.assetId && <div className="px-3 pb-3"><DriveFileActions assetId={item.assetId} /></div>}</li>)}</ul><Button className="mt-6 w-full sm:w-auto" type="button" onClick={() => { setActivityId(null); setAllowAdditionalFiles(false); setItems([]); setSubmittedItems([]); setSubmittedReference(''); setComplete(false); setMessage(''); explicitProvider.current = false; setProvider(providers?.google_drive.available ? 'google_drive' : providers?.s3.available ? 's3' : ''); formRef.current?.reset() }}>{t('Start another record')}</Button></div></div>}
         {message && <p className={`m-5 rounded-lg border p-3 text-sm sm:m-7 ${complete ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`} role={complete ? 'status' : 'alert'}>{message}</p>}
       </CardContent>
     </Card>

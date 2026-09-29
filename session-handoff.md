@@ -2,9 +2,16 @@
 
 ## Current Objective
 
-- Latest completed work: feat-063 loads primary pages only on first visit, then retains their state until logout. No active feature. Verified locally; the user requested committing on `develop`, merging to `main` and pushing both branches on 2026-09-29. Production deployment status has not been verified; older deployment notes below are historical.
+- Latest completed work: feat-064 adds on-demand copy/open Google Drive links for ready evidence. Verified and running locally; the user requested commit and push through `develop` and `main`. Production deployment has not been verified. No active feature. Previous feat-063 was committed as `ad517ef` and pushed to both `develop` and `main`; older deployment notes below are historical.
 - Goal: Deliver the LinhCj's packing/unpacking evidence recorder with application storage and optional linked Google Drive. Feature 055's environment-scoped Drive root is complete locally; no deployment was requested.
 - feat-041 thirty-day evidence retention and logo reload is deployed from commit `64da323`; production migration `0011` is applied. Features 042–055 are complete locally on `develop` and are not committed or deployed. No active feature; feat-018 remains blocked/deferred.
+
+## Feature 064 — Copy and open Drive evidence links completed
+
+- New owner-authorized `GET /api/v1/media-assets/{assetId}/drive-link` returns Google's validated HTTPS webViewLink; `?redirect=1` sends a no-store 307 redirect. Original linked account and live metadata are checked. Existing permissions and pinned verified downloads remain unchanged; external links show the current Drive file.
+- Copy/open controls appear only for ready Drive media in archive detail/viewer and submission previews. No link fetch occurs on render. Clipboard denial/unavailability falls back to selectable text, with VI/EN messages. The submission preview retains its own completed storage provider after the form resets.
+- Checks: startup init; backend 93 passed/5 opt-in skipped plus typecheck/build; web 63/63 plus typecheck/build; diff/JSON checks. Local backend was rebuilt/restarted; health ok, frontend 200, new unauthenticated endpoint 401.
+- No migration. Prepared for the authorized `develop` commit → `main` merge → push workflow. Physical phone and authenticated live Google opening are not verified. For manual review at localhost:5173, open ready Drive evidence and use both buttons; check the Google account has access. Installed-app versus browser opening depends on the phone/browser and cannot be guaranteed by a web redirect.
 
 ## Feature 063 — Load primary pages on first visit completed
 

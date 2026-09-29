@@ -150,6 +150,17 @@ export async function logout(): Promise<void> {
   await recorderRequest<void>('/auth/logout', { method: 'POST' })
 }
 
+export function getMediaAssetDriveOpenUrl(assetId: string): string {
+  return `${config.apiBaseUrl}/media-assets/${encodeURIComponent(assetId)}/drive-link?redirect=1`
+}
+
+export async function getMediaAssetDriveLink(assetId: string): Promise<string> {
+  const { data } = await recorderRequest<{ data: { url: string } }>(`/media-assets/${encodeURIComponent(assetId)}/drive-link`)
+  const url = new URL(data.url)
+  if (url.origin !== 'https://drive.google.com' || url.username || url.password) throw new ApiError(502, 'INVALID_RESPONSE', 'The API returned an unexpected response.')
+  return url.href
+}
+
 export async function createRecorderActivity(input: {
   notes: string | null
   occurredAt?: string

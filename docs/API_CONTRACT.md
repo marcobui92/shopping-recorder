@@ -313,6 +313,16 @@ The S3-backed browser workflow computes SHA-256 before declaring each asset, fol
 
 Returns only ready evidence owned by the caller. The backend may stream a `200` response or issue a redirect to a narrowly scoped, short-lived retrieval capability. The response must not disclose provider credentials or a permanent public URL. Missing, unauthorized, or non-ready assets return `404 ASSET_NOT_FOUND`.
 
+### `GET /api/v1/media-assets/{assetId}/drive-link`
+
+Returns `200` with `{ "data": { "url": "https://drive.google.com/file/d/.../view" } }` for ready Google Drive evidence owned by the signed-in caller. The optional query `redirect=1` returns `307 Location: <url>` for a normal browser link. Both responses use `Cache-Control: no-store`.
+
+The backend applies the same owner/lifecycle guard as content retrieval, verifies the original linked Google account and live file metadata, and returns Google's `webViewLink` only when it is an HTTPS `drive.google.com` URL. Resource-key query parameters are preserved. Missing, foreign, non-ready, cancelled, expired or deleted evidence returns `404 ASSET_NOT_FOUND`; S3 evidence returns `409 DRIVE_LINK_UNAVAILABLE`; disconnected/replaced Google accounts, missing/trashed files, unavailable links and provider failures return sanitized `503 STORAGE_PROVIDER_UNAVAILABLE`.
+
+This explicit endpoint exposes a Google viewer link, including its file identifier, but no provider credentials or internal storage reference object. It neither makes the file public nor changes permissions: recipients need access through Google. The link opens the current Drive file, whereas `/content` continues retrieving the pinned verified revision. A previously copied link remains subject to Google's file permissions and deletion, not the recorder session. Opening the installed Drive app depends on the device/browser's link handling; a web viewer is the fallback. Frontend copy/open requests are user-triggered, with a selectable text fallback when clipboard access fails.
+
+Reference: Google's [Files resource](https://developers.google.com/workspace/drive/api/reference/rest/v3/files) defines `webViewLink` for opening the file in its viewer.
+
 ## Recorder Error Codes
 
 All errors retain the standard `{ "error": { "code", "message" } }` shape.
@@ -326,6 +336,7 @@ All errors retain the standard `{ "error": { "code", "message" } }` shape.
 | 404 | `ACTIVITY_NOT_FOUND` | Activity is missing or not owned by caller |
 | 404 | `ASSET_NOT_FOUND` | Asset is missing, unauthorized, or not ready for retrieval |
 | 409 | `STORAGE_PROVIDER_NOT_AVAILABLE` | Provider is not configured, linked, or selectable for the user |
+| 409 | `DRIVE_LINK_UNAVAILABLE` | Ready evidence is not stored in Google Drive |
 | 409 | `USERNAME_TAKEN` | Registration username is already used |
 | 409 | `GOOGLE_REAUTHORIZATION_REQUIRED` | Drive connection exists but must be authorized again |
 | 409 | `ACTIVITY_IMMUTABLE` | Completed activity cannot accept the requested mutation |
