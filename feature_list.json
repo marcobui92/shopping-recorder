@@ -790,6 +790,19 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-09-28. Storage provider availability is cached in the browser API module for the authenticated session, while the existing storage-providers-changed event and inline Refresh storage action force an explicit refresh; focus and page navigation no longer probe the endpoint repeatedly. Google Drive connection/reconnect/unlink controls were removed from the profile popup and added to Settings. Verification: web 51/51 plus typecheck/build; provider cache and Settings/profile regressions pass."
+    },
+    {
+      "id": "feat-063",
+      "name": "Load primary pages on first visit",
+      "description": "Defer Workspace, Archive and Settings mounting and data requests until each page is opened, retaining visited page state within the signed-in session.",
+      "dependencies": ["feat-062"],
+      "acceptance_criteria": [
+        "Initial and direct page loads do not mount or fetch data for unvisited primary pages.",
+        "Visited pages retain drafts and settings state during navigation without rerunning mount requests.",
+        "Signing out clears retained pages; navigation regressions, web checks and session evidence are updated."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-09-29. Primary pages mount only on first visit, then retain their state during authenticated navigation; logout/user changes reset retained pages and visit history. Header logout now uses the shared storage-cache reset handler. Verification: ./init.sh passed; focused App navigation tests 9/9; full web tests 55/55; web typecheck/build and git diff --check passed. Covers deferred Settings/Drive mounting, direct Archive/Settings entry, preserved drafts/filters/settings, and logout followed by fresh login. No backend/API/migration change or deployment."
     }
   ]
 }

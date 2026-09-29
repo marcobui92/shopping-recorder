@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Archive, LayoutDashboard, Settings, ShieldCheck } from 'lucide-react'
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 
@@ -14,6 +14,16 @@ import { I18nProvider, LanguageSwitcher, useI18n } from './i18n'
 
 export function App() {
   return <I18nProvider><AppContent /></I18nProvider>
+}
+
+function DeferredPage({ active, retain, children }: { active: boolean; retain: boolean; children: ReactNode }) {
+  const [visited, setVisited] = useState(active)
+  useEffect(() => {
+    if (active) setVisited(true)
+  }, [active])
+
+  if (!active && !(retain && visited)) return null
+  return <div hidden={!active}>{children}</div>
 }
 
 function AppContent() {
@@ -48,16 +58,19 @@ function AppContent() {
             {user && <NavLink aria-label={t('Settings')} className="inline-flex size-9 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:h-auto sm:w-auto sm:px-3 sm:py-2" to="/settings"><Settings aria-hidden="true" className="size-4" /><span aria-hidden="true" className="hidden sm:inline">{t('Settings')}</span></NavLink>}
             {user && <span className="hidden items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:flex"><ShieldCheck aria-hidden="true" className="size-3.5 text-primary" /> {t('Private evidence')}</span>}
             <span className="relative" id="header-profile" />
-            <AccountAccess onUserChange={setUser} showForm={false} user={user} />
+            <AccountAccess onUserChange={handleUserChange} showForm={false} user={user} />
             <LanguageSwitcher />
           </nav>
         </div>
       </header>
       <main className="relative overflow-hidden">
         <div aria-hidden="true" className="page-grid pointer-events-none absolute inset-x-0 top-0 h-[34rem] opacity-70" />
-        {(user || location.pathname === '/') && <div hidden={location.pathname !== '/'}><HomePage onBusyChange={setWorkspaceBusy} onUserChange={handleUserChange} sessionReady={sessionReady} user={user} /></div>}
-        {(user || location.pathname === '/archive') && <div hidden={location.pathname !== '/archive'}><ArchivePage onUserChange={handleUserChange} sessionReady={sessionReady} user={user} /></div>}
-        {(user || location.pathname === '/settings') && <div hidden={location.pathname !== '/settings'}><SettingsPage onUserChange={handleUserChange} sessionReady={sessionReady} user={user} /></div>}
+        {/* Retained pages and visit history belong only to the current signed-in user. */}
+        <Fragment key={user?.id ?? 'signed-out'}>
+          <DeferredPage active={location.pathname === '/'} retain={Boolean(user)}><HomePage onBusyChange={setWorkspaceBusy} onUserChange={handleUserChange} sessionReady={sessionReady} user={user} /></DeferredPage>
+          <DeferredPage active={location.pathname === '/archive'} retain={Boolean(user)}><ArchivePage onUserChange={handleUserChange} sessionReady={sessionReady} user={user} /></DeferredPage>
+          <DeferredPage active={location.pathname === '/settings'} retain={Boolean(user)}><SettingsPage onUserChange={handleUserChange} sessionReady={sessionReady} user={user} /></DeferredPage>
+        </Fragment>
         <Routes>
           <Route path="/" element={null} />
           <Route path="/archive" element={null} />

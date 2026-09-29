@@ -2,8 +2,16 @@
 
 ## Current Objective
 
+- Latest completed work: feat-063 loads primary pages only on first visit, then retains their state until logout. No active feature. Verified locally; the user requested committing on `develop`, merging to `main` and pushing both branches on 2026-09-29. Production deployment status has not been verified; older deployment notes below are historical.
 - Goal: Deliver the LinhCj's packing/unpacking evidence recorder with application storage and optional linked Google Drive. Feature 055's environment-scoped Drive root is complete locally; no deployment was requested.
 - feat-041 thirty-day evidence retention and logo reload is deployed from commit `64da323`; production migration `0011` is applied. Features 042–055 are complete locally on `develop` and are not committed or deployed. No active feature; feat-018 remains blocked/deferred.
+
+## Feature 063 — Load primary pages on first visit completed
+
+- Workspace, Archive and Settings only mount on first visit, including direct route entry. Unopened pages no longer fetch their data; visited pages retain drafts, filters and unsaved settings across navigation.
+- Logout/user changes reset retained pages and visit history. Header logout also clears the storage-provider cache through the shared user-change handler.
+- Verification: `./init.sh`; App tests 9/9; full web tests 55/55; web typecheck/build; `git diff --check`. No backend/API/migration change. Session authentication still waits for the existing shared API request; no live latency improvement is claimed. JavaScript imports remain in the shared bundle.
+- Local frontend and backend were started and checked: `http://localhost:5173/` returned 200 and `http://localhost:3000/api/v1/health` returned `status: ok`. Release is prepared for the authorized `develop` commit → `main` merge → push workflow. Optional live follow-up: open Workspace and inspect Network for absence of history/settings/Drive-status requests, then open each destination once and verify switching back preserves state.
 
 ## Feature 055 — Environment-scoped Drive root completed
 

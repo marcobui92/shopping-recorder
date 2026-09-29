@@ -552,3 +552,15 @@ NODE
 - Settings now has a general-purpose page description and a dedicated Google Drive section/card so future settings groups can be added without overloading the page header.
 - Reset and Start another record now reuse the cached provider value locally; they no longer dispatch a provider refresh or mark storage as loading. Provider refresh remains reserved for the initial session probe and explicit recovery events/actions.
 - Verification: web 51/51, typecheck and production build passed; provider cache, Settings and profile regressions pass. No backend/API/migration/provider mutation.
+
+## 2026-09-29 — Feature 063 load primary pages on first visit
+
+- Workspace, Archive and Settings now mount only when first opened, preventing unopened pages from issuing history/settings/Drive requests. Once visited, pages remain mounted during authenticated navigation to retain drafts, filters and unsaved settings. This defers component/data loading; JavaScript bundle splitting is not part of this change.
+- Retained page state and visit history are keyed to the current user and cleared on logout/user changes. Header logout uses the shared auth-change handler to also clear the existing storage-provider cache.
+- Verification: `./init.sh` passed; `npm run test --prefix web -- src/App.test.tsx` passed 9/9; `npm run test --prefix web` passed 55/55; `npm run typecheck --prefix web`, `npm run build --prefix web`, and `git diff --check` passed. Regression scenarios cover deferred Settings/Drive mounting, direct Archive/Settings entry, retained workspace/archive/settings edits, and logout followed by fresh login.
+- No backend/API/migration change, commit, push or deployment. Live browser timing was not measured; session-request latency itself is unchanged.
+
+## 2026-09-29 — Local run and requested release preparation
+
+- Rebuilt the backend with `npm run build --prefix backend`; started backend with `npm run start` in `backend/` and frontend with `npm run dev -- --host localhost --port 5173 --strictPort` in `web/`. HTTP checks returned backend `status: ok` and frontend 200. Existing local PostgreSQL listens on port 5432.
+- User requested commit on the development branch, merge to `main`, and push. `git fetch origin` confirmed `origin/develop` and `main` share the same starting commit `82e1a6c`; the stale local `develop` was fast-forwarded and checked out without losing the six changed files. Preparing `feat: load primary pages on first visit` using the already-passing web test/typecheck/build evidence above. Production deployment verification is not included in this request.
