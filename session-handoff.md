@@ -2,9 +2,16 @@
 
 ## Current Objective
 
-- Latest completed work: feat-064 adds on-demand copy/open Google Drive links for ready evidence. Verified and running locally; the user requested commit and push through `develop` and `main`. Production deployment has not been verified. No active feature. Previous feat-063 was committed as `ad517ef` and pushed to both `develop` and `main`; older deployment notes below are historical.
-- Goal: Deliver the LinhCj's packing/unpacking evidence recorder with application storage and optional linked Google Drive. Feature 055's environment-scoped Drive root is complete locally; no deployment was requested.
-- feat-041 thirty-day evidence retention and logo reload is deployed from commit `64da323`; production migration `0011` is applied. Features 042–055 are complete locally on `develop` and are not committed or deployed. No active feature; feat-018 remains blocked/deferred.
+- Latest completed work: feat-065 optimistic session restore — the web shell renders immediately from a remembered user while the session check and a `/health` wake ping run in the background, so a cold Render instance no longer blocks the UI. Verified locally (web 71/71, headless Chrome scenarios); not committed, pushed or deployed. No active feature.
+- Production latency baseline (2026-10-03): warm `/auth/session` through the Vercel proxy is ~0.6–0.9s (network floor ~0.35s VN↔US + two sequential session DB round-trips ~0.25s); multi-second first loads match Render free-tier spin-down after ~15 min idle. Candidate follow-ups: consolidate the authenticator UPDATE + `currentUser` SELECT into one query; keep-alive pinger or paid Render instance.
+- Previous feat-064 (Drive evidence links) was committed as `333e1ed` and pushed through `develop`/`main`; production deployment has not been verified. feat-018 remains blocked/deferred.
+
+## Feature 065 — Optimistic session restore during backend wake completed
+
+- `web/src/sessionUserStore.ts` persists the last verified public user in sessionStorage; `App.tsx` uses `sessionStatus: checking|verified|anonymous` and renders the signed-in shell immediately for a remembered user with an accessible "Restoring session…" pill. Same-id verification keeps mounted state; any failure or a manual login/logout race downgrades/upgrades correctly and clears the store. No remembered user → unchanged full-page skeleton.
+- `pingHealth()` fires one no-credentials `/api/v1/health` on mount to wake sleeping instances. Expected 401s during `checking` are suppressed in RecorderWorkflow, RecorderHistory, SettingsPage (load vs save errors split) and GoogleDriveConnection.
+- Verification: web 71/71 incl. 4 new App scenarios + 4 store units; web typecheck/build; backend unchanged 93 passed/5 opt-in skipped + typecheck. Headless Chrome with intercepted `/auth/session` captured shell+pill at 1.2s under a 6s hold, slow-401 downgrade with store cleared, and classic skeleton without a remembered user (screenshots /tmp/sr-verify/). Probe accounts deleted from the local database.
+- Not verified: production behavior after deploy (Render cold start cannot be forced from here); physical mobile check. Next session: optionally ship, then confirm the first-load experience after a 20-minute idle window on the deployed site.
 
 ## Feature 064 — Copy and open Drive evidence links completed
 

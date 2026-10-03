@@ -131,7 +131,7 @@ function EvidencePreview({ file, mediaType, eager = false }: { file: File; media
   return <a aria-label={`Open full preview of ${file.name}`} className="group/preview relative block max-w-full overflow-hidden bg-secondary" href={previewUrl} rel="noreferrer" target="_blank"><img alt={`Preview of ${file.name}`} className="aspect-[4/3] w-full max-w-full object-cover transition-transform duration-300 group-hover/preview:scale-[1.02]" src={previewUrl} onError={() => setFailed(true)} /><span className="absolute bottom-2 right-2 grid size-8 place-items-center rounded-lg bg-slate-950/75 text-white opacity-0 backdrop-blur transition-opacity group-hover/preview:opacity-100"><Expand aria-hidden="true" className="size-4" /></span></a>
 }
 
-export function RecorderWorkflow({ onBusyChange, onCompleted }: { onBusyChange?: (busy: boolean) => void; onCompleted?: () => void }) {
+export function RecorderWorkflow({ onBusyChange, onCompleted, sessionChecking = false }: { onBusyChange?: (busy: boolean) => void; onCompleted?: () => void; sessionChecking?: boolean }) {
   const { t } = useI18n()
   const formRef = useRef<HTMLFormElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -349,8 +349,8 @@ export function RecorderWorkflow({ onBusyChange, onCompleted }: { onBusyChange?:
                     <option value="s3" disabled={!providers?.s3.available}>{t('Application storage')}</option>
                   </Select>
                   {activityId ? <p className="text-xs text-muted-foreground">{t('This record keeps its storage location. Retry here after restoring access.')}</p> : <>
-                    {storageLoading && <p role="status">{t('Checking storage…')}</p>}
-                    {storageError && <div className="flex flex-wrap items-center gap-2"><p role="alert">{t('Unable to check storage. Retry without losing your selected files.')}</p><Button type="button" size="sm" variant="outline" disabled={storageLoading} onClick={() => setStorageRetry((value) => value + 1)}><RotateCcw aria-hidden="true" className="size-3.5" /> {t('Refresh storage')}</Button></div>}
+                    {storageLoading || (storageError && sessionChecking) && <p role="status">{t('Checking storage…')}</p>}
+                    {storageError && !sessionChecking && <div className="flex flex-wrap items-center gap-2"><p role="alert">{t('Unable to check storage. Retry without losing your selected files.')}</p><Button type="button" size="sm" variant="outline" disabled={storageLoading} onClick={() => setStorageRetry((value) => value + 1)}><RotateCcw aria-hidden="true" className="size-3.5" /> {t('Refresh storage')}</Button></div>}
                     {!storageLoading && !storageError && !storageReady && <p role="alert">{t('Selected storage is unavailable. Connect Google Drive or choose available application storage. Your files are kept here.')}</p>}
                     {providers && !providers.google_drive.available && <div className="flex flex-wrap items-center gap-2"><p className="text-sm text-muted-foreground">{t(!providers.google_drive.configured ? 'Google Drive is not configured.' : providers.google_drive.state === 'reauthorization_required' ? 'Reconnect Google Drive to restore access.' : providers.google_drive.state === 'unavailable' ? 'Google Drive is temporarily unavailable.' : 'Google Drive is not connected.')}</p>{providers.google_drive.configured && <Button type="button" size="sm" variant="outline" disabled={storageLoading} onClick={() => setStorageRetry((value) => value + 1)}><RotateCcw aria-hidden="true" className="size-3.5" /> {t('Refresh storage')}</Button>}</div>}
                   </>}

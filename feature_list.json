@@ -816,6 +816,20 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-09-29. Added on-demand owner-authorized Drive webViewLink JSON/redirect API with live original-account/file checks and safe HTTPS origin validation. Ready Drive image/video actions appear in archive detail/viewer and completion previews; copy has clipboard-denial/unavailability fallback and VI/EN text. Drive permissions and pinned content downloads are unchanged. Verification: ./init.sh; web 63/63 plus typecheck/build; backend 93 passed/5 opt-in skipped plus typecheck/build; git diff --check. Backend restarted locally; health ok, frontend 200, new unauthenticated endpoint 401. Live signed-in Google and physical mobile app handoff were not exercised. No migration, commit, push or deployment."
+    },
+    {
+      "id": "feat-065",
+      "name": "Optimistic session restore during backend wake",
+      "description": "Render the signed-in app shell immediately from a remembered user while the silent session check runs in the background, so a cold-starting backend no longer blocks the whole UI behind the full-page skeleton.",
+      "dependencies": ["feat-063"],
+      "acceptance_criteria": [
+        "With a remembered user in sessionStorage, the workspace/archive/settings shell renders immediately with an accessible 'Restoring session...' status while /auth/session is pending.",
+        "A resolved session for the same user keeps mounted page state; a failed or mismatched session downgrades to the signed-out UI and clears the remembered user.",
+        "Without a remembered user the previous full-page skeleton behavior is preserved, and expected 401s during the checking phase are not surfaced as storage/settings/history errors.",
+        "A best-effort /health request is fired on app load to wake sleeping instances, and web tests, typecheck and build pass."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-10-03. Added web/src/sessionUserStore.ts (+4 unit tests), pingHealth() in web/src/api.ts, sessionStatus state model with manual-auth race guard in App.tsx, sessionChecking error suppression in RecorderWorkflow/RecorderHistory/GoogleDriveConnection/SettingsPage, and the header 'Restoring session...' status pill (VI/EN). Verification: web 71/71 tests, typecheck, build; backend 93 passed/5 opt-in skipped plus typecheck (unchanged). Headless Chrome against local dev servers: remembered user + held /auth/session showed shell + pill within 1.2s and pill cleared after verification; slow 401 downgraded to login and cleared the store; no remembered user kept the classic skeleton. Not deployed to production."
     }
   ]
 }

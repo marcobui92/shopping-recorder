@@ -16,7 +16,7 @@ describe('SettingsPage', () => {
   beforeEach(() => { vi.clearAllMocks(); vi.mocked(getGoogleDriveStatus).mockResolvedValue({ configured: false, connected: false, updatedAt: null }); vi.mocked(getSettings).mockResolvedValue({ retentionDays: 30 }); vi.mocked(updateSettings).mockResolvedValue({ retentionDays: 14 }) })
 
   it('loads and saves the retention period', async () => {
-    render(<I18nProvider><SettingsPage sessionReady user={user} onUserChange={vi.fn()} /></I18nProvider>)
+    render(<I18nProvider><SettingsPage sessionStatus="verified" user={user} onUserChange={vi.fn()} /></I18nProvider>)
     const input = await screen.findByLabelText('Tự động xóa bằng chứng sau (ngày)')
     expect(input).toHaveValue(30)
     expect(await screen.findByText('Google Drive chưa được cấu hình.')).toBeInTheDocument()
@@ -27,7 +27,7 @@ describe('SettingsPage', () => {
   })
 
   it('rejects values outside the supported range', async () => {
-    render(<I18nProvider><SettingsPage sessionReady user={user} onUserChange={vi.fn()} /></I18nProvider>)
+    render(<I18nProvider><SettingsPage sessionStatus="verified" user={user} onUserChange={vi.fn()} /></I18nProvider>)
     const input = await screen.findByLabelText('Tự động xóa bằng chứng sau (ngày)')
     fireEvent.change(input, { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: 'Lưu cài đặt' }))

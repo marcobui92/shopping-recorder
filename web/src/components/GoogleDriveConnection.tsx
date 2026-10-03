@@ -4,7 +4,7 @@ import { connectGoogleDrive, getGoogleDriveStatus, unlinkGoogleDrive, type Googl
 import { useI18n } from '../i18n'
 import { Button } from './ui/button'
 
-export function GoogleDriveConnection({ onStatusChange, onUnlinked, showIntro = false, hideWhenConnected = false }: { onStatusChange?: (status: GoogleDriveStatus) => void; onUnlinked?: () => void; showIntro?: boolean; hideWhenConnected?: boolean } = {}) {
+export function GoogleDriveConnection({ onStatusChange, onUnlinked, showIntro = false, hideWhenConnected = false, sessionChecking = false }: { onStatusChange?: (status: GoogleDriveStatus) => void; onUnlinked?: () => void; showIntro?: boolean; hideWhenConnected?: boolean; sessionChecking?: boolean } = {}) {
   const { t } = useI18n()
   const [status, setStatus] = useState<GoogleDriveStatus | null>(null)
   const [resolved, setResolved] = useState(false)
@@ -33,9 +33,9 @@ export function GoogleDriveConnection({ onStatusChange, onUnlinked, showIntro = 
     <div className={showIntro ? 'mt-4 space-y-3 border-t pt-3' : 'space-y-3'} aria-label="Google Drive">
     <p className="font-medium">Google Drive</p>
     {result && <p role="status" className="text-sm">{t(result === 'connected' ? 'Google Drive connected.' : result === 'cancelled' ? 'Google connection cancelled.' : 'Google connection failed. Please retry.')}</p>}
-    {!status && !error && <p role="status">{t('Checking Google Drive…')}</p>}
+    {!status && (!error || sessionChecking) && <p role="status">{t('Checking Google Drive…')}</p>}
     {status && <p className="text-sm text-muted-foreground">{t(!status.configured ? 'Google Drive is not configured.' : status.state === 'reauthorization_required' ? 'Reconnect Google Drive to restore access.' : status.state === 'unavailable' ? 'Google Drive is temporarily unavailable.' : status.connected ? 'Google Drive connected.' : 'Google Drive is not connected.')}</p>}
-    {error && <div role="alert"><p>{t('Unable to update Google Drive. Please retry.')}</p><Button type="button" variant="outline" onClick={() => void refresh()}>{t('Retry')}</Button></div>}
+    {error && !sessionChecking && <div role="alert"><p>{t('Unable to update Google Drive. Please retry.')}</p><Button type="button" variant="outline" onClick={() => void refresh()}>{t('Retry')}</Button></div>}
     {status?.configured && !confirm && <div className="flex min-w-0 flex-wrap gap-2">
       <Button className="h-auto min-h-10 max-w-full whitespace-normal break-words text-center leading-5" type="button" variant="outline" disabled={busy} onClick={() => setConfirm('connect')}>{t(status.connected ? 'Reconnect or replace Google' : 'Connect Google Drive')}</Button>
       {status.connected && <Button className="h-auto min-h-10 max-w-full whitespace-normal break-words text-center leading-5" type="button" variant="outline" disabled={busy} onClick={() => setConfirm('unlink')}>{t('Unlink Google Drive')}</Button>}

@@ -130,6 +130,11 @@ export async function getSession(): Promise<AppUser> {
   return payload.data.user
 }
 
+// Best-effort wake-up for sleeping backend instances; never blocks the UI.
+export async function pingHealth(): Promise<void> {
+  try { await fetch(`${config.apiBaseUrl}/health`, { credentials: 'omit' }) } catch { /* wake attempt only */ }
+}
+
 export async function registerAccount(input: { email: string | null; password: string; username: string }): Promise<AppUser> {
   const payload = await recorderRequest<{ data?: { user?: AppUser } }>('/auth/register', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input),

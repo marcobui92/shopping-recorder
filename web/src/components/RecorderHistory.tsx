@@ -25,7 +25,7 @@ import { Select } from './ui/select'
 import { Textarea } from './ui/textarea'
 import { useI18n } from '../i18n'
 
-interface RecorderHistoryProps { refreshKey?: number }
+interface RecorderHistoryProps { refreshKey?: number; sessionChecking?: boolean }
 
 function displayDate(value: string): string {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
@@ -39,7 +39,7 @@ function statusVariant(status: RecorderActivity['status']): 'success' | 'warning
   return 'outline'
 }
 
-export function RecorderHistory({ refreshKey = 0 }: RecorderHistoryProps) {
+export function RecorderHistory({ refreshKey = 0, sessionChecking = false }: RecorderHistoryProps) {
   const { t } = useI18n()
   const [referenceQuery, setReferenceQuery] = useState('')
   const [activities, setActivities] = useState<RecorderActivity[]>([])
@@ -198,8 +198,8 @@ export function RecorderHistory({ refreshKey = 0 }: RecorderHistoryProps) {
         </form>
 
         <div className="mt-6">
-          {loading && <p className="flex items-center gap-2 rounded-xl bg-muted p-4 text-sm text-muted-foreground" role="status"><LoaderCircle aria-hidden="true" className="size-4 animate-spin text-primary" /> {t('Loading evidence records…')}</p>}
-          {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert"><p>{t(error)}</p><Button className="mt-3" size="sm" variant="outline" onClick={() => setReloadKey((value) => value + 1)}><RefreshCw aria-hidden="true" className="size-3.5" /> {t('Retry')}</Button></div>}
+          {(loading || (Boolean(error) && sessionChecking)) && <p className="flex items-center gap-2 rounded-xl bg-muted p-4 text-sm text-muted-foreground" role="status"><LoaderCircle aria-hidden="true" className="size-4 animate-spin text-primary" /> {t('Loading evidence records…')}</p>}
+          {error && !sessionChecking && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert"><p>{t(error)}</p><Button className="mt-3" size="sm" variant="outline" onClick={() => setReloadKey((value) => value + 1)}><RefreshCw aria-hidden="true" className="size-3.5" /> {t('Retry')}</Button></div>}
           {!loading && !error && activities.length === 0 && <div className="grid min-h-40 place-items-center rounded-xl border border-dashed bg-muted/30 p-6 text-center"><div><FileX2 aria-hidden="true" className="mx-auto size-7 text-muted-foreground" /><p className="mt-3 text-sm font-medium">{t('No evidence records match these filters.')}</p></div></div>}
           {!loading && !error && activities.length > 0 && <>
             <ul className="divide-y rounded-xl border">

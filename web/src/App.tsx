@@ -1,9 +1,10 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
-import { Archive, LayoutDashboard, Settings, ShieldCheck } from 'lucide-react'
+import { Archive, LayoutDashboard, LoaderCircle, Settings, ShieldCheck } from 'lucide-react'
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 
-import { clearStorageProvidersCache, getSession, type AppUser } from './api'
+import { clearStorageProvidersCache, getSession, pingHealth, type AppUser } from './api'
 import { AccountAccess } from './components/AccountAccess'
+import { clearRememberedUser, readRememberedUser, saveRememberedUser, type SessionStatus } from './sessionUserStore'
 import { HomePage } from './pages/HomePage'
 import { ArchivePage } from './pages/ArchivePage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -29,22 +30,37 @@ function DeferredPage({ active, retain, children }: { active: boolean; retain: b
 function AppContent() {
   const { t } = useI18n()
   const location = useLocation()
-  const [user, setUser] = useState<AppUser | null>(null)
-  const [sessionReady, setSessionReady] = useState(false)
+  const [user, setUser] = useState<AppUser | null>(readRememberedUser)
+  const [sessionStatus, setSessionStatus] = useState<SessionStatus>('checking')
   const [workspaceBusy, setWorkspaceBusy] = useState(false)
   const sessionRequested = useRef(false)
+  const manualAuthOverride = useRef(false)
   function handleUserChange(nextUser: AppUser | null) {
+    manualAuthOverride.current = true
     clearStorageProvidersCache()
+    if (nextUser) saveRememberedUser(nextUser)
+    else clearRememberedUser()
     setUser(nextUser)
+    setSessionStatus(nextUser ? 'verified' : 'anonymous')
   }
 
   useEffect(() => {
     if (sessionRequested.current) return
     sessionRequested.current = true
+    void pingHealth()
     void getSession()
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setSessionReady(true))
+      .then((resolved) => {
+        if (manualAuthOverride.current) return
+        saveRememberedUser(resolved)
+        setUser(resolved)
+        setSessionStatus('verified')
+      })
+      .catch(() => {
+        if (manualAuthOverride.current) return
+        clearRememberedUser()
+        setUser(null)
+        setSessionStatus('anonymous')
+      })
   }, [])
 
   return (
@@ -57,6 +73,7 @@ function AppContent() {
             {user && <NavLink aria-label={t('Evidence archive')} className="inline-flex size-9 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:h-auto sm:w-auto sm:px-3 sm:py-2" to="/archive"><Archive aria-hidden="true" className="size-4" /><span aria-hidden="true" className="hidden sm:inline">{t('Evidence archive')}</span></NavLink>}
             {user && <NavLink aria-label={t('Settings')} className="inline-flex size-9 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:h-auto sm:w-auto sm:px-3 sm:py-2" to="/settings"><Settings aria-hidden="true" className="size-4" /><span aria-hidden="true" className="hidden sm:inline">{t('Settings')}</span></NavLink>}
             {user && <span className="hidden items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:flex"><ShieldCheck aria-hidden="true" className="size-3.5 text-primary" /> {t('Private evidence')}</span>}
+            {user && sessionStatus === 'checking' && <span aria-label={t('Restoring session…')} className="flex shrink-0 items-center gap-1.5 rounded-full border bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground" role="status"><LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" /><span className="hidden sm:inline">{t('Restoring session…')}</span></span>}
             <span className="relative" id="header-profile" />
             <AccountAccess onUserChange={handleUserChange} showForm={false} user={user} />
             <LanguageSwitcher />
@@ -67,9 +84,9 @@ function AppContent() {
         <div aria-hidden="true" className="page-grid pointer-events-none absolute inset-x-0 top-0 h-[34rem] opacity-70" />
         {/* Retained pages and visit history belong only to the current signed-in user. */}
         <Fragment key={user?.id ?? 'signed-out'}>
-          <DeferredPage active={location.pathname === '/'} retain={Boolean(user)}><HomePage onBusyChange={setWorkspaceBusy} onUserChange={handleUserChange} sessionReady={sessionReady} user={user} /></DeferredPage>
-          <DeferredPage active={location.pathname === '/archive'} retain={Boolean(user)}><ArchivePage onUserChange={handleUserChange} sessionReady={sessionReady} user={user} /></DeferredPage>
-          <DeferredPage active={location.pathname === '/settings'} retain={Boolean(user)}><SettingsPage onUserChange={handleUserChange} sessionReady={sessionReady} user={user} /></DeferredPage>
+          <DeferredPage active={location.pathname === '/'} retain={Boolean(user)}><HomePage onBusyChange={setWorkspaceBusy} onUserChange={handleUserChange} sessionStatus={sessionStatus} user={user} /></DeferredPage>
+          <DeferredPage active={location.pathname === '/archive'} retain={Boolean(user)}><ArchivePage onUserChange={handleUserChange} sessionStatus={sessionStatus} user={user} /></DeferredPage>
+          <DeferredPage active={location.pathname === '/settings'} retain={Boolean(user)}><SettingsPage onUserChange={handleUserChange} sessionStatus={sessionStatus} user={user} /></DeferredPage>
         </Fragment>
         <Routes>
           <Route path="/" element={null} />

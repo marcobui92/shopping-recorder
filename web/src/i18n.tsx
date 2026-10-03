@@ -14,6 +14,7 @@ const translations: Record<string, string> = {
   'Unable to get the Drive link. Check the connection and try again.': 'Không thể lấy liên kết Drive. Kiểm tra kết nối rồi thử lại.',
   "Reload LinhCj's": "Tải lại LinhCj's",
   'Loading your workspace': 'Đang tải không gian làm việc',
+  'Restoring session…': 'Đang khôi phục phiên…',
   'Unfinished work': 'Công việc chưa hoàn tất',
   'Continue a draft or interrupted upload without creating a duplicate record.': 'Tiếp tục bản nháp hoặc lần tải lên bị gián đoạn mà không tạo bản ghi trùng.',
   'Refresh unfinished work': 'Làm mới công việc chưa hoàn tất',

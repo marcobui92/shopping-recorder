@@ -1,11 +1,12 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
-import { clearStorageProvidersCache, getSession, getSettings, login, logout } from './api'
+import { clearStorageProvidersCache, getSession, getSettings, login, logout, type AppUser } from './api'
 import { App } from './App'
 import { GoogleDriveConnection } from './components/GoogleDriveConnection'
+import { rememberedUserStorageKey } from './sessionUserStore'
 
 vi.mock('./api', async (importOriginal) => ({
   ...await importOriginal<typeof import('./api')>(),
@@ -13,6 +14,7 @@ vi.mock('./api', async (importOriginal) => ({
   getSettings: vi.fn(),
   login: vi.fn(),
   logout: vi.fn(),
+  pingHealth: vi.fn(),
   clearStorageProvidersCache: vi.fn(),
 }))
 vi.mock('./components/RecorderWorkflow', () => ({
@@ -33,6 +35,7 @@ vi.mock('./components/RecorderHistory', () => ({ RecorderHistory: () => {
 
 beforeEach(() => {
   localStorage.setItem('shopping-recorder-locale', 'en')
+  sessionStorage.clear()
   vi.clearAllMocks()
   vi.mocked(getSettings).mockResolvedValue({ retentionDays: 30 })
 })
@@ -40,7 +43,12 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   localStorage.removeItem('shopping-recorder-locale')
+  sessionStorage.clear()
 })
+
+function seedRememberedUser(user: AppUser) {
+  sessionStorage.setItem(rememberedUserStorageKey, JSON.stringify(user))
+}
 
 it('shows an accessible workspace skeleton while the silent session check is pending', () => {
   vi.mocked(getSession).mockReturnValue(new Promise(() => {}))
@@ -57,6 +65,49 @@ it('shows an accessible workspace skeleton while the silent session check is pen
   fireEvent.click(language)
   expect(screen.getByRole('option', { name: 'Tiếng Việt' })).toHaveTextContent('🇻🇳')
   expect(screen.getByRole('option', { name: 'English' })).toHaveTextContent('🇺🇸')
+})
+
+it('renders the remembered workspace immediately while the session is restored in the background', () => {
+  vi.mocked(getSession).mockReturnValue(new Promise(() => {}))
+  seedRememberedUser({ email: null, id: 'user-1', username: 'operator' })
+  render(<MemoryRouter><App /></MemoryRouter>)
+
+  expect(screen.getByText('Workspace content')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Workspace' })).toBeInTheDocument()
+  expect(screen.getByRole('status', { name: 'Restoring session…' })).toBeInTheDocument()
+  expect(screen.queryByRole('status', { name: 'Loading your workspace' })).not.toBeInTheDocument()
+})
+
+it('downgrades to the login form and clears the remembered user when silent restore fails', async () => {
+  vi.mocked(getSession).mockRejectedValue(new Error('No session'))
+  seedRememberedUser({ email: null, id: 'user-1', username: 'operator' })
+  render(<MemoryRouter><App /></MemoryRouter>)
+
+  expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Workspace' })).not.toBeInTheDocument()
+  expect(sessionStorage.getItem(rememberedUserStorageKey)).toBeNull()
+})
+
+it('keeps provisional drafts when the session resolves for the same remembered user', async () => {
+  let resolveSession: (value: AppUser) => void = () => {}
+  vi.mocked(getSession).mockReturnValue(new Promise((resolve) => { resolveSession = resolve }))
+  seedRememberedUser({ email: null, id: 'user-1', username: 'operator' })
+  render(<MemoryRouter><App /></MemoryRouter>)
+
+  fireEvent.change(screen.getByLabelText('Workspace draft'), { target: { value: 'keep me' } })
+  await act(async () => { resolveSession({ email: null, id: 'user-1', username: 'operator' }) })
+
+  expect(screen.getByLabelText('Workspace draft')).toHaveValue('keep me')
+  expect(screen.queryByRole('status', { name: 'Restoring session…' })).not.toBeInTheDocument()
+})
+
+it('opens a deep link from the remembered user before the session resolves', () => {
+  vi.mocked(getSession).mockReturnValue(new Promise(() => {}))
+  seedRememberedUser({ email: null, id: 'user-1', username: 'operator' })
+  render(<MemoryRouter initialEntries={['/archive']}><App /></MemoryRouter>)
+
+  expect(screen.getByText('Archive content')).toBeInTheDocument()
+  expect(screen.getByRole('status', { name: 'Restoring session…' })).toBeInTheDocument()
 })
 
 it('centers a compact login form after silent session restoration', async () => {
@@ -153,11 +204,13 @@ it('clears visited pages and drafts on logout before the next login', async () =
   expect(screen.queryByText('Workspace content')).not.toBeInTheDocument()
   expect(screen.queryByText('Archive content')).not.toBeInTheDocument()
   expect(clearStorageProvidersCache).toHaveBeenCalledTimes(1)
+  expect(sessionStorage.getItem(rememberedUserStorageKey)).toBeNull()
 
   fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'operator' } })
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } })
   fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
   await screen.findByText('Archive content')
+  expect(JSON.parse(sessionStorage.getItem(rememberedUserStorageKey) ?? 'null')).toEqual(user)
   expect(screen.queryByText('Workspace content')).not.toBeInTheDocument()
   fireEvent.click(screen.getByRole('link', { name: 'Workspace' }))
   expect(screen.getByLabelText('Workspace draft')).toHaveValue('')
