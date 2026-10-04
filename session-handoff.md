@@ -2,7 +2,7 @@
 
 ## Current Objective
 
-- Latest completed work: feat-065 optimistic session restore — the web shell renders immediately from a remembered user while the session check and a `/health` wake ping run in the background, so a cold Render instance no longer blocks the UI. Verified locally (web 71/71, headless Chrome scenarios); not committed, pushed or deployed. No active feature.
+- Latest completed work: feat-065 optimistic session restore (committed `c97e3db`, pushed to develop+main) plus an uncommitted follow-up fix: AccountAccess resolved its `#header-profile` portal target during the render phase, so the first optimistic paint showed the inline "Signed in as" card in the header while `checking`; now resolved in `useLayoutEffect` (web 71/71, typecheck, build; headless Chrome verified). Production cold measurement: Render wake through the Vercel proxy took 13.5s (< 120s CDN origin timeout) — hibernation flow safe. Open: commit/push the fix if the user asks; optional hardening — App.tsx session catch downgrades on network/5xx like 401.
 - Production latency baseline (2026-10-03): warm `/auth/session` through the Vercel proxy is ~0.6–0.9s (network floor ~0.35s VN↔US + two sequential session DB round-trips ~0.25s); multi-second first loads match Render free-tier spin-down after ~15 min idle. Candidate follow-ups: consolidate the authenticator UPDATE + `currentUser` SELECT into one query; keep-alive pinger or paid Render instance.
 - Previous feat-064 (Drive evidence links) was committed as `333e1ed` and pushed through `develop`/`main`; production deployment has not been verified. feat-018 remains blocked/deferred.
 

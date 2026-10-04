@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useRef, useState } from 'react'
+import { type FormEvent, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ArrowRight, FileCheck2, LoaderCircle, LockKeyhole, LogOut, ShieldCheck, Sparkles, UserRound } from 'lucide-react'
 
@@ -43,6 +43,12 @@ export function AccountAccess({ onUserChange, showForm = true, user }: AccountAc
   const [rememberCredentials, setRememberCredentials] = useState(() => Boolean(readRememberedUsername()))
   const [profileOpen, setProfileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null)
+  // The header anchor does not exist in the DOM during the first render pass;
+  // resolve it after commit so the profile never flashes the inline fallback card.
+  useLayoutEffect(() => {
+    if (user) setPortalTarget(document.getElementById('header-profile'))
+  }, [user])
 
   useEffect(() => {
     if (!profileOpen) return
@@ -109,8 +115,7 @@ export function AccountAccess({ onUserChange, showForm = true, user }: AccountAc
         </div>}
       </div>
     )
-    const target = typeof document !== 'undefined' ? document.getElementById('header-profile') : null
-    if (target) return createPortal(profile, target)
+    if (portalTarget) return createPortal(profile, portalTarget)
     return (
       <Card className="border-primary/20 bg-gradient-to-r from-card to-accent/40">
         <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
