@@ -71,9 +71,10 @@ describe('RecorderHistory', () => {
     expect(screen.getByRole('heading', { name: 'Recorded handoffs' }).parentElement?.parentElement).toHaveClass('py-3')
     expect(screen.queryByText('Compare packing and unpacking')).not.toBeInTheDocument()
     expect(screen.getByRole('form', { name: 'Filter recorder history' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }))
     fireEvent.change(screen.getByLabelText('Operation'), { target: { value: 'packing' } })
+    await waitFor(() => expect(listRecorderActivities).toHaveBeenLastCalledWith(expect.objectContaining({ operationType: 'packing', page: 1 })))
     fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'complete' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }))
     await waitFor(() => expect(listRecorderActivities).toHaveBeenLastCalledWith(expect.objectContaining({
       operationType: 'packing', page: 1, pageSize: 10, status: 'complete',
     })))
@@ -83,7 +84,7 @@ describe('RecorderHistory', () => {
     const preview = await screen.findByAltText('seal.jpg')
     expect(screen.queryByRole('button', { name: 'Copy Drive link' })).not.toBeInTheDocument()
     const detail = screen.getByRole('dialog', { name: 'ORDER-1042' })
-    expect(detail).toHaveClass('max-h-[calc(100dvh-1.5rem)]', 'max-w-5xl', 'overflow-y-auto')
+    expect(detail).toHaveClass('max-h-[calc(100dvh-1.5rem)]', 'max-w-5xl', 'overflow-hidden')
     expect(screen.getByRole('form', { name: 'Correct activity metadata' })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Recorder history pages' })).toBeInTheDocument()
     expect(preview).toHaveAttribute('src', 'http://api.test/media-assets/asset-1/content')
@@ -143,6 +144,58 @@ describe('RecorderHistory', () => {
     expect(deleteRecorderActivity).toHaveBeenCalledWith('activity-1')
   })
 
+  it('bulk deletes selected records after one confirmation and reports the result', async () => {
+    const second = { ...activity, id: 'activity-2', reference: 'ORDER-2048', status: 'expired' as const }
+    const draft = { ...activity, id: 'activity-3', reference: 'ORDER-3072', status: 'draft' as const, completedAt: null, evidenceExpiresAt: null }
+    vi.mocked(listRecorderActivities).mockResolvedValue({ data: [activity, second, draft], meta: { page: 1, pageSize: 10, totalPages: 1, totalRecords: 3 } })
+    render(<RecorderHistory />)
+    await screen.findByText('ORDER-1042')
+
+    expect(screen.queryByLabelText('Select ORDER-3072')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Select ORDER-1042'))
+    fireEvent.click(screen.getByLabelText('Select ORDER-2048'))
+    expect(screen.getByText('2 records selected')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+
+    await waitFor(() => expect(deleteRecorderActivity).toHaveBeenCalledWith('activity-1'))
+    await waitFor(() => expect(deleteRecorderActivity).toHaveBeenCalledWith('activity-2'))
+    expect(deleteRecorderActivity).not.toHaveBeenCalledWith('activity-3')
+    await screen.findByText('2 activities deleted.')
+    expect(listRecorderActivities).toHaveBeenCalledTimes(2)
+    expect(screen.getByLabelText('Select ORDER-1042')).not.toBeChecked()
+  })
+
+  it('selects every deletable record at once and reports partial bulk failures', async () => {
+    const second = { ...activity, id: 'activity-2', reference: 'ORDER-2048' }
+    vi.mocked(listRecorderActivities).mockResolvedValue({ data: [activity, second], meta: { page: 1, pageSize: 10, totalPages: 1, totalRecords: 2 } })
+    vi.mocked(deleteRecorderActivity).mockRejectedValueOnce(new Error('Storage unavailable.'))
+    render(<RecorderHistory />)
+    await screen.findByText('ORDER-1042')
+
+    fireEvent.click(screen.getByLabelText('Select all'))
+    expect(screen.getByText('2 records selected')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+
+    await screen.findByText('1 activities deleted.')
+    expect(screen.getByRole('alert')).toHaveTextContent('1 could not be deleted.')
+  })
+
+  it('pins the detail header outside the scroll body and places evidence media first', async () => {
+    render(<RecorderHistory />)
+    await screen.findByText('ORDER-1042')
+    fireEvent.click(screen.getByRole('button', { name: 'View evidence' }))
+    const detail = await screen.findByRole('dialog', { name: 'ORDER-1042' })
+    expect(detail).toHaveClass('flex', 'flex-col', 'overflow-hidden')
+    const preview = await screen.findByAltText('seal.jpg')
+    const form = screen.getByRole('form', { name: 'Correct activity metadata' })
+    expect(preview.compareDocumentPosition(form)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    const scrollBody = detail.querySelector('.overflow-y-auto')
+    expect(scrollBody).toContainElement(form)
+    expect(scrollBody).not.toContainElement(screen.getByRole('button', { name: 'Close detail' }))
+  })
+
   it('keeps expired record metadata visible without exposing evidence controls', async () => {
     const expired = { ...activity, status: 'expired' as const, expiredAt: '2026-10-05T09:10:00.000Z' }
     vi.mocked(listRecorderActivities).mockResolvedValue({ data: [expired], meta: { page: 1, pageSize: 10, totalPages: 1, totalRecords: 1 } })
@@ -166,8 +219,10 @@ it('searches on the server, resets pagination on apply/clear, and retains other 
   fireEvent.click(screen.getByRole('button', { name: 'Next' }))
   await screen.findByText('Page 2 of 3')
   fireEvent.change(screen.getByLabelText('Search order or shipment reference'), { target: { value: '  AbC%_  ' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Filters' }))
   fireEvent.change(screen.getByLabelText('Operation'), { target: { value: 'packing' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }))
+  await waitFor(() => expect(listRecorderActivities).toHaveBeenLastCalledWith(expect.objectContaining({ operationType: 'packing', page: 1 })))
+  fireEvent.submit(screen.getByRole('form', { name: 'Filter recorder history' }))
   await waitFor(() => expect(listRecorderActivities).toHaveBeenLastCalledWith(expect.objectContaining({ reference: 'AbC%_', operationType: 'packing', page: 1 })))
   await screen.findByText('Page 1 of 3')
   fireEvent.click(screen.getByRole('button', { name: 'Next' }))
@@ -176,6 +231,36 @@ it('searches on the server, resets pagination on apply/clear, and retains other 
   fireEvent.click(screen.getByRole('button', { name: 'Clear search' }))
   await waitFor(() => expect(listRecorderActivities).toHaveBeenLastCalledWith(expect.objectContaining({ reference: undefined, operationType: 'packing', page: 1 })))
   expect(screen.getByLabelText('Search order or shipment reference')).toHaveValue('')
+})
+
+it('collapses advanced filters by default, auto-applies changes and shows the active count', async () => {
+  render(<RecorderHistory />)
+  await screen.findByText('ORDER-1042')
+  expect(screen.queryByLabelText('Operation')).not.toBeInTheDocument()
+  expect(screen.queryByLabelText('Occurred from')).not.toBeInTheDocument()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Filters' }))
+  expect(screen.getByLabelText('Operation')).toBeInTheDocument()
+  fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'complete' } })
+  await waitFor(() => expect(listRecorderActivities).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'complete', page: 1 })))
+
+  fireEvent.click(screen.getByRole('button', { name: /Filters/ }))
+  expect(screen.queryByLabelText('Operation')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Filters/ })).toHaveTextContent('1')
+  fireEvent.change(screen.getByLabelText('Search order or shipment reference'), { target: { value: 'ORDER' } })
+  fireEvent.submit(screen.getByRole('form', { name: 'Filter recorder history' }))
+  await screen.findByText('ORDER-1042')
+  expect(listRecorderActivities).toHaveBeenLastCalledWith(expect.objectContaining({ reference: 'ORDER', status: 'complete' }))
+})
+
+it('clears every filter from the panel', async () => {
+  render(<RecorderHistory />)
+  await screen.findByText('ORDER-1042')
+  fireEvent.click(screen.getByRole('button', { name: 'Filters' }))
+  fireEvent.change(screen.getByLabelText('Operation'), { target: { value: 'unpacking' } })
+  await waitFor(() => expect(listRecorderActivities).toHaveBeenLastCalledWith(expect.objectContaining({ operationType: 'unpacking' })))
+  fireEvent.click(screen.getByRole('button', { name: 'Clear all filters' }))
+  await waitFor(() => expect(listRecorderActivities).toHaveBeenLastCalledWith({ page: 1, pageSize: 10, sortDirection: 'desc' }))
 })
 
 it('localizes search loading/error/empty states, retains input through retry and language changes', async () => {
@@ -188,7 +273,7 @@ it('localizes search loading/error/empty states, retains input through retry and
   fail(new Error('untranslated backend detail'))
   expect(await screen.findByRole('alert')).toHaveTextContent('Không thể tải lịch sử bản ghi.')
   vi.mocked(listRecorderActivities).mockResolvedValue({ data: [], meta: { page: 1, pageSize: 10, totalPages: 0, totalRecords: 0 } })
-  fireEvent.click(screen.getByRole('button', { name: 'Áp dụng bộ lọc' }))
+  fireEvent.submit(screen.getByRole('form', { name: 'Lọc lịch sử bản ghi' }))
   await screen.findByText('Không có bản ghi phù hợp với bộ lọc.')
   expect(listRecorderActivities).toHaveBeenLastCalledWith(expect.objectContaining({ reference: 'MÃ-GIỮ', page: 1 }))
   fireEvent.click(screen.getByRole('button', { name: 'Language' }))

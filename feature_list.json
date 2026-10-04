@@ -830,6 +830,51 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-10-03. Added web/src/sessionUserStore.ts (+4 unit tests), pingHealth() in web/src/api.ts, sessionStatus state model with manual-auth race guard in App.tsx, sessionChecking error suppression in RecorderWorkflow/RecorderHistory/GoogleDriveConnection/SettingsPage, and the header 'Restoring session...' status pill (VI/EN). Verification: web 71/71 tests, typecheck, build; backend 93 passed/5 opt-in skipped plus typecheck (unchanged). Headless Chrome against local dev servers: remembered user + held /auth/session showed shell + pill within 1.2s and pill cleared after verification; slow 401 downgraded to login and cleared the store; no remembered user kept the classic skeleton. Follow-up fix: AccountAccess resolved the #header-profile portal target during the render phase, so the first optimistic paint showed the inline 'Signed in as' fallback card in the header while checking; the target is now resolved in useLayoutEffect after commit (headless Chrome: card gone, avatar portals with the restoring pill; web 71/71, typecheck, build). Production cold measurement after 22.5min Render idle: wake request completed in 13.5s via the Vercel proxy (well under the 120s CDN origin timeout), so the transient-failure downgrade path is not expected to trigger. Not deployed to production."
+    },
+    {
+      "id": "feat-066",
+      "name": "Compact collapsible archive filters",
+      "description": "The archive filter block occupies most of the first screen and pushes the record list below the fold. Collapse advanced filters (operation, status, order, date range) behind a toggle with an active-count badge, keep search always visible, and auto-apply filter changes so the list is reachable in one glance.",
+      "dependencies": ["feat-063"],
+      "acceptance_criteria": [
+        "By default only the search row and a filters toggle are visible; the record list starts near the top of the card on mobile and desktop.",
+        "Advanced filters live in a collapsible panel with an active-filter count badge; clearing returns to the unfiltered list.",
+        "Changing any filter applies immediately (page resets to 1) without a separate Apply step; search still applies on submit and keeps the clear-search control.",
+        "Existing filter semantics (reference search, operation, status, order, date range, pagination) are unchanged and VI/EN labels are complete.",
+        "Web tests, typecheck and build pass."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-10-04. RecorderHistory filters are now a single always-visible search row plus a Filters toggle; advanced operation/status/order/date controls live in a collapsible panel that auto-applies every change with page reset, shows an active-count badge when collapsed, and offers Clear all filters. Search applies on submit; clear-search retained. Web 76/76 (2 new filter tests, 3 updated), typecheck, build. Headless Chrome on local dev: collapsed by default, first list row 139px below the card top (was ~400px), panel expands, status filter auto-applied, badge showed 1 after collapse."
+    },
+    {
+      "id": "feat-067",
+      "name": "Multi-select delete from the archive list",
+      "description": "Add selection checkboxes to archive list rows with a bulk action bar so owners can delete several completed/expired records at once instead of opening each detail popup. Deletion reuses the existing per-activity delete API and a single confirmation dialog.",
+      "dependencies": ["feat-066"],
+      "acceptance_criteria": [
+        "Each deletable list row has an accessible checkbox plus a select-all control for the current page; selection survives re-render and resets on page/filter change.",
+        "A bulk bar shows the selected count with Delete and Cancel actions; delete requires one confirmation dialog stating evidence is permanently removed.",
+        "Non-deletable statuses (draft/uploading/cancelled) cannot be selected for delete and are reported as skipped in the result notice.",
+        "Partial failures are reported per record; the list refreshes and shows a VI/EN result summary after the batch.",
+        "Web tests, typecheck and build pass."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-10-04. Archive rows for complete/expired records have accessible checkboxes plus a select-all control; a bulk bar shows the count with Cancel and Delete selected, backed by one confirmation dialog. Deletion runs the existing per-activity API via Promise.allSettled, reports deleted/failed counts, clears selection and reloads; selection resets on every list load. Draft/uploading rows expose no checkbox. Web 76/76 (2 new bulk tests), typecheck, build. Headless Chrome on local dev: 3 checkboxes rendered, selecting 2 showed '2 ban ghi da chon', confirmation dialog opened and dismissed via Keep."
+    },
+    {
+      "id": "feat-068",
+      "name": "Archive detail popup: sticky header, media first, tighter spacing",
+      "description": "Rework the activity detail popup so the header (title + close) stays pinned while the body scrolls, evidence media is the first content section, outside-tap dismissal remains reliable, and vertical spacing between sections is reduced so the popup is scannable.",
+      "dependencies": ["feat-066"],
+      "acceptance_criteria": [
+        "The popup uses a fixed header with the activity identity and close control; the scrollable body sits below it on mobile and desktop.",
+        "Ready image/video evidence renders as the first body section, above metadata correction, audit trail and lifecycle actions.",
+        "Pointer-down outside the dialog (and Escape) still closes it; scrolling inside the dialog never moves or hides the header.",
+        "Section spacing is tightened (consistent compact rhythm) without changing popup actions or data.",
+        "Web tests, typecheck and build pass."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-10-04. The activity detail dialog is now a flex column with overflow-hidden: a pinned header (operation badge, truncated title, status/occurred/storage meta line, close button) outside a single overflow-y-auto body. Ready/expired evidence media is the first body section, above metadata correction, lifecycle actions and audit trail; section rhythm unified to space-y-4 with tighter form/asset gaps. Backdrop pointer-down and Escape dismissal unchanged. Web 76/76 (1 new layout test, 1 class assertion updated), typecheck, build. Headless Chrome on local dev: media precedes the edit form, close button sits outside the scroll body, header still visible after scrolling to the bottom, and tapping the backdrop dismissed the popup."
     }
   ]
 }
