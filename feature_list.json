@@ -875,6 +875,20 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-10-04. The activity detail dialog is now a flex column with overflow-hidden: a pinned header (operation badge, truncated title, status/occurred/storage meta line, close button) outside a single overflow-y-auto body. Ready/expired evidence media is the first body section, above metadata correction, lifecycle actions and audit trail; section rhythm unified to space-y-4 with tighter form/asset gaps. Backdrop pointer-down and Escape dismissal unchanged. Web 76/76 (1 new layout test, 1 class assertion updated), typecheck, build. Headless Chrome on local dev: media precedes the edit form, close button sits outside the scroll body, header still visible after scrolling to the bottom, and tapping the backdrop dismissed the popup."
+    },
+    {
+      "id": "feat-069",
+      "name": "Allow deleting activities in any status",
+      "description": "Owners could not remove cancelled, draft or uploading records at all: the backend delete gate rejected every non-complete status and the archive UI hid the delete control for them. Any activity can now be deleted (single or bulk) through the same soft-delete plus provider cleanup pipeline used by completed records.",
+      "dependencies": ["feat-067"],
+      "acceptance_criteria": [
+        "DELETE /activities/{id} returns 202 for every status (draft, uploading, complete, expired, cancelled) and enqueues provider cleanup for assets with provider refs; repeat delete stays idempotent.",
+        "The detail popup shows Delete for every status and the list checkboxes/select-all include every row.",
+        "ACTIVITY_NOT_DELETABLE is removed from service errors and the API contract.",
+        "Web and backend tests, typecheck and build pass."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-10-04. Backend deleteActivity no longer gates on status (only null/already-deleted handled); ACTIVITY_NOT_DELETABLE mapping removed from service.ts and docs/API_CONTRACT.md; every list row and detail popup now exposes delete. Web 77/77 (1 new any-status test, bulk test updated to include draft), typecheck, build; backend 93 pass/5 skip, typecheck. Local API (curl, seeded session): DELETE on a seeded draft → 202 {cleanupPending:0}, DELETE on a seeded cancelled → 202, repeat DELETE → 202; DB showed both rows status='deleted' with deleted_at set. Probe rows, session and token removed afterwards."
     }
   ]
 }

@@ -59,9 +59,6 @@ function mapRepositoryConflict(error: unknown): never {
     if (error.message === 'ACTIVITY_NOT_CANCELLABLE') {
       throw new AppError(409, 'ACTIVITY_NOT_CANCELLABLE', 'A completed activity cannot be cancelled.')
     }
-    if (error.message === 'ACTIVITY_NOT_DELETABLE') {
-      throw new AppError(409, 'ACTIVITY_NOT_DELETABLE', 'Only a completed activity can be deleted.')
-    }
   }
   throw error
 }

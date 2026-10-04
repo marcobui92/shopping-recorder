@@ -156,7 +156,6 @@ class MemoryRecorderRepository implements RecorderRepository {
   async deleteActivity(userId: string, activityId: string) {
     const activity = this.activities.get(activityId)
     if (!activity || activity.ownerUserId !== userId) return null
-    if (activity.status !== 'complete' && !this.deleted.has(activityId)) throw new Error('ACTIVITY_NOT_DELETABLE')
     if (!this.deleted.has(activityId)) {
       this.deleted.add(activityId)
       this.addAudit(activityId, 'deleted', { ...activity }, { status: 'deleted' })

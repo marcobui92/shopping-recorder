@@ -151,17 +151,18 @@ describe('RecorderHistory', () => {
     render(<RecorderHistory />)
     await screen.findByText('ORDER-1042')
 
-    expect(screen.queryByLabelText('Select ORDER-3072')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Select ORDER-3072')).toBeInTheDocument()
     fireEvent.click(screen.getByLabelText('Select ORDER-1042'))
     fireEvent.click(screen.getByLabelText('Select ORDER-2048'))
-    expect(screen.getByText('2 records selected')).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Select ORDER-3072'))
+    expect(screen.getByText('3 records selected')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
 
     await waitFor(() => expect(deleteRecorderActivity).toHaveBeenCalledWith('activity-1'))
     await waitFor(() => expect(deleteRecorderActivity).toHaveBeenCalledWith('activity-2'))
-    expect(deleteRecorderActivity).not.toHaveBeenCalledWith('activity-3')
-    await screen.findByText('2 activities deleted.')
+    await waitFor(() => expect(deleteRecorderActivity).toHaveBeenCalledWith('activity-3'))
+    await screen.findByText('3 activities deleted.')
     expect(listRecorderActivities).toHaveBeenCalledTimes(2)
     expect(screen.getByLabelText('Select ORDER-1042')).not.toBeChecked()
   })
@@ -180,6 +181,28 @@ describe('RecorderHistory', () => {
 
     await screen.findByText('1 activities deleted.')
     expect(screen.getByRole('alert')).toHaveTextContent('1 could not be deleted.')
+  })
+
+  it('lets records in every status be selected in the list and deleted from the detail popup', async () => {
+    const cancelled = { ...activity, completedAt: null, evidenceExpiresAt: null, expiredAt: null, id: 'activity-5', reference: 'ORDER-5100', status: 'cancelled' as const }
+    const draft = { ...activity, completedAt: null, evidenceExpiresAt: null, id: 'activity-6', reference: 'ORDER-6100', status: 'draft' as const }
+    vi.mocked(listRecorderActivities).mockResolvedValue({ data: [cancelled, draft], meta: { page: 1, pageSize: 10, totalPages: 1, totalRecords: 2 } })
+    vi.mocked(getRecorderActivity).mockResolvedValue({ ...cancelled, assets: [] })
+    render(<RecorderHistory />)
+    await screen.findByText('ORDER-5100')
+
+    expect(screen.getByLabelText('Select ORDER-6100')).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Select ORDER-5100'))
+    fireEvent.click(screen.getByLabelText('Select ORDER-6100'))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete selected' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+    await waitFor(() => expect(deleteRecorderActivity).toHaveBeenCalledWith('activity-5'))
+    await waitFor(() => expect(deleteRecorderActivity).toHaveBeenCalledWith('activity-6'))
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'View evidence' })[0])
+    const deleteButton = await screen.findByRole('button', { name: 'Delete activity' })
+    fireEvent.click(deleteButton)
+    expect(screen.getByRole('heading', { name: 'Delete activity?' })).toBeInTheDocument()
   })
 
   it('pins the detail header outside the scroll body and places evidence media first', async () => {

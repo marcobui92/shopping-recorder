@@ -408,9 +408,6 @@ export class PostgresRecorderRepository implements RecorderRepository {
       `, [activityId, ownerUserId])
       const current = found.rows[0]
       if (!current) return null
-      if (current.status !== 'complete' && current.status !== 'expired' && current.status !== ('deleted' as RecorderActivity['status'])) {
-        throw new Error('ACTIVITY_NOT_DELETABLE')
-      }
       if (current.status !== ('deleted' as RecorderActivity['status'])) {
         const before = toActivity(current)
         await client.query(`UPDATE recorder_activities SET status = 'deleted', deleted_at = now(), updated_at = now() WHERE id = $1`, [activityId])

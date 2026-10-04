@@ -245,7 +245,7 @@ Cancels only a `draft` or `uploading` activity, expires active attempts, revokes
 
 ### `DELETE /api/v1/recorder-activities/{activityId}`
 
-Deletes a completed or expired activity after explicit browser confirmation. The API changes it to an internal tombstone immediately and attempts exact-version provider cleanup. Returns `202` with `{ "data": { "cleanupPending": number } }`; deleted activities disappear from history/detail/content immediately.
+Deletes an activity in any status after explicit browser confirmation. The API changes it to an internal tombstone immediately and attempts exact-version provider cleanup. Returns `202` with `{ "data": { "cleanupPending": number } }`; deleted activities disappear from history/detail/content immediately.
 
 Completed evidence automatically expires 30 days after `completedAt`. The backend sweep changes the activity to `expired` before provider calls, so content retrieval is denied immediately even if B2 or Drive deletion must retry. List/detail responses retain the record, asset metadata and audit trail; provider references remain private.
 
@@ -342,7 +342,6 @@ All errors retain the standard `{ "error": { "code", "message" } }` shape.
 | 409 | `ACTIVITY_IMMUTABLE` | Completed activity cannot accept the requested mutation |
 | 409 | `ACTIVITY_NOT_COMPLETABLE` | Activity has no assets or at least one asset is not ready |
 | 409 | `ACTIVITY_NOT_CANCELLABLE` | Completed activity cannot use cancellation |
-| 409 | `ACTIVITY_NOT_DELETABLE` | Activity must be completed before deletion |
 | 409 | `UPLOAD_ALREADY_ACTIVE` | Asset already has a nonterminal upload attempt |
 | 409 | `ASSET_ALREADY_READY` | Ready evidence does not need another upload |
 | 410 | `UPLOAD_EXPIRED` | Upload capability can no longer be finalized |

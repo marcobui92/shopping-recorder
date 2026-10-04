@@ -34,7 +34,7 @@ const translations: Record<string, string> = {
   'The upload could not be recovered. Check the connection and retry.': 'Không thể khôi phục lần tải lên. Kiểm tra kết nối rồi thử lại.',
   'All evidence is already verified. You can complete this activity from its detail view.': 'Tất cả bằng chứng đã được xác minh. Bạn có thể hoàn tất hoạt động từ phần chi tiết.',
   'Cancel unfinished activity?': 'Hủy hoạt động chưa hoàn tất?',
-  'Delete completed activity?': 'Xóa hoạt động đã hoàn tất?',
+  'Delete activity?': 'Xóa hoạt động?',
   'This will cancel the activity and remove uploaded evidence.': 'Hoạt động sẽ bị hủy và bằng chứng đã tải lên sẽ bị xóa.',
   'This permanently hides the activity and deletes its evidence. This cannot be undone.': 'Hoạt động sẽ bị ẩn vĩnh viễn và bằng chứng bị xóa. Không thể hoàn tác.',
   'Keep': 'Giữ lại',
