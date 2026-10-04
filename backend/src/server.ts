@@ -99,7 +99,7 @@ async function start() {
     await app.listen({ host: config.host, port: config.port })
     if (recorderService) {
       void runRetentionSweep()
-      retentionTimer = setInterval(() => { void runRetentionSweep() }, 60 * 60 * 1000)
+      retentionTimer = setInterval(() => { void runRetentionSweep() }, 24 * 60 * 60 * 1000)
       retentionTimer.unref()
     }
   } catch (error) {

@@ -25,7 +25,7 @@ The recorder contract supports packing/unpacking activities and verified image/v
 
 ### `GET /api/v1/settings` and `PATCH /api/v1/settings`
 
-Settings are authenticated and owner-scoped. The response is `{ "data": { "retentionDays": 30 } }` by default. `PATCH` accepts only an integer `retentionDays` from 1 through 3650. The value applies when the owner completes future activities; existing completed activities keep their assigned expiry deadline. Stored evidence is deleted when that deadline is reached while record metadata remains available as expired.
+Settings are authenticated and owner-scoped. The response is `{ "data": { "retentionDays": 30 } }` by default. `PATCH` accepts only an integer `retentionDays` from 1 through 3650. The value applies when the owner completes future activities, and saving also recomputes `evidence_expires_at` (completion time plus the new period) for the owner's activities that are still `complete` in the same transaction; already expired, cancelled or deleted records keep their stored deadlines. Stored evidence is deleted when that deadline is reached while record metadata remains available as expired.
 
 | Capability | Planned responsibility | Owning feature |
 | --- | --- | --- |

@@ -889,6 +889,33 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-10-04. Backend deleteActivity no longer gates on status (only null/already-deleted handled); ACTIVITY_NOT_DELETABLE mapping removed from service.ts and docs/API_CONTRACT.md; every list row and detail popup now exposes delete. Web 77/77 (1 new any-status test, bulk test updated to include draft), typecheck, build; backend 93 pass/5 skip, typecheck. Local API (curl, seeded session): DELETE on a seeded draft → 202 {cleanupPending:0}, DELETE on a seeded cancelled → 202, repeat DELETE → 202; DB showed both rows status='deleted' with deleted_at set. Probe rows, session and token removed afterwards."
+    },
+    {
+      "id": "feat-070",
+      "name": "Apply retention setting to existing completed records",
+      "description": "Evidence expiry is frozen at completion time, so raising the auto-delete period (e.g. 1 → 15 days) still deleted records completed under the shorter setting. PATCH /settings must recompute evidence_expires_at (completed_at + current retention) for the owner's still-complete activities in the same transaction.",
+      "dependencies": ["feat-058"],
+      "acceptance_criteria": [
+        "updateRetentionDays recomputes evidence_expires_at = completed_at + new retention days for all owner activities in status complete; expired/cancelled/deleted rows are untouched.",
+        "Setting update and expiry recomputation commit atomically; unknown user returns null as before.",
+        "API contract and Settings page copy state that saving updates existing completed records.",
+        "Backend and web tests (incl. PostgreSQL integration), typecheck and build pass."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-10-04. PostgresSettingsRepository.updateRetentionDays now runs in one transaction: after updating app_users.retention_days it recomputes evidence_expires_at = completed_at + new days for the owner's status='complete' activities; expired/cancelled/deleted rows untouched; missing user still returns null. API contract and Settings page copy (EN/VI) state the recalculation. Backend 93 passed/6 opt-in skipped plus typecheck; new PostgreSQL integration 1/1 (recompute to 15 days, expired row unchanged, unknown user null); web 77/77, typecheck, build. Live local API smoke reproducing the reported bug: seeded retention 1 day + a complete record expiring tomorrow, PATCH settings to 15 → 200 and the record's window became exactly 15 days from completion; tightening to 5 recomputed to 5 days; retentionDays=0 → 400. Probe rows, session, token removed and local account retention restored to 30."
+    },
+    {
+      "id": "feat-071",
+      "name": "Run the retention sweep daily instead of hourly",
+      "description": "Per owner direction, the in-process auto-delete sweep should repeat once a day rather than every hour. Keep the immediate sweep on backend startup; change the interval to 24 hours and update architecture/operations docs that state hourly scheduling.",
+      "dependencies": ["feat-070"],
+      "acceptance_criteria": [
+        "server.ts schedules runRetentionSweep with a 24-hour interval and still runs it on startup.",
+        "ARCHITECTURE.md and OPERATIONS.md describe the daily sweep and owner-configured retention.",
+        "Backend tests and typecheck pass."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-10-04. setInterval window changed from 60*60*1000 to 24*60*60*1000 in backend/src/server.ts (startup sweep unchanged); ARCHITECTURE.md and OPERATIONS.md reworded to startup-and-daily and owner retention setting. Backend 93 passed/6 opt-in skipped, typecheck pass. Note: due records are now physical-deleted up to ~24h after their exact expiry timestamp; each cold start also sweeps immediately, so sleeping free-tier instances still reconcile on wake."
     }
   ]
 }

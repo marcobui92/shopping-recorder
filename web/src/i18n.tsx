@@ -110,7 +110,7 @@ const translations: Record<string, string> = {
   'Google Drive': 'Google Drive',
   'Manage your Google Drive connection for personal evidence storage.': 'Quản lý kết nối Google Drive để lưu bằng chứng cá nhân.',
   'Auto-delete evidence after (days)': 'Tự động xóa bằng chứng sau (ngày)',
-  'Completed records keep their metadata, but stored files are deleted after this period. Choose 1 to 3650 days.': 'Bản ghi hoàn tất vẫn giữ thông tin, nhưng tệp sẽ bị xóa sau thời gian này. Chọn từ 1 đến 3650 ngày.',
+  'Completed records keep their metadata, but stored files are deleted this many days after each record was completed. Saving also updates the deadline of records still in your archive. Choose 1 to 3650 days.': 'Bản ghi hoàn tất vẫn giữ thông tin, nhưng tệp sẽ bị xóa sau số ngày này tính từ lúc mỗi bản ghi hoàn tất. Khi lưu, hạn xóa của các bản ghi còn trong lưu trữ cũng được tính lại. Chọn từ 1 đến 3650 ngày.',
   'Save settings': 'Lưu cài đặt',
   'Settings saved.': 'Đã lưu cài đặt.',
   'Unable to load settings.': 'Không thể tải cài đặt.',
