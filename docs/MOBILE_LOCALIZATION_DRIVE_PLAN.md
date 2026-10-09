@@ -177,6 +177,8 @@ Sau khi đăng nhập ứng dụng, người dùng cần thấy rõ Google Drive
 
 Các bề mặt cho người dùng sẽ gọi B2 bằng tên trung tính như “Application storage / Bộ nhớ ứng dụng”, không hiển thị tên Backblaze. Google Drive vẫn giữ tên thật để người dùng nhận biết tài khoản và ranh giới quyền. Enum/API/log/provider kỹ thuật không đổi; cần audit copy, lỗi, badge, chi tiết activity và test VI/EN.
 
+Cập nhật (feat-072): audit copy ở chi tiết activity, badge trạng thái, tên khu vực/aria-label và thông báo lỗi/notice đã đi qua `t()`; nhãn dịch không còn bị `capitalize` CSS viết hoa lại (từ điển là chủ sở hữu duy nhất của casing), và ngày/tháng cùng kích thước tệp định dạng theo `useI18n().locale`. Còn mở: nội dung dài trong `LegalPage.tsx` và tên thao tác trong audit trail (hiển thị enum API).
+
 ### feat-037 — Reset form và preview bằng chứng sau submit
 
 Khi activity hoàn tất thành công, form tạo mới phải xóa metadata/file state để bản ghi kế tiếp bắt đầu sạch. Trạng thái thành công hiển thị reference và preview ảnh/video vừa xác minh, cùng đường dẫn xem chi tiết qua quyền bảo vệ hiện hành. Nếu upload/finalize thất bại, dữ liệu và khả năng recovery vẫn được giữ. Reset chỉ xảy ra sau completion thành công; cần kiểm tra focus, object URL cleanup, VI/EN và bố cục mobile.

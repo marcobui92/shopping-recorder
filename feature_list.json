@@ -916,6 +916,22 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-10-04. setInterval window changed from 60*60*1000 to 24*60*60*1000 in backend/src/server.ts (startup sweep unchanged); ARCHITECTURE.md and OPERATIONS.md reworded to startup-and-daily and owner retention setting. Backend 93 passed/6 opt-in skipped, typecheck pass. Note: due records are now physical-deleted up to ~24h after their exact expiry timestamp; each cold start also sweeps immediately, so sleeping free-tier instances still reconcile on wake."
+    },
+    {
+      "id": "feat-072",
+      "name": "Apply audited design-system refinements to the recorder UI",
+      "description": "Seven verified plans under design-plans/ closed gaps that survived feature growth: an element-level 44px minimum that silently overrode every smaller control, record status presented two different ways inside one task, hand-written link styling beside the button primitive, English application copy in the activity detail and shell chrome, CSS re-capitalization of translated labels plus browser-locale dates and byte sizes, an over-provisioned new-record column split, and a step indicator that could not express state.",
+      "dependencies": ["feat-027", "feat-028", "feat-066", "feat-068"],
+      "acceptance_criteria": [
+        "Control heights are declared by the primitives: standard buttons and fields render 44px, sm renders 36px, icon renders a 40x40 square, the language flag trigger renders its documented compact size, and no !min-h-*/!important height patch remains in web/src.",
+        "Record status uses Badge plus statusVariant in both the archive row and the detail header, and evidence/Drive action links render through buttonVariants.",
+        "Activity detail copy, archive pagination, new-record section names and shell navigation/footer labels resolve through t() in both locales.",
+        "Translated labels are not re-cased by CSS, and dates plus byte sizes format through useI18n().locale.",
+        "The new-record card splits its lg columns equally with the drop zone filling the row, and the step indicator advances with items.length, activityId and complete.",
+        "Web tests, typecheck and the production build pass."
+      ],
+      "status": "done",
+      "evidence": "Completed on 2026-10-09. Removed the styles.css base-layer button min-height; buttonVariants base now carries min-h-11 with sm 'h-9 min-h-0' and icon 'size-10 min-h-0', Input and the Select trigger render h-11, and the !min-h-0 patches in AccountAccess and the evidence viewer plus the h-auto min-h-10 patches in GoogleDriveConnection are gone. Headless-Chrome measurements in the running app (signed in, lang=vi): at 1440px Input 550x44, Select trigger 550x44, lg submit 205x44, sm View evidence 162x36, profile avatar 40x40 (was 40x44), flag trigger 40x24, archive search field 930x44; at 390px the same tiers hold with the two-up phone field grid intact and no horizontal growth. New-record grid resolves 607px/607px (was 473/741) with the drop zone at 551x414 and only 28px of section padding below it instead of 242px of empty card; SessionLoadingSkeleton mirrors the split and side assignment. Detail header renders the outline status Badge for a draft (measured 77x26) and its meta line reads 'Bản nháp · 22:14 4 thg 10, 2026 · Bộ nhớ ứng dụng'; the list row reads 'Đóng gói' instead of 'Đóng Gói'. Web 78/78 tests (1 new step-indicator test), typecheck and production build pass. ./init.sh not re-run: no dependency or lockfile change. Not exercised: asset-level action rows and Drive actions, because the probe record holds no uploaded evidence and no file was pushed to provider storage."
     }
   ]
 }

@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Copy, ExternalLink } from 'lucide-react'
 import { getMediaAssetDriveLink, getMediaAssetDriveOpenUrl } from '../api'
 import { useI18n } from '../i18n'
-import { Button } from './ui/button'
+import { Button, buttonVariants } from './ui/button'
 import { Input } from './ui/input'
+import { cn } from '../lib/utils'
 
 export function DriveFileActions({ assetId }: { assetId: string }) {
   const { t } = useI18n()
@@ -26,8 +27,8 @@ export function DriveFileActions({ assetId }: { assetId: string }) {
 
   return <div className="space-y-2">
     <div className="flex flex-wrap gap-2">
-      <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void copyLink()}><Copy aria-hidden="true" className="size-3.5" />{t(busy ? 'Getting link…' : 'Copy Drive link')}</Button>
-      <a className="inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-semibold hover:bg-accent" href={getMediaAssetDriveOpenUrl(assetId)} target="_blank" rel="noopener noreferrer"><ExternalLink aria-hidden="true" className="size-3.5" />{t('Open in Drive')}</a>
+      <Button type="button" variant="outline" disabled={busy} onClick={() => void copyLink()}><Copy aria-hidden="true" className="size-3.5" />{t(busy ? 'Getting link…' : 'Copy Drive link')}</Button>
+      <a className={cn(buttonVariants({ variant: 'outline' }))} href={getMediaAssetDriveOpenUrl(assetId)} target="_blank" rel="noopener noreferrer"><ExternalLink aria-hidden="true" className="size-3.5" />{t('Open in Drive')}</a>
     </div>
     <p className="text-xs text-muted-foreground">{t('Drive opens the current file. Google access is required.')}</p>
     {copied && <p role="status" className="text-xs text-emerald-700">{t('Drive link copied.')}</p>}

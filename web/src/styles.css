@@ -44,7 +44,6 @@
   html { @apply scroll-smooth; }
   body { @apply m-0 min-w-80 bg-background font-sans text-foreground antialiased; }
   button, a, input, select, textarea { @apply focus-visible:outline-none; }
-  button, [role="button"] { min-height: 2.75rem; }
   ::selection { @apply bg-primary/20 text-foreground; }
 }
 

@@ -1,5 +1,5 @@
 import { StrictMode } from 'react'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -89,6 +89,21 @@ describe('RecorderWorkflow', () => {
     expect(screen.getByLabelText('Notes')).toHaveClass('h-20', 'sm:h-auto', 'sm:min-h-24')
     expect(screen.getByText('Drop evidence here or choose files').closest('label')).toHaveClass('min-h-32', 'sm:min-h-44', 'py-4', 'sm:py-7')
     expect(screen.getByText('Add the handoff context, then review every photo and video before starting the secure upload.')).toHaveClass('hidden', 'sm:block')
+  })
+
+  it('advances the step indicator as evidence is staged', () => {
+    render(<RecorderWorkflow />)
+    const steps = screen.getByRole('list', { name: 'New record steps' })
+    let items = within(steps).getAllByRole('listitem')
+    expect(items[0]).toHaveAttribute('aria-current', 'step')
+    expect(items[1]).not.toHaveAttribute('aria-current')
+
+    selectEvidence()
+    items = within(steps).getAllByRole('listitem')
+    expect(items[0]).not.toHaveAttribute('aria-current')
+    expect(items[0].querySelector('svg')).toBeInTheDocument()
+    expect(items[1]).toHaveAttribute('aria-current', 'step')
+    expect(items[2]).not.toHaveAttribute('aria-current')
   })
 
   it('shows dropped files immediately and lets the operator remove them before upload', async () => {

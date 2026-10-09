@@ -68,7 +68,7 @@ function AppContent() {
       <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-2 px-2 sm:gap-3 sm:px-6 lg:px-8">
           <BrandRefreshButton disabled={workspaceBusy} />
-          <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <nav aria-label={t('Main navigation')} className="flex shrink-0 items-center gap-1 sm:gap-2">
             {user && <NavLink aria-label={t('Workspace')} className="inline-flex size-9 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:h-auto sm:w-auto sm:px-3 sm:py-2" end to="/"><LayoutDashboard aria-hidden="true" className="size-4" /><span aria-hidden="true" className="hidden sm:inline">{t('Workspace')}</span></NavLink>}
             {user && <NavLink aria-label={t('Evidence archive')} className="inline-flex size-9 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:h-auto sm:w-auto sm:px-3 sm:py-2" to="/archive"><Archive aria-hidden="true" className="size-4" /><span aria-hidden="true" className="hidden sm:inline">{t('Evidence archive')}</span></NavLink>}
             {user && <NavLink aria-label={t('Settings')} className="inline-flex size-9 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:h-auto sm:w-auto sm:px-3 sm:py-2" to="/settings"><Settings aria-hidden="true" className="size-4" /><span aria-hidden="true" className="hidden sm:inline">{t('Settings')}</span></NavLink>}
@@ -100,7 +100,7 @@ function AppContent() {
       <footer className="border-t bg-card/60">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-7 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <span>LinhCj&apos;s · {t('Packing & unpacking evidence')}</span>
-          <nav aria-label="Legal" className="flex gap-4"><Link className="hover:text-foreground hover:underline" to="/privacy">Privacy Policy</Link><Link className="hover:text-foreground hover:underline" to="/terms">Terms of Service</Link><span>{t('Encrypted in transit · Owner-authorized access')}</span></nav>
+          <nav aria-label={t('Legal')} className="flex gap-4"><Link className="hover:text-foreground hover:underline" to="/privacy">{t('Privacy Policy')}</Link><Link className="hover:text-foreground hover:underline" to="/terms">{t('Terms of Service')}</Link><span>{t('Encrypted in transit · Owner-authorized access')}</span></nav>
         </div>
       </footer>
     </div>

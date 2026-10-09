@@ -14,18 +14,18 @@ export function SessionLoadingSkeleton() {
         <div className="h-5 w-28 rounded-full bg-white/15" />
         <div className="mx-auto h-7 w-56 max-w-full rounded bg-white/20" />
       </div>
-      <div className="grid gap-5 p-4 sm:p-7 lg:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-5 p-4 sm:p-7 lg:grid-cols-2">
+        <div className="space-y-3">
+          <div className="h-5 w-36 rounded bg-muted" />
+          <div className="h-11 rounded-lg bg-muted" />
+          <div className="h-24 rounded-lg bg-muted" />
+        </div>
         <div className="space-y-4">
           <div className="h-36 rounded-xl bg-muted" />
           <div className="grid grid-cols-2 gap-3">
             <div className="h-11 rounded-lg bg-muted" />
             <div className="h-11 rounded-lg bg-muted" />
           </div>
-        </div>
-        <div className="space-y-3">
-          <div className="h-5 w-36 rounded bg-muted" />
-          <div className="h-11 rounded-lg bg-muted" />
-          <div className="h-24 rounded-lg bg-muted" />
         </div>
       </div>
     </div>

@@ -140,11 +140,14 @@ const translations: Record<string, string> = {
   'Review complete · Upload': 'Đã xem xong · Tải lên', 'Starting…': 'Đang bắt đầu…', 'Complete record': 'Hoàn tất bản ghi', 'Reset form': 'Đặt lại biểu mẫu', 'Evidence record completed and secured.': 'Bản ghi bằng chứng đã hoàn tất và được bảo vệ.',
   'Select at least one image or video.': 'Hãy chọn ít nhất một ảnh hoặc video.', 'Unsupported file type:': 'Định dạng tệp không được hỗ trợ:', 'Upload failed.': 'Tải lên không thành công.', 'Retry': 'Thử lại', 'Verified': 'Đã xác minh',
   'Ready to upload': 'Sẵn sàng tải lên', 'Calculating checksum': 'Đang tính mã kiểm tra', 'Preparing storage': 'Đang chuẩn bị nơi lưu', 'Uploading': 'Đang tải lên', 'Verifying file': 'Đang xác minh tệp', 'Needs attention': 'Cần xử lý',
+  'Ready': 'Sẵn sàng', 'Pending upload': 'Chờ tải lên', 'Verifying': 'Đang xác minh', 'Failed': 'Lỗi',
   'Evidence archive': 'Kho bằng chứng', 'Recorded handoffs': 'Các lần bàn giao đã ghi', 'Search activity history and review verified evidence.': 'Tìm trong lịch sử và xem bằng chứng đã xác minh.',
   'Recorder workspace sections': 'Các khu vực không gian ghi nhận',
+  'Main navigation': 'Điều hướng chính', 'Legal': 'Thông tin pháp lý', 'Privacy Policy': 'Chính sách bảo mật', 'Terms of Service': 'Điều khoản dịch vụ',
+  'New record steps': 'Các bước tạo bản ghi', 'Evidence upload status': 'Trạng thái tải lên bằng chứng',
   'record': 'bản ghi', 'records': 'bản ghi',
   'Apply filters': 'Áp dụng bộ lọc', 'All': 'Tất cả', 'Newest first': 'Mới nhất trước', 'Oldest first': 'Cũ nhất trước', 'Occurred from': 'Từ thời điểm', 'Occurred to': 'Đến thời điểm',
-  'Loading evidence records…': 'Đang tải bản ghi bằng chứng…', 'No evidence records match these filters.': 'Không có bản ghi phù hợp với bộ lọc.', 'View evidence': 'Xem bằng chứng', 'Previous': 'Trước', 'Next': 'Sau',
+  'Loading evidence records…': 'Đang tải bản ghi bằng chứng…', 'No evidence records match these filters.': 'Không có bản ghi phù hợp với bộ lọc.', 'View evidence': 'Xem bằng chứng', 'Previous': 'Trước', 'Next': 'Sau', 'Recorder history pages': 'Trang lịch sử bản ghi',
   'Close detail': 'Đóng chi tiết', 'Unreferenced activity': 'Hoạt động chưa có mã', 'Status': 'Trạng thái', 'Occurred': 'Thời điểm', 'Storage': 'Nơi lưu', 'Save correction': 'Lưu chỉnh sửa', 'Saving…': 'Đang lưu…', 'Cancel activity': 'Hủy hoạt động', 'Delete activity': 'Xóa hoạt động',
   'Order': 'Thứ tự', 'Draft': 'Bản nháp', 'Complete': 'Hoàn tất', 'Expired': 'Đã hết hạn', 'Cancelled': 'Đã hủy', 'Page': 'Trang', 'of': 'trên', 'Close': 'Đóng', 'Correct activity metadata': 'Chỉnh sửa thông tin hoạt động.', 'Unable to load activity detail.': 'Không thể tải chi tiết hoạt động.', 'Unable to cancel the activity.': 'Không thể hủy hoạt động.', 'Loading activity detail…': 'Đang tải chi tiết hoạt động…',
   'Evidence expired': 'Bằng chứng đã hết hạn',
@@ -175,7 +178,7 @@ export function useI18n() { return useContext(I18nContext) }
 export function LanguageSwitcher() {
   const { locale, setLocale } = useI18n()
   return <div className="[&_[role=listbox]]:right-0 [&_[role=listbox]]:w-16">
-    <Select aria-label="Language" className="h-6 w-10 border-0 px-0.5 text-base shadow-none" id="language-switcher" value={locale} onChange={(event) => setLocale(event.target.value as Locale)}>
+    <Select aria-label="Language" className="h-6 w-10 min-h-0 border-0 px-0.5 text-base shadow-none" id="language-switcher" value={locale} onChange={(event) => setLocale(event.target.value as Locale)}>
       <option aria-label="Tiếng Việt" value="vi">🇻🇳</option>
       <option aria-label="English" value="en">🇺🇸</option>
     </Select>
