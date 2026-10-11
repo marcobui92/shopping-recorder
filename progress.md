@@ -665,3 +665,7 @@ NODE
 - Implementation is token-only: :root carries the Hong dao tone; html[data-tone] blocks override the hue-dependent tokens at identical lightness, so every measured WCAG pair holds in every tone (ink ≥11.98, faded ink ≥5.83, seal-on-tint ≥5.63, button text ≥12.6). Ledger Amber and Seal Crimson stay fixed so pending/danger never collide with a tone's seal hue.
 - Verification: web 79/79 (new persistence test), typecheck, build; headless Chrome confirmed all five token blocks compute live, checked-state, reload persistence and no label truncation; screenshots /tmp/ui-verify/f075-*.
 - Next session: commit feat-073/074/075 together (pre-push security gate; ./init.sh re-run; UI-AUDIT-001/ui_audit_probe cleanup decision).
+
+## 2026-10-11 — feat-073/074/075 committed and pushed
+
+- `febb314` chore: better-* skill suite; `bd3c080` feat: Custody Dossier identity + lighter tone + naturalized Vietnamese + 5 selectable tones (logo follows the tone). `main` and `origin/develop` fast-forwarded to `bd3c080`; pre-push L3 scan skipped by user choice. Remaining: production deploy/verification, ./init.sh restartable re-check, UI-AUDIT-001/ui_audit_probe cleanup, physical mobile pass.
