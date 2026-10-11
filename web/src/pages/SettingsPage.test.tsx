@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { I18nProvider } from '../i18n'
 import { SettingsPage } from './SettingsPage'
@@ -33,5 +33,22 @@ describe('SettingsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Lưu cài đặt' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Nhập số ngày từ 1 đến 3650.')
     expect(updateSettings).not.toHaveBeenCalled()
+  })
+
+  it('applies and persists the chosen color tone', async () => {
+    localStorage.removeItem('shopping-recorder-tone')
+    document.documentElement.removeAttribute('data-tone')
+    render(<I18nProvider><SettingsPage sessionStatus="verified" user={user} onUserChange={vi.fn()} /></I18nProvider>)
+    const group = await screen.findByRole('radiogroup', { name: 'Tone màu' })
+    expect(within(group).getByRole('radio', { name: 'Hồng đào' })).toBeChecked()
+    fireEvent.click(within(group).getByRole('radio', { name: 'Tím lavender' }))
+    expect(within(group).getByRole('radio', { name: 'Tím lavender' })).toBeChecked()
+    expect(localStorage.getItem('shopping-recorder-tone')).toBe('tim')
+    expect(document.documentElement.getAttribute('data-tone')).toBe('tim')
+    fireEvent.click(within(group).getByRole('radio', { name: 'Xanh hồ sơ' }))
+    expect(localStorage.getItem('shopping-recorder-tone')).toBe('xanh')
+    expect(document.documentElement.getAttribute('data-tone')).toBe('xanh')
+    document.documentElement.removeAttribute('data-tone')
+    localStorage.removeItem('shopping-recorder-tone')
   })
 })

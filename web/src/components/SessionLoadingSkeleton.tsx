@@ -9,10 +9,10 @@ export function SessionLoadingSkeleton() {
     role="status"
   >
     <span className="sr-only">{t('Loading your workspace')}</span>
-    <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-      <div className="space-y-3 bg-slate-950 p-5 sm:p-7">
-        <div className="h-5 w-28 rounded-full bg-white/15" />
-        <div className="mx-auto h-7 w-56 max-w-full rounded bg-white/20" />
+    <div className="overflow-hidden rounded-lg border bg-card">
+      <div className="space-y-3 border-b bg-muted/60 p-5 sm:p-7">
+        <div className="h-5 w-28 rounded-full bg-muted" />
+        <div className="mx-auto h-7 w-56 max-w-full rounded bg-muted" />
       </div>
       <div className="grid gap-5 p-4 sm:p-7 lg:grid-cols-2">
         <div className="space-y-3">

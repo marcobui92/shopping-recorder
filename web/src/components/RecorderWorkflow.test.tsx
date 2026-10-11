@@ -116,7 +116,7 @@ describe('RecorderWorkflow', () => {
 
     expect(screen.getByText('1 file ready for review')).toBeInTheDocument()
     expect(screen.getByText('Review selected evidence')).toBeInTheDocument()
-    expect(screen.getAllByText(/handoff\.jpg/)).toHaveLength(2)
+    expect(screen.getAllByText(/handoff\.jpg/)).toHaveLength(1)
     await waitFor(() => expect(screen.getByRole('button', { name: 'Review complete · Upload' })).toBeEnabled())
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove handoff.jpg' }))
@@ -137,7 +137,7 @@ describe('RecorderWorkflow', () => {
     expect(document.getElementById('record-photo')).toHaveAttribute('capture', 'environment')
     expect(document.getElementById('record-video')).toHaveAttribute('capture', 'environment')
     expect(screen.getByText('2 files ready for review')).toBeInTheDocument()
-    expect(screen.getAllByText(/front\.jpg|seal\.png/)).toHaveLength(3)
+    expect(screen.getAllByText(/front\.jpg|seal\.png/)).toHaveLength(2)
   })
 
   it('normalizes direct camera files with missing or generic MIME metadata', async () => {
@@ -169,7 +169,7 @@ describe('RecorderWorkflow', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Review complete · Upload' })).toBeEnabled())
     fireEvent.click(screen.getByRole('button', { name: 'Review complete · Upload' }))
 
-    expect(await screen.findAllByText(/seal\.jpg/)).toHaveLength(2)
+    expect(await screen.findAllByText(/seal\.jpg/)).toHaveLength(1)
     await waitFor(() => expect(screen.getByText(/^ready$/i)).toBeInTheDocument())
     fireEvent.click(screen.getByRole('button', { name: 'Complete record' }))
     await screen.findByText('Evidence record completed and secured.')
@@ -245,7 +245,7 @@ it.each(['disconnected', 'reauthorization_required', 'unavailable'] as const)('u
   vi.mocked(getStorageProviders).mockResolvedValue({ s3: { available: true }, google_drive: { available: false, configured: true, state } })
   render(<RecorderWorkflow />)
   await waitFor(() => expect(screen.getByLabelText('Storage')).toHaveValue('s3'))
-  fireEvent.click(screen.getByRole('button', { name: 'Application storage' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Storage: Application storage' }))
   expect(screen.getByRole('option', { name: 'Google Drive' })).toBeDisabled()
 })
 

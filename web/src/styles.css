@@ -1,3 +1,10 @@
+@import "@fontsource/be-vietnam-pro/400.css";
+@import "@fontsource/be-vietnam-pro/500.css";
+@import "@fontsource/be-vietnam-pro/600.css";
+@import "@fontsource/be-vietnam-pro/700.css";
+@import "@fontsource/be-vietnam-pro/800.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
 @import "tailwindcss";
 
 @theme inline {
@@ -17,26 +24,105 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-ink: var(--foreground);
+  --color-paper: var(--background);
+  --color-folio: var(--card);
+  --color-seal: var(--seal);
+  --color-seal-tint: var(--seal-tint);
+  --color-ledger-amber: var(--ledger-amber);
+  --color-ledger-amber-tint: var(--ledger-amber-tint);
+  --color-seal-crimson: var(--seal-crimson);
+  --color-seal-crimson-tint: var(--seal-crimson-tint);
+  --font-sans: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.6;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 1.35;
+  --text-2xl: 1.875rem;
+  --text-2xl--line-height: 1.25;
+  --text-3xl: 2.375rem;
+  --text-3xl--line-height: 1.15;
+  --text-4xl: 2.875rem;
+  --text-4xl--line-height: 1.1;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.5rem;
+  --radius-3xl: 0.75rem;
+  --radius-4xl: 0.75rem;
+  --default-transition-duration: 100ms;
 }
 
 :root {
-  --background: oklch(0.985 0.004 210);
-  --foreground: oklch(0.2 0.025 230);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.025 230);
-  --primary: oklch(0.47 0.115 178);
-  --primary-foreground: oklch(0.99 0.005 175);
-  --secondary: oklch(0.95 0.012 210);
-  --secondary-foreground: oklch(0.27 0.03 225);
-  --muted: oklch(0.96 0.008 215);
-  --muted-foreground: oklch(0.51 0.025 225);
-  --accent: oklch(0.94 0.025 177);
-  --accent-foreground: oklch(0.32 0.07 178);
-  --destructive: oklch(0.58 0.2 25);
-  --border: oklch(0.9 0.012 220);
-  --input: oklch(0.86 0.016 220);
-  --ring: oklch(0.56 0.11 178);
+  /* Custody Dossier: ink on paper; color reserved for evidentiary state. */
+  /* Default tone: Hong dao (peach rose). Other tones override hues below; lightness is shared. */
+  --background: oklch(0.976 0.006 25); /* Paper */
+  --foreground: oklch(0.32 0.05 358); /* Dossier Ink */
+  --card: oklch(0.993 0.004 25); /* Folio */
+  --card-foreground: oklch(0.32 0.05 358);
+  --primary: oklch(0.32 0.05 358); /* Dossier Ink — solid actions */
+  --primary-foreground: oklch(0.993 0.004 25);
+  --secondary: oklch(0.95 0.008 25);
+  --secondary-foreground: oklch(0.32 0.05 358);
+  --muted: oklch(0.958 0.008 25);
+  --muted-foreground: oklch(0.48 0.045 358); /* Faded Ink */
+  --accent: oklch(0.955 0.025 5); /* Seal tint */
+  --accent-foreground: oklch(0.5 0.14 5); /* Seal */
+  --destructive: oklch(0.4397 0.1348 28); /* Seal Crimson (fixed) */
+  --border: oklch(0.881 0.014 25); /* Ledger rule */
+  --input: oklch(0.78 0.02 25); /* strong rule */
+  --ring: oklch(0.5 0.14 5); /* Seal focus ring */
+  /* Evidentiary state hues — the only saturated color in the UI. */
+  --seal: oklch(0.5 0.14 5); /* verified / complete */
+  --seal-tint: oklch(0.955 0.025 5);
+  /* Fixed across tones: pending and danger must stay distinguishable from every seal hue. */
+  --ledger-amber: oklch(0.5078 0.108 73); /* pending / in-custody */
+  --ledger-amber-tint: oklch(0.95 0.028 89);
+  --seal-crimson: oklch(0.4397 0.1348 28); /* expired / destructive */
+  --seal-crimson-tint: oklch(0.945 0.016 30);
+}
+
+html[data-tone="xanh"] {
+  --background: oklch(0.976 0.005 126); --foreground: oklch(0.3 0.02 168);
+  --card: oklch(0.993 0.004 125); --card-foreground: oklch(0.3 0.02 168);
+  --primary: oklch(0.3 0.02 168); --primary-foreground: oklch(0.993 0.004 125);
+  --secondary: oklch(0.95 0.006 123); --secondary-foreground: oklch(0.3 0.02 168);
+  --muted: oklch(0.958 0.006 123); --muted-foreground: oklch(0.4421 0.0171 155);
+  --accent: oklch(0.955 0.013 157); --accent-foreground: oklch(0.471 0.0974 157);
+  --border: oklch(0.8811 0.0139 117); --input: oklch(0.7795 0.0199 117);
+  --ring: oklch(0.471 0.0974 157); --seal: oklch(0.471 0.0974 157); --seal-tint: oklch(0.955 0.013 157);
+}
+
+html[data-tone="tim"] {
+  --background: oklch(0.976 0.006 300); --foreground: oklch(0.32 0.05 310);
+  --card: oklch(0.993 0.004 300); --card-foreground: oklch(0.32 0.05 310);
+  --primary: oklch(0.32 0.05 310); --primary-foreground: oklch(0.993 0.004 300);
+  --secondary: oklch(0.95 0.008 300); --secondary-foreground: oklch(0.32 0.05 310);
+  --muted: oklch(0.958 0.008 300); --muted-foreground: oklch(0.48 0.04 310);
+  --accent: oklch(0.955 0.02 310); --accent-foreground: oklch(0.48 0.13 310);
+  --border: oklch(0.881 0.014 300); --input: oklch(0.78 0.02 300);
+  --ring: oklch(0.48 0.13 310); --seal: oklch(0.48 0.13 310); --seal-tint: oklch(0.955 0.02 310);
+}
+
+html[data-tone="bac"] {
+  --background: oklch(0.976 0.005 235); --foreground: oklch(0.3 0.04 250);
+  --card: oklch(0.993 0.004 235); --card-foreground: oklch(0.3 0.04 250);
+  --primary: oklch(0.3 0.04 250); --primary-foreground: oklch(0.993 0.004 235);
+  --secondary: oklch(0.95 0.006 235); --secondary-foreground: oklch(0.3 0.04 250);
+  --muted: oklch(0.958 0.006 235); --muted-foreground: oklch(0.47 0.035 250);
+  --accent: oklch(0.955 0.018 245); --accent-foreground: oklch(0.47 0.12 245);
+  --border: oklch(0.881 0.012 235); --input: oklch(0.78 0.018 235);
+  --ring: oklch(0.47 0.12 245); --seal: oklch(0.47 0.12 245); --seal-tint: oklch(0.955 0.018 245);
+}
+
+html[data-tone="kem"] {
+  --background: oklch(0.976 0.007 85); --foreground: oklch(0.32 0.045 75);
+  --card: oklch(0.993 0.005 85); --card-foreground: oklch(0.32 0.045 75);
+  --primary: oklch(0.32 0.045 75); --primary-foreground: oklch(0.993 0.005 85);
+  --secondary: oklch(0.95 0.01 85); --secondary-foreground: oklch(0.32 0.045 75);
+  --muted: oklch(0.958 0.01 85); --muted-foreground: oklch(0.48 0.05 75);
+  --accent: oklch(0.95 0.03 75); --accent-foreground: oklch(0.44 0.09 55);
+  --border: oklch(0.881 0.016 85); --input: oklch(0.78 0.022 85);
+  --ring: oklch(0.44 0.09 55); --seal: oklch(0.44 0.09 55); --seal-tint: oklch(0.95 0.03 75);
 }
 
 @layer base {
@@ -44,19 +130,20 @@
   html { @apply scroll-smooth; }
   body { @apply m-0 min-w-80 bg-background font-sans text-foreground antialiased; }
   button, a, input, select, textarea { @apply focus-visible:outline-none; }
-  ::selection { @apply bg-primary/20 text-foreground; }
+  /* Bare anchors (footer, legal, download links) get the same ring the button primitives draw. */
+  a:focus-visible { @apply ring-2 ring-ring; }
+  ::selection { @apply bg-accent text-accent-foreground; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @media (max-width: 640px) {
   body { padding-bottom: env(safe-area-inset-bottom); }
-}
-
-@layer utilities {
-  .page-grid {
-    background-image:
-      linear-gradient(to right, color-mix(in oklch, var(--border) 45%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in oklch, var(--border) 45%, transparent) 1px, transparent 1px);
-    background-size: 32px 32px;
-    mask-image: linear-gradient(to bottom, black, transparent 86%);
-  }
 }

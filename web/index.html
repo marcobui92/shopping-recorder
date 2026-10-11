@@ -4,7 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="LinhCj's — packing and unpacking evidence workspace" />
+    <meta name="theme-color" content="#FBF6F5" />
     <title>LinhCj's</title>
+    <style>html { background: #FBF6F5; }</style>
+    <script>
+      try {
+        var tone = localStorage.getItem('shopping-recorder-tone');
+        var paper = { hong: '#FBF6F5', xanh: '#F6F8F4', tim: '#F8F6FB', bac: '#F4F8FA', kem: '#F9F7F2' };
+        if (tone && paper[tone]) {
+          if (tone !== 'hong') document.documentElement.setAttribute('data-tone', tone);
+          var bg = paper[tone];
+          document.documentElement.style.background = bg;
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', bg);
+        }
+      } catch (e) { /* preference is optional */ }
+    </script>
   </head>
   <body>
     <div id="root"></div>

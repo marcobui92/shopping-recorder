@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 
 type LegalPageProps = { kind: 'privacy' | 'terms' }
 
@@ -6,12 +7,11 @@ export function LegalPage({ kind }: LegalPageProps) {
   const privacy = kind === 'privacy'
   return (
     <article className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-      <Link className="text-sm font-semibold text-primary hover:underline" to="/">← Back to LinhCj&apos;s</Link>
-      <p className="mt-8 text-sm font-semibold uppercase tracking-[0.18em] text-primary">LinhCj&apos;s</p>
-      <h1 className="mt-3 text-4xl font-semibold tracking-tight">{privacy ? 'Privacy Policy' : 'Terms of Service'}</h1>
+      <Link className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground hover:underline" to="/"><ArrowLeft aria-hidden="true" className="size-4" />Back to LinhCj&apos;s</Link>
+      <h1 className="mt-8 text-4xl font-semibold tracking-tight">{privacy ? 'Privacy Policy' : 'Terms of Service'}</h1>
       <p className="mt-3 text-sm text-muted-foreground">Last updated: September 21, 2026</p>
 
-      {privacy ? <div className="prose mt-10 max-w-none text-sm leading-7 text-muted-foreground">
+      {privacy ? <div className="mt-10 max-w-prose space-y-4 text-base leading-7 text-muted-foreground [&_h2]:mt-8 [&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-foreground">
         <p>LinhCj&apos;s helps operators record packing and unpacking evidence for their own operational records. This policy explains what we collect and how we use it.</p>
         <h2>Information we collect</h2>
         <p>We collect the username, optional email address, activity details, and evidence files that you choose to submit. We also store security data needed to keep your session and uploads safe.</p>
@@ -25,7 +25,7 @@ export function LegalPage({ kind }: LegalPageProps) {
         <p>Sessions, provider credentials, and evidence access are protected with application controls and encryption in transit. Stored evidence is deleted 30 days after the record is completed; record metadata remains available with an expired status.</p>
         <h2>Contact</h2>
         <p>For privacy questions or data requests, contact the LinhCj&apos;s service owner through the support channel provided with your deployment.</p>
-      </div> : <div className="prose mt-10 max-w-none text-sm leading-7 text-muted-foreground">
+      </div> : <div className="mt-10 max-w-prose space-y-4 text-base leading-7 text-muted-foreground [&_h2]:mt-8 [&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-foreground">
         <p>These Terms govern your use of LinhCj&apos;s, an operational workspace for recording packing and unpacking evidence.</p>
         <h2>Your account</h2>
         <p>You are responsible for keeping your credentials private and for activity recorded under your account. Provide accurate information and do not share access to evidence you are required to protect.</p>

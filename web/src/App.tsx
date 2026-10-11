@@ -65,14 +65,14 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b bg-card">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-2 px-2 sm:gap-3 sm:px-6 lg:px-8">
           <BrandRefreshButton disabled={workspaceBusy} />
           <nav aria-label={t('Main navigation')} className="flex shrink-0 items-center gap-1 sm:gap-2">
-            {user && <NavLink aria-label={t('Workspace')} className="inline-flex size-9 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:h-auto sm:w-auto sm:px-3 sm:py-2" end to="/"><LayoutDashboard aria-hidden="true" className="size-4" /><span aria-hidden="true" className="hidden sm:inline">{t('Workspace')}</span></NavLink>}
-            {user && <NavLink aria-label={t('Evidence archive')} className="inline-flex size-9 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:h-auto sm:w-auto sm:px-3 sm:py-2" to="/archive"><Archive aria-hidden="true" className="size-4" /><span aria-hidden="true" className="hidden sm:inline">{t('Evidence archive')}</span></NavLink>}
-            {user && <NavLink aria-label={t('Settings')} className="inline-flex size-9 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:h-auto sm:w-auto sm:px-3 sm:py-2" to="/settings"><Settings aria-hidden="true" className="size-4" /><span aria-hidden="true" className="hidden sm:inline">{t('Settings')}</span></NavLink>}
-            {user && <span className="hidden items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:flex"><ShieldCheck aria-hidden="true" className="size-3.5 text-primary" /> {t('Private evidence')}</span>}
+            {user && <NavLink aria-label={t('Workspace')} className="inline-flex size-9 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:h-auto sm:w-auto sm:rounded-none sm:px-3 sm:py-2 sm:aria-[current=page]:bg-transparent sm:aria-[current=page]:text-foreground sm:aria-[current=page]:shadow-[inset_0_-2px_0_0_var(--seal)]" end to="/"><LayoutDashboard aria-hidden="true" className="size-4" /><span aria-hidden="true" className="hidden sm:inline">{t('Workspace')}</span></NavLink>}
+            {user && <NavLink aria-label={t('Evidence archive')} className="inline-flex size-9 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:h-auto sm:w-auto sm:rounded-none sm:px-3 sm:py-2 sm:aria-[current=page]:bg-transparent sm:aria-[current=page]:text-foreground sm:aria-[current=page]:shadow-[inset_0_-2px_0_0_var(--seal)]" to="/archive"><Archive aria-hidden="true" className="size-4" /><span aria-hidden="true" className="hidden sm:inline">{t('Evidence archive')}</span></NavLink>}
+            {user && <NavLink aria-label={t('Settings')} className="inline-flex size-9 items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground sm:h-auto sm:w-auto sm:rounded-none sm:px-3 sm:py-2 sm:aria-[current=page]:bg-transparent sm:aria-[current=page]:text-foreground sm:aria-[current=page]:shadow-[inset_0_-2px_0_0_var(--seal)]" to="/settings"><Settings aria-hidden="true" className="size-4" /><span aria-hidden="true" className="hidden sm:inline">{t('Settings')}</span></NavLink>}
+            {user && <span className="hidden items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:flex"><ShieldCheck aria-hidden="true" className="size-3.5 text-seal" /> {t('Private evidence')}</span>}
             {user && sessionStatus === 'checking' && <span aria-label={t('Restoring session…')} className="flex shrink-0 items-center gap-1.5 rounded-full border bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground" role="status"><LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" /><span className="hidden sm:inline">{t('Restoring session…')}</span></span>}
             <span className="relative" id="header-profile" />
             <AccountAccess onUserChange={handleUserChange} showForm={false} user={user} />
@@ -80,8 +80,7 @@ function AppContent() {
           </nav>
         </div>
       </header>
-      <main className="relative overflow-hidden">
-        <div aria-hidden="true" className="page-grid pointer-events-none absolute inset-x-0 top-0 h-[34rem] opacity-70" />
+      <main className="relative">
         {/* Retained pages and visit history belong only to the current signed-in user. */}
         <Fragment key={user?.id ?? 'signed-out'}>
           <DeferredPage active={location.pathname === '/'} retain={Boolean(user)}><HomePage onBusyChange={setWorkspaceBusy} onUserChange={handleUserChange} sessionStatus={sessionStatus} user={user} /></DeferredPage>
@@ -97,7 +96,7 @@ function AppContent() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
-      <footer className="border-t bg-card/60">
+      <footer className="border-t bg-card">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-7 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <span>LinhCj&apos;s · {t('Packing & unpacking evidence')}</span>
           <nav aria-label={t('Legal')} className="flex gap-4"><Link className="hover:text-foreground hover:underline" to="/privacy">{t('Privacy Policy')}</Link><Link className="hover:text-foreground hover:underline" to="/terms">{t('Terms of Service')}</Link><span>{t('Encrypted in transit · Owner-authorized access')}</span></nav>

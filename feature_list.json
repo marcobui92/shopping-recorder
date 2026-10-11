@@ -386,8 +386,8 @@
       "status": "done",
       "evidence": "Completed 2026-09-17. Added authenticated exact-reference comparison candidates bounded to the newest 50 records per operation, owner/tombstone isolation, explicit selection for multiple matches, one-match convenience, missing-side/truncation/error states, phone tabs, wide two-column evidence, notes/times/status/media and protected original downloads in VI/EN. No pair is persisted and no automatic/AI assessment occurs. Startup/final ./init.sh passed; web 42/42 plus typecheck/build, backend 83 passed/5 opt-in skipped plus typecheck/build, PostgreSQL recorder integrations 2/2 with fixtures cleaned, harness 100/100 and API JSON examples valid. Browser runtime had no available instances, so physical mobile/wide visual QA remains documented and unavailable. No migration, environment or provider change."
     },
-  {
-    "id": "feat-034",
+    {
+      "id": "feat-034",
       "name": "Recover server-created unfinished recorder activities",
       "description": "Resume draft/uploading activities after reload or interruption by reconciling server assets, preserving ready files and reselecting missing local files when required. See docs/MOBILE_LOCALIZATION_DRIVE_PLAN.md.",
       "dependencies": [
@@ -519,7 +519,9 @@
       "id": "feat-042",
       "name": "Reliable direct camera capture uploads",
       "description": "Fix image and video uploads created through mobile camera capture so they use supported media metadata and preserve the selected storage provider and recovery state on failure.",
-      "dependencies": ["feat-041"],
+      "dependencies": [
+        "feat-041"
+      ],
       "acceptance_criteria": [
         "Photos and videos captured from the device camera pass client validation and upload through the same provider-safe workflow as selected files.",
         "Browser-specific empty or generic capture MIME metadata is normalized only when the filename safely identifies an allowed media type; unsupported files remain rejected.",
@@ -532,7 +534,9 @@
       "id": "feat-043",
       "name": "Mobile account popup containment and dismissal",
       "description": "Keep Vietnamese reconnect/change-account actions inside the account popup on narrow screens and dismiss the popup when tapping outside it.",
-      "dependencies": ["feat-042"],
+      "dependencies": [
+        "feat-042"
+      ],
       "acceptance_criteria": [
         "Long Vietnamese account actions wrap or size within the viewport without overflowing the popup.",
         "Tapping or clicking outside the popup dismisses it while interactions inside remain usable.",
@@ -545,7 +549,9 @@
       "id": "feat-044",
       "name": "Compact mobile record form",
       "description": "Reorganize mobile text inputs and selectors so core record fields and evidence actions require substantially less vertical scrolling without changing submitted values.",
-      "dependencies": ["feat-043"],
+      "dependencies": [
+        "feat-043"
+      ],
       "acceptance_criteria": [
         "Phone layouts surface operation, reference, notes, storage and evidence controls in a compact, understandable order.",
         "Text inputs and application selectors retain labels, touch targets, validation and VI/EN behavior.",
@@ -558,7 +564,9 @@
       "id": "feat-045",
       "name": "Centered evidence detail modal",
       "description": "Open selected evidence-record details in a centered responsive modal instead of appending the detail below the record list.",
-      "dependencies": ["feat-044"],
+      "dependencies": [
+        "feat-044"
+      ],
       "acceptance_criteria": [
         "Viewing a record opens its metadata, lifecycle actions and evidence in a centered responsive dialog above the archive.",
         "The dialog supports explicit close and outside dismissal without losing archive filters or pagination.",
@@ -571,7 +579,9 @@
       "id": "feat-046",
       "name": "Keep Drive upload capabilities on the web origin",
       "description": "Route authenticated Google Drive upload capabilities through the configured web origin so reverse-proxied production sessions retain their cookie on mobile and desktop browsers.",
-      "dependencies": ["feat-045"],
+      "dependencies": [
+        "feat-045"
+      ],
       "acceptance_criteria": [
         "Drive upload capabilities use the configured web CORS origin for the application upload URL, while local adapter tests retain a safe fallback.",
         "A reverse-proxied upload keeps the authenticated session and existing origin/length/provider checks; provider upload sessions and credentials remain server-only.",
@@ -584,7 +594,9 @@
       "id": "feat-047",
       "name": "Focused upload-first recorder workspace",
       "description": "Make evidence capture the first post-login action, move secondary record information and archive navigation below/behind the primary upload flow, compact the media review, and allow failed assets to be discarded safely.",
-      "dependencies": ["feat-046"],
+      "dependencies": [
+        "feat-046"
+      ],
       "acceptance_criteria": [
         "After login, the new-record evidence capture controls and selected media appear before secondary metadata and storage guidance; the archive is a separate lower-priority view.",
         "Media review remains compact while retaining preview, progress, retry, and remove actions; a failed asset can be discarded without leaving a server-side unfinished asset that blocks completion.",
@@ -597,7 +609,9 @@
       "id": "feat-048",
       "name": "Seamless workspace and archive navigation",
       "description": "Remove user-facing API/session check screens and manual packing comparison, keep authentication state stable across workspace/archive navigation, preserve the profile action in the archive, and compact the recorded-handoffs header.",
-      "dependencies": ["feat-047"],
+      "dependencies": [
+        "feat-047"
+      ],
       "acceptance_criteria": [
         "The app checks the existing session once in the shared shell without rendering API or session-check status cards.",
         "Workspace/archive navigation stays client-side, reuses the resolved session, and keeps the signed-in profile control available on both routes.",
@@ -611,7 +625,9 @@
       "id": "feat-049",
       "name": "Compact language selector",
       "description": "Replace the two-button VI/EN control in the shared header with a smaller icon-led language selection control while preserving browser-local language preference and accessibility.",
-      "dependencies": ["feat-048"],
+      "dependencies": [
+        "feat-048"
+      ],
       "acceptance_criteria": [
         "The header shows one compact language icon and the currently selected locale instead of two separate buttons.",
         "Users can select Vietnamese or English with an accessible labeled control and the existing local preference behavior remains unchanged.",
@@ -624,7 +640,9 @@
       "id": "feat-050",
       "name": "Country-flag language menu",
       "description": "Use the shared application Select UI for language choice and show only country-flag icons for Vietnamese and English in the compact header control.",
-      "dependencies": ["feat-049"],
+      "dependencies": [
+        "feat-049"
+      ],
       "acceptance_criteria": [
         "The language control uses the same custom Select interaction and styling as other app selections.",
         "The closed control and menu show Vietnam and United States country flags without visible VI/EN text.",
@@ -637,7 +655,9 @@
       "id": "feat-051",
       "name": "Viewport-centered compact login",
       "description": "Remove nonessential marketing copy from the signed-out experience and place the login/register form in the visible viewport without requiring users to scroll to reach credentials.",
-      "dependencies": ["feat-050"],
+      "dependencies": [
+        "feat-050"
+      ],
       "acceptance_criteria": [
         "Signed-out Workspace and Archive center a compact account form in the available viewport below the shared header.",
         "The login form presents username and password immediately without the hero or marketing panel; registration retains username, optional email and password.",
@@ -650,7 +670,9 @@
       "id": "feat-052",
       "name": "Compact authenticated mobile header",
       "description": "Prevent the signed-in PackTrace header from becoming cramped with longer Vietnamese navigation labels on phone-width screens.",
-      "dependencies": ["feat-051"],
+      "dependencies": [
+        "feat-051"
+      ],
       "acceptance_criteria": [
         "Workspace and Evidence archive use recognizable icon-only navigation at phone widths while retaining explicit accessible Vietnamese and English names.",
         "Desktop navigation continues to show the localized text labels and all profile/language actions remain available.",
@@ -663,7 +685,9 @@
       "id": "feat-053",
       "name": "Remembered browser login and LinhCj's identity",
       "description": "Offer an explicit browser-managed credential preference and rename the website's user-facing identity to LinhCj's without changing internal API identifiers.",
-      "dependencies": ["feat-052"],
+      "dependencies": [
+        "feat-052"
+      ],
       "acceptance_criteria": [
         "Login and registration offer a localized remember-credentials choice that restores the username and delegates password storage to the browser password manager without putting plaintext passwords in application storage.",
         "The header identity, document metadata, login copy, footer, not-found page and legal pages use LinhCj's instead of PackTrace.",
@@ -676,7 +700,9 @@
       "id": "feat-054",
       "name": "Reliable session loading and failed-upload recovery",
       "description": "Show an informative skeleton while the initial session request is pending, correct Backblaze B2 presigned PUT checksum behavior, make failed assets removable, and prevent accidental workspace reload/reset while uploads are active.",
-      "dependencies": ["feat-053"],
+      "dependencies": [
+        "feat-053"
+      ],
       "acceptance_criteria": [
         "Workspace and archive routes show an accessible layout skeleton instead of a blank page until the shared session request settles.",
         "Application-storage upload capabilities do not bind an empty-payload SDK checksum and remain compatible with browser file PUTs to Backblaze B2.",
@@ -690,7 +716,9 @@
       "id": "feat-055",
       "name": "Environment-scoped Google Drive root folder",
       "description": "Separate local-development Google Drive evidence from production by applying a validated development suffix and namespace to the app-managed root folder without changing production naming or existing evidence ownership.",
-      "dependencies": ["feat-054"],
+      "dependencies": [
+        "feat-054"
+      ],
       "acceptance_criteria": [
         "Local Google Drive setup uses a visible `Shopping Recorder - dev` root folder and an environment namespace property, while production keeps the existing visible root name.",
         "Reconnect validates the stored root namespace and discovers only a matching environment folder, preventing local development from reusing a production root with the same application user.",
@@ -704,7 +732,9 @@
       "id": "feat-056",
       "name": "Remove interrupted upload retry",
       "description": "Stop offering replacement upload attempts for unfinished or interrupted recorder activities; failed evidence can be removed and the record can be started again explicitly.",
-      "dependencies": ["feat-055"],
+      "dependencies": [
+        "feat-055"
+      ],
       "acceptance_criteria": [
         "The web no longer renders unfinished-activity recovery or Retry upload controls for interrupted/failed evidence.",
         "The upload-attempt retry API and service/repository creation path are removed; finalization of the same attempt and asset discard remain available.",
@@ -717,7 +747,9 @@
       "id": "feat-057",
       "name": "Inline Google storage status retry",
       "description": "Expose an inline retry action beside Google Drive/storage availability errors so operators can recover storage status without opening the user/profile controls.",
-      "dependencies": ["feat-056"],
+      "dependencies": [
+        "feat-056"
+      ],
       "acceptance_criteria": [
         "Storage status request errors show a visible inline Refresh storage action while preserving selected files.",
         "Configured but unavailable Google Drive states show the same inline action beside the status message.",
@@ -730,7 +762,9 @@
       "id": "feat-058",
       "name": "Configurable evidence auto-delete period",
       "description": "Add an authenticated Settings screen where each user controls the number of days before completed evidence is automatically deleted.",
-      "dependencies": ["feat-057"],
+      "dependencies": [
+        "feat-057"
+      ],
       "acceptance_criteria": [
         "Settings navigation and screen expose a validated retention period from 1 to 3650 days with a 30-day default.",
         "The authenticated settings API persists the owner value and future completed activities calculate evidence expiry from it; existing deadlines remain unchanged.",
@@ -743,7 +777,9 @@
       "id": "feat-059",
       "name": "Preserve state across primary pages",
       "description": "Keep Workspace, Archive and Settings mounted during SPA navigation so in-progress user interactions are not reset when switching pages.",
-      "dependencies": ["feat-058"],
+      "dependencies": [
+        "feat-058"
+      ],
       "acceptance_criteria": [
         "Authenticated Workspace, Archive and Settings pages remain mounted while another primary page is active.",
         "Switching pages through the header does not reload the document or discard workspace drafts, archive filters/details or settings form state.",
@@ -756,7 +792,9 @@
       "id": "feat-060",
       "name": "Stable upload finalization provider errors",
       "description": "Prevent unexpected storage SDK/provider errors during upload finalization from becoming opaque 500 responses and preserve a retryable attempt state.",
-      "dependencies": ["feat-059"],
+      "dependencies": [
+        "feat-059"
+      ],
       "acceptance_criteria": [
         "Unexpected storage verification errors return the stable STORAGE_PROVIDER_UNAVAILABLE 503 envelope without provider internals.",
         "The upload attempt is released so the same finalize request can be retried after the provider recovers.",
@@ -769,7 +807,9 @@
       "id": "feat-061",
       "name": "Recover stale finalization on asset removal",
       "description": "Allow failed uploads whose finalization worker died to be removed while preserving protection for a currently running finalization.",
-      "dependencies": ["feat-060"],
+      "dependencies": [
+        "feat-060"
+      ],
       "acceptance_criteria": [
         "DELETE keeps rejecting a recently active finalization to avoid races.",
         "DELETE atomically expires a finalizing attempt older than two minutes and discards its asset with normal provider cleanup.",
@@ -782,7 +822,9 @@
       "id": "feat-062",
       "name": "Session-scoped storage status and settings provider management",
       "description": "Avoid repeated storage provider probes during a signed-in session and move Google Drive connection controls into Settings.",
-      "dependencies": ["feat-061"],
+      "dependencies": [
+        "feat-061"
+      ],
       "acceptance_criteria": [
         "Storage provider availability is fetched once per authenticated browser session and reused across page navigation and focus changes.",
         "The existing inline Refresh storage action force-refreshes the cached provider status and preserves selected files.",
@@ -795,7 +837,9 @@
       "id": "feat-063",
       "name": "Load primary pages on first visit",
       "description": "Defer Workspace, Archive and Settings mounting and data requests until each page is opened, retaining visited page state within the signed-in session.",
-      "dependencies": ["feat-062"],
+      "dependencies": [
+        "feat-062"
+      ],
       "acceptance_criteria": [
         "Initial and direct page loads do not mount or fetch data for unvisited primary pages.",
         "Visited pages retain drafts and settings state during navigation without rerunning mount requests.",
@@ -808,7 +852,9 @@
       "id": "feat-064",
       "name": "Copy and open Google Drive evidence links",
       "description": "Add on-demand copy and open actions for ready Google Drive images/videos while preserving owner authorization and existing file permissions.",
-      "dependencies": ["feat-063"],
+      "dependencies": [
+        "feat-063"
+      ],
       "acceptance_criteria": [
         "Ready Drive evidence exposes copy/open actions in history, viewer and completion previews without eager link requests.",
         "Owner-authorized endpoints return a validated Google webViewLink or redirect to it; unavailable, non-ready and foreign assets fail closed.",
@@ -821,7 +867,9 @@
       "id": "feat-065",
       "name": "Optimistic session restore during backend wake",
       "description": "Render the signed-in app shell immediately from a remembered user while the silent session check runs in the background, so a cold-starting backend no longer blocks the whole UI behind the full-page skeleton.",
-      "dependencies": ["feat-063"],
+      "dependencies": [
+        "feat-063"
+      ],
       "acceptance_criteria": [
         "With a remembered user in sessionStorage, the workspace/archive/settings shell renders immediately with an accessible 'Restoring session...' status while /auth/session is pending.",
         "A resolved session for the same user keeps mounted page state; a failed or mismatched session downgrades to the signed-out UI and clears the remembered user.",
@@ -835,7 +883,9 @@
       "id": "feat-066",
       "name": "Compact collapsible archive filters",
       "description": "The archive filter block occupies most of the first screen and pushes the record list below the fold. Collapse advanced filters (operation, status, order, date range) behind a toggle with an active-count badge, keep search always visible, and auto-apply filter changes so the list is reachable in one glance.",
-      "dependencies": ["feat-063"],
+      "dependencies": [
+        "feat-063"
+      ],
       "acceptance_criteria": [
         "By default only the search row and a filters toggle are visible; the record list starts near the top of the card on mobile and desktop.",
         "Advanced filters live in a collapsible panel with an active-filter count badge; clearing returns to the unfiltered list.",
@@ -850,7 +900,9 @@
       "id": "feat-067",
       "name": "Multi-select delete from the archive list",
       "description": "Add selection checkboxes to archive list rows with a bulk action bar so owners can delete several completed/expired records at once instead of opening each detail popup. Deletion reuses the existing per-activity delete API and a single confirmation dialog.",
-      "dependencies": ["feat-066"],
+      "dependencies": [
+        "feat-066"
+      ],
       "acceptance_criteria": [
         "Each deletable list row has an accessible checkbox plus a select-all control for the current page; selection survives re-render and resets on page/filter change.",
         "A bulk bar shows the selected count with Delete and Cancel actions; delete requires one confirmation dialog stating evidence is permanently removed.",
@@ -865,7 +917,9 @@
       "id": "feat-068",
       "name": "Archive detail popup: sticky header, media first, tighter spacing",
       "description": "Rework the activity detail popup so the header (title + close) stays pinned while the body scrolls, evidence media is the first content section, outside-tap dismissal remains reliable, and vertical spacing between sections is reduced so the popup is scannable.",
-      "dependencies": ["feat-066"],
+      "dependencies": [
+        "feat-066"
+      ],
       "acceptance_criteria": [
         "The popup uses a fixed header with the activity identity and close control; the scrollable body sits below it on mobile and desktop.",
         "Ready image/video evidence renders as the first body section, above metadata correction, audit trail and lifecycle actions.",
@@ -880,7 +934,9 @@
       "id": "feat-069",
       "name": "Allow deleting activities in any status",
       "description": "Owners could not remove cancelled, draft or uploading records at all: the backend delete gate rejected every non-complete status and the archive UI hid the delete control for them. Any activity can now be deleted (single or bulk) through the same soft-delete plus provider cleanup pipeline used by completed records.",
-      "dependencies": ["feat-067"],
+      "dependencies": [
+        "feat-067"
+      ],
       "acceptance_criteria": [
         "DELETE /activities/{id} returns 202 for every status (draft, uploading, complete, expired, cancelled) and enqueues provider cleanup for assets with provider refs; repeat delete stays idempotent.",
         "The detail popup shows Delete for every status and the list checkboxes/select-all include every row.",
@@ -894,7 +950,9 @@
       "id": "feat-070",
       "name": "Apply retention setting to existing completed records",
       "description": "Evidence expiry is frozen at completion time, so raising the auto-delete period (e.g. 1 → 15 days) still deleted records completed under the shorter setting. PATCH /settings must recompute evidence_expires_at (completed_at + current retention) for the owner's still-complete activities in the same transaction.",
-      "dependencies": ["feat-058"],
+      "dependencies": [
+        "feat-058"
+      ],
       "acceptance_criteria": [
         "updateRetentionDays recomputes evidence_expires_at = completed_at + new retention days for all owner activities in status complete; expired/cancelled/deleted rows are untouched.",
         "Setting update and expiry recomputation commit atomically; unknown user returns null as before.",
@@ -908,7 +966,9 @@
       "id": "feat-071",
       "name": "Run the retention sweep daily instead of hourly",
       "description": "Per owner direction, the in-process auto-delete sweep should repeat once a day rather than every hour. Keep the immediate sweep on backend startup; change the interval to 24 hours and update architecture/operations docs that state hourly scheduling.",
-      "dependencies": ["feat-070"],
+      "dependencies": [
+        "feat-070"
+      ],
       "acceptance_criteria": [
         "server.ts schedules runRetentionSweep with a 24-hour interval and still runs it on startup.",
         "ARCHITECTURE.md and OPERATIONS.md describe the daily sweep and owner-configured retention.",
@@ -921,7 +981,12 @@
       "id": "feat-072",
       "name": "Apply audited design-system refinements to the recorder UI",
       "description": "Seven verified plans under design-plans/ closed gaps that survived feature growth: an element-level 44px minimum that silently overrode every smaller control, record status presented two different ways inside one task, hand-written link styling beside the button primitive, English application copy in the activity detail and shell chrome, CSS re-capitalization of translated labels plus browser-locale dates and byte sizes, an over-provisioned new-record column split, and a step indicator that could not express state.",
-      "dependencies": ["feat-027", "feat-028", "feat-066", "feat-068"],
+      "dependencies": [
+        "feat-027",
+        "feat-028",
+        "feat-066",
+        "feat-068"
+      ],
       "acceptance_criteria": [
         "Control heights are declared by the primitives: standard buttons and fields render 44px, sm renders 36px, icon renders a 40x40 square, the language flag trigger renders its documented compact size, and no !min-h-*/!important height patch remains in web/src.",
         "Record status uses Badge plus statusVariant in both the archive row and the detail header, and evidence/Drive action links render through buttonVariants.",
@@ -932,6 +997,60 @@
       ],
       "status": "done",
       "evidence": "Completed on 2026-10-09. Removed the styles.css base-layer button min-height; buttonVariants base now carries min-h-11 with sm 'h-9 min-h-0' and icon 'size-10 min-h-0', Input and the Select trigger render h-11, and the !min-h-0 patches in AccountAccess and the evidence viewer plus the h-auto min-h-10 patches in GoogleDriveConnection are gone. Headless-Chrome measurements in the running app (signed in, lang=vi): at 1440px Input 550x44, Select trigger 550x44, lg submit 205x44, sm View evidence 162x36, profile avatar 40x40 (was 40x44), flag trigger 40x24, archive search field 930x44; at 390px the same tiers hold with the two-up phone field grid intact and no horizontal growth. New-record grid resolves 607px/607px (was 473/741) with the drop zone at 551x414 and only 28px of section padding below it instead of 242px of empty card; SessionLoadingSkeleton mirrors the split and side assignment. Detail header renders the outline status Badge for a draft (measured 77x26) and its meta line reads 'Bản nháp · 22:14 4 thg 10, 2026 · Bộ nhớ ứng dụng'; the list row reads 'Đóng gói' instead of 'Đóng Gói'. Web 78/78 tests (1 new step-indicator test), typecheck and production build pass. ./init.sh not re-run: no dependency or lockfile change. Not exercised: asset-level action rows and Drive actions, because the probe record holds no uploaded evidence and no file was pushed to provider storage."
+    },
+    {
+      "id": "feat-073",
+      "name": "Rebuild the web UI on a new Custody Dossier visual identity",
+      "description": "Full rewrite of the UI layer onto a brand-new identity: ink-on-paper palette with color reserved for evidentiary state, self-hosted Be Vietnam Pro + IBM Plex Mono type roles, a shared Custody Spine motif fusing the new-record stepper and the archive audit trail, and a solid hairline shell. Removes the surviving AI tells: glass header, decorative page-grid, primary-tint icon chips, the indigo/violet gradient hero on sign-in, an unloaded DM Sans declaration and no-op prose classes. API contract, upload pipeline, i18n approach, session persistence and all behavior are unchanged.",
+      "dependencies": [
+        "feat-072"
+      ],
+      "acceptance_criteria": [
+        "styles.css tokens carry the Custody Dossier palette (Custody Ink, Paper, Folio, Faded Ink, Seal Green, Ledger Amber, Seal Crimson) as oklch, status hues pass AA on their tints, and no teal/cyan primary remains.",
+        "Be Vietnam Pro and IBM Plex Mono are self-hosted via @fontsource and actually render in the built app; mono is used only for documentary data (references, digests, timestamps, counters); --font-sans no longer names an unloaded font.",
+        "The app shell is a solid header with one bottom hairline and a Seal Green active-item underline; the backdrop-blur header, .page-grid overlay, gradient hero and blur blobs are gone from web/src.",
+        "The new-record stepper and the archive audit trail render through one shared CustodySpine component with native ol/li aria-current semantics.",
+        "Archive detail keeps role=dialog invariants (accessible name, Escape ladder viewer-confirm-detail, body-scroll lock, focus return to the trigger) in its new presentation.",
+        "All group-A accessible names, roles and texts in the colocated tests are preserved; group-B class assertions are updated to the new markup without losing the responsive intent; LegalPage text is styled from tokens rather than no-op prose classes.",
+        "No change to web/src/api.ts, config.ts, sessionUserStore.ts, i18n translation keys, or any backend file; upload/DnD/finalize behavior is untouched.",
+        "Web tests, typecheck and production build pass; visual check at 1440 and 390 in vi and en across all surfaces; reduced-motion respected."
+      ],
+      "status": "done",
+      "evidence": "Gate at every step boundary (2,3,4,5,6,7): `npm run test --prefix web` -> Test Files 10 passed (10), Tests 78 passed (78); `npm run typecheck --prefix web` (tsc -b) clean; `npm run build --prefix web` succeeds, dist/assets contains hashed woff2 for Be Vietnam Pro + IBM Plex Mono. Final sweeps: grep -rE 'backdrop-blur|page-grid|bg-primary/10|slate-9|indigo-|violet-|fuchsia-|cyan-|emerald-|red-[0-9]|DM Sans|prose' web/src -> no matches; git diff HEAD -- web/src/api.ts web/src/config.ts web/src/sessionUserStore.ts web/src/i18n.tsx backend/ -> empty (contract/i18n untouched). better-interface audit (6 domain passes): all HIGH findings fixed — global prefers-reduced-motion gate added (measured transitionDuration 1e-05s under emulation, scroll-behavior auto), bare anchors get the focus ring (headless Tab scan: every stop ring=true), completion dialog + archive drawer now receive focus on open and the workflow dialog closes on Escape (CDP check: activeElement === dialog panel), custom Select trigger carries a composed accessible name ('Nơi lưu: Bộ nhớ ứng dụng') while the hidden native select keeps the label association, expired status remapped from Ledger Amber to Seal Crimson (badge danger), truncated filenames got title fallbacks and the redundant drop-zone join list was removed. Visual verification (headless Chrome vs local dev servers, /tmp/ui-verify/f073-*.png): home 1440/390, archive drawer 1440, settings 1440, legal 1440, 404 1440, signed-out login 1440/390 — solid hairline header with Seal Green active underline, ink dossier sign-in header, mono retention field, hairline icon boxes, no glass/grid/gradient; Vietnamese diacritics render in Be Vietnam Pro. Group-B test updates limited to 4 assertions tied to intentionally changed markup (filename occurrence counts x3, storage trigger composed name x1); all Group-A names/roles/testids preserved."
+    },
+    {
+      "id": "feat-074",
+      "name": "Lighten the Custody Dossier tone and naturalize the Vietnamese copy",
+      "description": "Responds to user feedback on feat-073: the palette reads too dark and the Vietnamese is translationese. Raises the lightness of paper/card/secondary/muted/border/input and the evidentiary tints in styles.css :root, softens Custody Ink from near-black to charcoal, syncs index.html theme-color and inline background hex, brings stray hard-coded hex literals onto the palette, and rewrites flagged vi VALUES in i18n.tsx (EN keys untouched) against a naturalness ruleset. No layout, behavior, API, i18n-architecture or English-copy changes.",
+      "dependencies": [
+        "feat-073"
+      ],
+      "acceptance_criteria": [
+        "styles.css :root tokens carry the lightened palette (background ~oklch 0.976, card 0.993, ink 0.30, secondary 0.950, muted 0.958, border 0.907, input 0.80, lighter tints) with all text pairs still AA >=4.5:1 and input affordance >=3:1, proven by an oklch->sRGB contrast script whose output is recorded in evidence.",
+        "index.html meta theme-color and inline html background are the recomputed hex of the new --background; BrandLogo SVG literals match the new Ink/Seal/Crimson palette; grep finds no stray color hex/oklch outside styles.css and BrandLogo.",
+        "Flagged translationese vi values rewritten per the named set (e.g. Bộ nhớ ứng dụng -> Lưu trữ của ứng dụng, Đã đăng nhập với tên -> Đang đăng nhập, of -> trong, Công việc chưa hoàn tất -> Việc dở dang) plus any additional failures found in a full dictionary read-through; EN keys and all test-pinned natural vi values unchanged unless value+assertion are updated together.",
+        "All 78 web tests, web typecheck and web build green.",
+        "Visual evidence: vi-locale headless screenshots of login, home, new record, archive+drawer, settings at 1440x900 and 390x844 recorded under /tmp/ui-verify/f074-*."
+      ],
+      "status": "done",
+      "evidence": "Palette: styles.css :root lifted — background oklch(0.976 0.005 126) #F6F8F4, card 0.993 #FCFDFA, ink/primary 0.30 0.020 168 #24312C, secondary 0.950, muted 0.958, seal/amber/crimson tints lightened; border/input/ring/muted-foreground/state hues unchanged. Contrast (oklch->sRGB WCAG script): ink on bg 12.67, on card 13.26; Faded Ink >=6.6 on bg/card/muted/secondary; seal-on-tint 5.71, amber-on-tint 5.13, crimson-on-tint 7.05 (all AA); button text on ink 13.26; input border vs card 1.96, hairline vs bg 1.34. index.html theme-color + inline bg -> #F6F8F4; BrandLogo hexes -> #24312C/#FCFDFA; grep sweep: no retired literals or tailwind palette classes left in web/src. VI copy: 27 translationese values rewritten in i18n.tsx (keys untouched) — Bộ nhớ ứng dụng -> Lưu trữ của ứng dụng, Đã đăng nhập với tên -> Đang đăng nhập, Trang N trên M -> Trang N trong M, Công việc chưa hoàn tất -> Việc dở dang, passive calques removed per Revision-1 ruleset in design-plans/feat-073-custody-dossier-ui-identity.md; all test-pinned natural vi values kept unchanged. Commands: npm run test --prefix web -> 78 passed (10 files); npm run typecheck --prefix web -> clean; npm run build --prefix web -> built. Visual (headless Chrome, vi locale, /tmp/verify-f074.mjs): /tmp/ui-verify/f074-{home,archive,settings}-1440.png, f074-home-390.png, f074-login-1440.png — body bg computes to oklch(0.976 0.005 126); 'Lưu trữ của ứng dụng' and 'Trang 1 trong 1' render live; no 'Bộ nhớ ứng dụng'/'trên' pagination left."
+    },
+    {
+      "id": "feat-075",
+      "name": "Selectable color tones with a feminine default",
+      "description": "Adds a Color tone picker (5 tones: Hong dao, Custody green, Lavender, Silver blue, Cream amber) persisted in localStorage and applied via html[data-tone] token blocks before first paint. The default tone is the feminine peach-rose set; every tone hue-rotates the neutral paper/card/ink/border tokens and the seal/accent/ring hues while keeping lightness values, so all measured WCAG pairs are identical in structure across tones. Ledger Amber and Seal Crimson stay fixed as semantic pending/danger colors. Settings-only UI; no API, layout or behavior changes elsewhere.",
+      "dependencies": [
+        "feat-074"
+      ],
+      "acceptance_criteria": [
+        "styles.css defines the five token blocks (:root = Hong dao default; html[data-tone=xanh|tim|bac|kem] override the hue-dependent tokens only) and ledger-amber/seal-crimson are not overridden.",
+        "oklch->sRGB contrast script proves for EVERY tone: ink on bg/card >= 4.5, faded ink on bg/card/muted >= 4.5, seal on seal-tint >= 4.5, primary-foreground on primary >= 4.5; output recorded in evidence.",
+        "The chosen tone persists in localStorage (shopping-recorder-tone), is applied to documentElement before first paint by the index.html inline script (no flash, theme-color synced), and survives reload.",
+        "Settings shows a Tone mau radiogroup of 5 named swatch options; selecting one applies immediately; vi+en i18n keys added; a new SettingsPage test covers selection -> localStorage + data-tone.",
+        "web tests (79+), typecheck and build green; headless screenshots of the login screen in all five tones."
+      ],
+      "status": "done",
+      "evidence": "Five tones implemented: styles.css :root = Hong dao default (peach rose, Paper #FBF6F5, plum ink oklch(0.32 0.05 358), rose seal oklch(0.5 0.14 5)); html[data-tone=xanh|tim|bac|kem] blocks override only hue-dependent tokens at shared lightness; ledger-amber and seal-crimson fixed across tones. Contrast (oklch->sRGB WCAG script, every tone): ink on bg/card 11.98-13.37, faded ink on bg/card/muted 5.83-7.48, seal on seal-tint 5.63-6.92, button text on primary 12.60-13.37 — all AA. Persistence: localStorage shopping-recorder-tone; index.html inline script applies data-tone + theme-color + background before first paint; web/src/tone.ts currentTone/applyTone; Settings 'Tone màu' radiogroup of 5 native radio swatches (vi: Hồng đào/Mặc định feminin, Xanh hồ sơ, Tím lavender, Xanh bạc, Vàng kem), applied instantly; i18n keys added vi+en. Commands: npm run test --prefix web -> 79 passed (10 files, incl. new tone-selection persistence test); npm run typecheck --prefix web -> clean; npm run build --prefix web -> built. Visual (headless Chrome, /tmp/verify-f075.mjs): per-tone computed --background matches each token block (0.976 0.006 25 / 0.976 0.005 126 / 0.976 0.006 300 / 0.976 0.005 235 / 0.976 0.007 85), checked radio + theme-color sync + reload persistence verified; screenshots /tmp/ui-verify/f075-{settings,home}-{hong,xanh,tim,bac,kem}.png + f075-login-hong-default.png; label truncation re-check: none at 1440. Follow-up (same session): BrandLogo.tsx hex literals replaced with token utilities (fill-card, stroke-input, stroke-ink, stroke-seal) so the logo follows the selected tone; built CSS confirms .stroke-ink{stroke:var(--foreground)} etc.; headless check: logo strokes compute to the hong plum/rose pair and the tim lavender pair; 79/79 tests + typecheck + build still green."
     }
   ]
 }

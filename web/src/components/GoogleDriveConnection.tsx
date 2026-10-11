@@ -28,8 +28,8 @@ export function GoogleDriveConnection({ onStatusChange, onUnlinked, showIntro = 
   }
   if (!resolved) return null
   if (status?.connected === true && hideWhenConnected) return null
-  return <section className={showIntro ? 'rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5' : 'mt-4 space-y-3 border-t pt-3'} aria-labelledby={showIntro ? 'personal-storage-heading' : undefined}>
-    {showIntro && <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Cloud aria-hidden="true" className="size-5" /></span><div><h2 className="font-semibold" id="personal-storage-heading">{t('Set up your personal storage')}</h2><p className="mt-1 text-sm leading-6 text-muted-foreground">{t('Connect Google Drive after signing in to keep your evidence in your own personal storage. You can also use application storage without connecting Google.')}</p></div></div>}
+  return <section className={showIntro ? 'rounded-lg border bg-muted/30 p-4 sm:p-5' : 'mt-4 space-y-3 border-t pt-3'} aria-labelledby={showIntro ? 'personal-storage-heading' : undefined}>
+    {showIntro && <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-md border border-input bg-background text-muted-foreground"><Cloud aria-hidden="true" className="size-5" /></span><div><h2 className="font-semibold" id="personal-storage-heading">{t('Set up your personal storage')}</h2><p className="mt-1 text-sm leading-6 text-muted-foreground">{t('Connect Google Drive after signing in to keep your evidence in your own personal storage. You can also use application storage without connecting Google.')}</p></div></div>}
     <div className={showIntro ? 'mt-4 space-y-3 border-t pt-3' : 'space-y-3'} aria-label="Google Drive">
     <p className="font-medium">Google Drive</p>
     {result && <p role="status" className="text-sm">{t(result === 'connected' ? 'Google Drive connected.' : result === 'cancelled' ? 'Google connection cancelled.' : 'Google connection failed. Please retry.')}</p>}
