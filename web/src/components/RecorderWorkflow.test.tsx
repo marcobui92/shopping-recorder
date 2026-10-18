@@ -34,6 +34,26 @@ vi.mock('../api', () => ({
   uploadMedia: vi.fn(),
 }))
 
+const mockDecodable = { current: false }
+
+// jsdom has no createImageBitmap, so the decode probe is driven by mockDecodable instead.
+vi.mock('../lib/imageBake', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/imageBake')>()
+  return {
+    ...actual,
+    loadBitmap: vi.fn(() => (mockDecodable.current
+      ? Promise.resolve({ close: () => {} } as unknown as ImageBitmap)
+      : Promise.reject(new Error('undecodable')))),
+  }
+})
+
+vi.mock('./ImageEditor', () => ({
+  __esModule: true,
+  default: ({ initialState, name, onApply }: { initialState?: { crop: { width: number } } | null; name: string; onApply: (result: { blob: Blob; name: string; state: unknown }) => void }) => (
+    <button data-crop-width={initialState?.crop.width ?? ''} onClick={() => onApply({ blob: new Blob(['edited'], { type: 'image/jpeg' }), name: `${name}-edited.jpg`, state: { adjustments: { brightness: 0, contrast: 0, saturation: 0 }, annotations: [], aspectKey: 'custom', bakes: [{ box: { height: 400, width: 400, x: 0, y: 0 }, rotation: 0 }], crop: { height: 400, width: 400, x: 0, y: 0 }, rotation: 0 } })} type="button">stub apply edit</button>
+  ),
+}))
+
 const activity = {
   completedAt: null, createdAt: '2026-09-05T00:00:00.000Z', evidenceExpiresAt: null, expiredAt: null, id: 'activity-1', notes: null,
   occurredAt: '2026-09-05T00:00:00.000Z', operationType: 'packing' as const, reference: null,
@@ -60,7 +80,7 @@ beforeEach(() => {
   vi.mocked(completeRecorderActivity).mockResolvedValue({ ...activity, completedAt: activity.createdAt, evidenceExpiresAt: '2026-10-05T00:00:00.000Z', status: 'complete' })
 })
 
-afterEach(() => cleanup())
+afterEach(() => { mockDecodable.current = false; cleanup() })
 
 function selectEvidence() {
   const file = new File([new Uint8Array([0xff, 0xd8, 0xff, 0x00])], 'seal.jpg', { type: 'image/jpeg' })
@@ -104,6 +124,65 @@ describe('RecorderWorkflow', () => {
     expect(items[0].querySelector('svg')).toBeInTheDocument()
     expect(items[1]).toHaveAttribute('aria-current', 'step')
     expect(items[2]).not.toHaveAttribute('aria-current')
+  })
+
+  it('offers editing for photos only and stops offering a format the device cannot decode', async () => {
+    render(<RecorderWorkflow />)
+    const photo = new File([new Uint8Array([0xff, 0xd8, 0xff, 0x00])], 'seal.jpg', { type: 'image/jpeg' })
+    const video = new File([new Uint8Array([0x00, 0x00, 0x00, 0x18])], 'clip.mp4', { type: 'video/mp4' })
+    fireEvent.change(screen.getByLabelText('Evidence files'), { target: { files: [photo, video] } })
+
+    expect(screen.getByRole('button', { name: 'Edit seal.jpg' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Edit clip.mp4' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit seal.jpg' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('This file cannot be edited on this device.')
+    expect(screen.queryByRole('button', { name: 'Edit seal.jpg' })).not.toBeInTheDocument()
+  })
+
+  it('announces a finished edit as a status, not an error', async () => {
+    mockDecodable.current = true
+    render(<RecorderWorkflow />)
+    selectEvidence()
+    fireEvent.click(screen.getByRole('button', { name: 'Edit seal.jpg' }))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'stub apply edit' }))
+
+    const banner = await screen.findByText('Edited: seal.jpg-edited.jpg')
+    expect(banner).toHaveAttribute('role', 'status')
+    expect(banner).toHaveClass('text-seal')
+  })
+
+  it('rebuilds the preview address when an edit replaces the file', async () => {
+    let issued = 0
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => `blob:preview-${(issued += 1)}`) })
+    mockDecodable.current = true
+    render(<RecorderWorkflow />)
+    selectEvidence()
+    expect(await screen.findByAltText('Preview of seal.jpg')).toHaveAttribute('src', 'blob:preview-1')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit seal.jpg' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'stub apply edit' }))
+
+    expect(await screen.findByAltText('Preview of seal.jpg-edited.jpg')).toHaveAttribute('src', 'blob:preview-2')
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:preview-1')
+  })
+
+  it('hands the last edit back when the editor is reopened', async () => {
+    mockDecodable.current = true
+    render(<RecorderWorkflow />)
+    selectEvidence()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit seal.jpg' }))
+    const apply = await screen.findByRole('button', { name: 'stub apply edit' })
+    expect(apply).toHaveAttribute('data-crop-width', '')
+    fireEvent.click(apply)
+    await screen.findByText('Edited: seal.jpg-edited.jpg')
+
+    // Reopening has to continue the edit, not start a blank one, or a second save quietly undoes
+    // the first. The stub reports the crop width it was handed.
+    fireEvent.click(screen.getByRole('button', { name: 'Edit seal.jpg-edited.jpg' }))
+    expect(await screen.findByRole('button', { name: 'stub apply edit' })).toHaveAttribute('data-crop-width', '400')
   })
 
   it('shows dropped files immediately and lets the operator remove them before upload', async () => {
@@ -317,7 +396,10 @@ it('recalculates the default for the next record after completing an explicit B2
   await screen.findByText('Submitted evidence')
   expect(screen.queryByRole('button', { name: 'Copy Drive link' })).not.toBeInTheDocument()
   expect(screen.getByLabelText('Reference')).toHaveValue('')
-  expect(screen.getByAltText('Preview of seal.jpg')).toBeInTheDocument()
+  // Awaited, not queried: the object URL is created in the preview's own effect, so the image lands
+  // one tick after the dialog mounts. A synchronous getByAltText here only passes when that flush
+  // wins the race, which it does not under load.
+  expect(await screen.findByAltText('Preview of seal.jpg')).toBeInTheDocument()
   fireEvent.click(await screen.findByRole('button', { name: 'Start another record' }))
   await waitFor(() => expect(screen.getByLabelText('Storage')).toHaveValue('google_drive'))
   expect(screen.queryByAltText('Preview of seal.jpg')).not.toBeInTheDocument()

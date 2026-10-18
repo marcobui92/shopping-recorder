@@ -1,5 +1,5 @@
-import { type DragEvent, type FormEvent, useEffect, useRef, useState } from 'react'
-import { Check, CloudUpload, Expand, FileCheck2, FileImage, Image, Info, LoaderCircle, PackageOpen, Plus, RotateCcw, ShieldCheck, Trash2, Upload, Video } from 'lucide-react'
+import { type DragEvent, type FormEvent, lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { Check, CloudUpload, Expand, FileCheck2, FileImage, Image, Info, LoaderCircle, PackageOpen, Pencil, Plus, RotateCcw, ShieldCheck, Trash2, Upload, Video } from 'lucide-react'
 
 import {
   ApiError,
@@ -15,6 +15,8 @@ import {
 } from '../api'
 import { DriveFileActions } from './DriveFileActions'
 import { CustodySpine, type CustodySpineNode } from './CustodySpine'
+import { loadBitmap, OUTPUT_CONTENT_TYPE, type EditorState } from '../lib/imageBake'
+import { type EditorResult } from './ImageEditor'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
@@ -24,6 +26,9 @@ import { Progress } from './ui/progress'
 import { Select } from './ui/select'
 import { Textarea } from './ui/textarea'
 import { type Locale, useI18n } from '../i18n'
+
+// Konva and the cropper are only needed once someone opens the editor, so keep them out of the first paint.
+const ImageEditor = lazy(() => import('./ImageEditor'))
 
 type FileStage = 'selected' | 'hashing' | 'preparing' | 'uploading' | 'finalizing' | 'ready' | 'failed'
 
@@ -85,8 +90,20 @@ interface FileItem {
   contentType: SupportedContentType
   key: string
   mediaType: SupportedMediaType
+  // Pristine bytes from before the first edit, kept in memory for the session only so a second save
+  // re-encodes the source once rather than the last output. Never hashed, uploaded or persisted.
+  preEdit?: { blob: Blob; name: string }
+  // The framing, turn, sliders and marks the editor was left showing, so reopening it continues the
+  // edit instead of starting from a blank frame. Same in-memory-only lifetime as `preEdit`.
+  editState?: EditorState
   progress: number
+  sourceKey: string
   stage: FileStage
+}
+
+// Stays the original file's identity after an edit, so duplicate detection still matches the source.
+function sourceKeyOf(file: File): string {
+  return `${file.name}-${file.size}-${file.lastModified}`
 }
 
 async function sha256(file: File): Promise<string> {
@@ -103,15 +120,14 @@ function formatBytes(bytes: number, locale: Locale): string {
   return `${new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(bytes / 1024 / 1024)} MB`
 }
 
-function EvidencePreview({ file, mediaType, eager = false }: { file: File; mediaType: SupportedMediaType; eager?: boolean }) {
+function EvidencePreview({ file, mediaType }: { file: File; mediaType: SupportedMediaType }) {
   const [failed, setFailed] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState(() => eager && typeof URL.createObjectURL === 'function' ? URL.createObjectURL(file) : '')
+  const [previewUrl, setPreviewUrl] = useState('')
 
+  // The URL belongs to this effect run and to nothing else: seeding it from an earlier file would
+  // leave the swap below pointing at an address the cleanup has already revoked.
   useEffect(() => {
     setFailed(false)
-    if (previewUrl) {
-      return () => { if (typeof URL.revokeObjectURL === 'function') URL.revokeObjectURL(previewUrl) }
-    }
     if (typeof URL.createObjectURL !== 'function') return
 
     const url = URL.createObjectURL(file)
@@ -143,8 +159,14 @@ export function RecorderWorkflow({ onBusyChange, onCompleted, sessionChecking = 
   const [allowAdditionalFiles, setAllowAdditionalFiles] = useState(false)
   const [items, setItems] = useState<FileItem[]>([])
   const [dragActive, setDragActive] = useState(false)
+  const [editingKey, setEditingKey] = useState<string | null>(null)
+  const [undecodable, setUndecodable] = useState<Partial<Record<SupportedContentType, boolean>>>({})
   const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState('')
+  const [message, setMessageState] = useState<{ kind: 'error' | 'success'; text: string } | null>(null)
+  // Error is the default so existing call sites stay red; success messages must say so explicitly.
+  function setMessage(text: string, kind: 'error' | 'success' = 'error') {
+    setMessageState(text ? { kind, text } : null)
+  }
   const [complete, setComplete] = useState(false)
   const [submittedItems, setSubmittedItems] = useState<FileItem[]>([])
   const [submittedProvider, setSubmittedProvider] = useState<'s3' | 'google_drive' | null>(null)
@@ -224,8 +246,8 @@ export function RecorderWorkflow({ onBusyChange, onCompleted, sessionChecking = 
     const describedFiles = selectedFiles.map((file) => ({ descriptor: describeMedia(file), file }))
     const unsupported = describedFiles.filter(({ descriptor }) => !descriptor).map(({ file }) => file)
     const validFiles = describedFiles.filter((entry): entry is { descriptor: MediaDescriptor; file: File } => Boolean(entry.descriptor))
-    const duplicateFiles = validFiles.filter(({ file }) => items.some((item) => item.file.name === file.name && item.file.size === file.size && item.file.lastModified === file.lastModified))
-    const nextItems = validFiles.map(({ descriptor, file }, index) => ({ ...descriptor, file, key: `${file.name}-${file.size}-${file.lastModified}-${Date.now()}-${index}`, progress: 0, stage: 'selected' as const }))
+    const duplicateFiles = validFiles.filter(({ file }) => items.some((item) => item.sourceKey === sourceKeyOf(file)))
+    const nextItems = validFiles.map(({ descriptor, file }, index) => ({ ...descriptor, file, key: `${sourceKeyOf(file)}-${Date.now()}-${index}`, progress: 0, sourceKey: sourceKeyOf(file), stage: 'selected' as const }))
     if (unsupported.length && validFiles.length) setMessage(`${t('Unsupported file type:')} ${unsupported.map((file) => file.name).join(', ')}`)
     else if (unsupported.length) setMessage(`${t('Unsupported file type:')} ${unsupported.map((file) => file.name).join(', ')}`)
     else if (duplicateFiles.length) setMessage(`${t('Possible duplicate:')} ${duplicateFiles.map(({ file }) => file.name).join(', ')}`)
@@ -242,6 +264,44 @@ export function RecorderWorkflow({ onBusyChange, onCompleted, sessionChecking = 
   function removeFile(key: string) {
     setItems((current) => current.filter((item) => item.key !== key))
     if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const editingItem = editingKey ? items.find((item) => item.key === editingKey) ?? null : null
+
+  // Always edit from the pristine bytes, so saving twice compresses the source once.
+  function editorSource(item: FileItem) {
+    return item.preEdit ?? { blob: item.file as Blob, name: item.file.name }
+  }
+
+  async function openEditor(item: FileItem) {
+    // Decode before opening: HEIC and some other formats are undecodable outside Safari, and the
+    // editor would only be able to report that after the user opened it.
+    try {
+      const bitmap = await loadBitmap(editorSource(item).blob)
+      bitmap.close()
+      setEditingKey(item.key)
+    } catch {
+      setUndecodable((current) => ({ ...current, [item.contentType]: true }))
+      setMessage(t('This file cannot be edited on this device.'))
+    }
+  }
+
+  function applyEdit(result: EditorResult) {
+    if (!editingKey) return
+    const edited = new File([result.blob], result.name, { lastModified: Date.now(), type: result.blob.type || OUTPUT_CONTENT_TYPE })
+    const source = items.find((item) => item.key === editingKey)
+    update(editingKey, {
+      contentType: OUTPUT_CONTENT_TYPE,
+      error: undefined,
+      file: edited,
+      mediaType: 'image',
+      preEdit: source?.preEdit ?? { blob: source?.file ?? edited, name: source?.file.name ?? result.name },
+      editState: result.state,
+      progress: 0,
+      stage: 'selected',
+    })
+    setEditingKey(null)
+    setMessage(`${t('Edited:')} ${edited.name}`, 'success')
   }
 
   function resetDraft() {
@@ -326,7 +386,7 @@ export function RecorderWorkflow({ onBusyChange, onCompleted, sessionChecking = 
       setStorageLoading(true)
       formRef.current?.reset()
       setComplete(true)
-      setMessage(t('Evidence record completed and secured.'))
+      setMessage(t('Evidence record completed and secured.'), 'success')
       onCompleted?.()
     } catch (reason) { setMessage(storageFailure(reason, 'Unable to complete this record.')) } finally { setBusy(false) }
   }
@@ -396,11 +456,11 @@ export function RecorderWorkflow({ onBusyChange, onCompleted, sessionChecking = 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><div className="flex items-center gap-2"><h4 className="text-lg font-semibold" id="review-evidence-heading">{t('Review selected evidence')}</h4><Badge variant="warning">{items.length} {t('selected')}</Badge></div><p className="mt-1 text-sm text-muted-foreground">{t('Open photos full-size and play videos to confirm the evidence is usable.')}</p></div><div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground"><Info aria-hidden="true" className="size-4" /> {t('Check focus, lighting and identifiers')}</div></div>
             <ul className="mt-5 grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label={t('Evidence upload status')}>
               {items.map((item) => <li className="group min-w-0 max-w-full overflow-hidden rounded-lg border bg-card" key={item.key}>
-                <div className="relative"><EvidencePreview file={item.file} mediaType={item.mediaType} /><Badge className="absolute left-3 top-3 border-transparent bg-foreground/80 text-card">{item.mediaType === 'image' ? <Image aria-hidden="true" className="size-3" /> : <Video aria-hidden="true" className="size-3" />}{item.mediaType}</Badge>{item.stage === 'selected' && !activityId && <Button aria-label={`Remove ${item.file.name}`} className="absolute right-3 top-3 bg-card/90 shadow-sm" size="icon" type="button" variant="outline" onClick={() => removeFile(item.key)}><Trash2 aria-hidden="true" className="size-4" /></Button>}</div>
+                <div className="relative"><EvidencePreview file={item.file} mediaType={item.mediaType} /><Badge className="absolute left-3 top-3 border-transparent bg-foreground/80 text-card">{item.mediaType === 'image' ? <Image aria-hidden="true" className="size-3" /> : <Video aria-hidden="true" className="size-3" />}{item.mediaType}</Badge>{item.mediaType === 'image' && item.stage === 'selected' && !activityId && !undecodable[item.contentType] && <Button aria-label={`${t('Edit')} ${item.file.name}`} className="absolute right-14 top-3 bg-card/90 shadow-sm" size="icon" type="button" variant="outline" onClick={() => void openEditor(item)}><Pencil aria-hidden="true" className="size-4" /></Button>}{item.stage === 'selected' && !activityId && <Button aria-label={`${t('Remove')} ${item.file.name}`} className="absolute right-3 top-3 bg-card/90 shadow-sm" size="icon" type="button" variant="outline" onClick={() => removeFile(item.key)}><Trash2 aria-hidden="true" className="size-4" /></Button>}</div>
                 <div className="p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><strong className="block truncate font-mono text-sm" title={item.file.name}>{item.file.name}</strong><span className="mt-1 block font-mono text-xs tabular-nums text-muted-foreground">{formatBytes(item.file.size, locale)} · {item.contentType}</span></div>{item.stage === 'ready' && <Badge variant="success"><Check aria-hidden="true" className="size-3" /> {t('Verified')}</Badge>}</div><p className="mt-3 text-xs font-medium text-muted-foreground">{stageLabel(item.stage, t)}</p>
                   {(item.stage === 'uploading' || item.stage === 'finalizing') && <Progress className="mt-3" aria-label={`${item.file.name} upload progress`} value={item.progress}>{item.progress}%</Progress>}
                   {item.error && <p className="mt-2 text-sm text-seal-crimson" role="alert">{item.error}</p>}
-                  {item.stage === 'failed' && activityId && <div className="mt-3 flex flex-wrap gap-2"><Button aria-label={`Remove ${item.file.name}`} disabled={busy} size="sm" type="button" variant="ghost" onClick={() => void discardFailedFile(item)}><Trash2 aria-hidden="true" className="size-3.5" /> {t('Remove')}</Button></div>}
+                  {item.stage === 'failed' && activityId && <div className="mt-3 flex flex-wrap gap-2"><Button aria-label={`${t('Remove')} ${item.file.name}`} disabled={busy} size="sm" type="button" variant="ghost" onClick={() => void discardFailedFile(item)}><Trash2 aria-hidden="true" className="size-3.5" /> {t('Remove')}</Button></div>}
                 </div>
               </li>)}
             </ul>
@@ -408,8 +468,9 @@ export function RecorderWorkflow({ onBusyChange, onCompleted, sessionChecking = 
 
           <div className="flex flex-col gap-3 border-t bg-card p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-7"><div><p className="text-sm font-semibold">{items.length ? `${items.length} ${t(items.length === 1 ? 'file' : 'files')} · ${formatBytes(selectedBytes, locale)}` : t('No evidence selected yet')}</p><p className="mt-1 hidden text-xs text-muted-foreground sm:block">{t('Files are hashed, uploaded privately, then verified before completion.')}</p></div>{!activityId && <div className="flex w-full gap-2 sm:w-auto"><Button aria-label={t('Reset form')} className="flex-1 sm:flex-none" disabled={busy} size="lg" type="button" variant="outline" onClick={resetDraft}><RotateCcw aria-hidden="true" className="size-4" /> <span className="hidden sm:inline">{t('Reset form')}</span></Button><Button className="flex-1 sm:min-w-48 sm:flex-none" disabled={busy || !items.length || !storageReady} size="lg" type="submit">{busy ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <Upload aria-hidden="true" className="size-4" />}{busy ? t('Starting…') : t('Review complete · Upload')}</Button></div>}{activityId && !complete && <Button className="sm:min-w-48" disabled={busy || !allReady} size="lg" type="button" onClick={() => void finish()}><Check aria-hidden="true" className="size-4" /> {t('Complete record')}</Button>}</div>
         </form>
-        {complete && <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/50 p-4" role="presentation"><div ref={completeDialogRef} className="w-full max-w-2xl rounded-xl border bg-card p-5 shadow-lg outline-none sm:p-7" role="dialog" aria-modal="true" aria-labelledby="submitted-evidence-heading" tabIndex={-1} onKeyDown={(event) => { if (event.key === 'Escape') setComplete(false) }}><div className="flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-full bg-seal-tint text-seal"><Check aria-hidden="true" className="size-6" /></span><div><h3 className="text-xl font-semibold" id="submitted-evidence-heading">{t('Submitted evidence')}</h3><p className="mt-1 text-sm text-muted-foreground">{submittedReference || t('Record completed')} · {t('Evidence verified and secured')}</p></div></div><ul className="mt-5 grid max-h-[55vh] gap-4 overflow-y-auto sm:grid-cols-2" aria-label={t('Submitted evidence preview')}>{submittedItems.map((item) => <li className="overflow-hidden rounded-lg border bg-card" key={item.key}><EvidencePreview eager file={item.file} mediaType={item.mediaType} /><div className="flex items-center justify-between gap-2 p-3"><span className="truncate font-mono text-sm font-medium">{item.file.name}</span><Badge variant="success"><Check aria-hidden="true" className="size-3" /> {t('Verified')}</Badge></div>{submittedProvider === 'google_drive' && item.assetId && <div className="px-3 pb-3"><DriveFileActions assetId={item.assetId} /></div>}</li>)}</ul><Button className="mt-6 w-full sm:w-auto" type="button" onClick={() => { setActivityId(null); setAllowAdditionalFiles(false); setItems([]); setSubmittedItems([]); setSubmittedReference(''); setComplete(false); setMessage(''); explicitProvider.current = false; setProvider(providers?.google_drive.available ? 'google_drive' : providers?.s3.available ? 's3' : ''); formRef.current?.reset() }}>{t('Start another record')}</Button></div></div>}
-        {message && <p className={`m-5 rounded-lg border p-3 text-sm sm:m-7 ${complete ? 'border-seal/30 bg-seal-tint text-seal' : 'border-seal-crimson/30 bg-seal-crimson-tint text-seal-crimson'}`} role={complete ? 'status' : 'alert'}>{message}</p>}
+        {complete && <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/50 p-4" role="presentation"><div ref={completeDialogRef} className="w-full max-w-2xl rounded-xl border bg-card p-5 shadow-lg outline-none sm:p-7" role="dialog" aria-modal="true" aria-labelledby="submitted-evidence-heading" tabIndex={-1} onKeyDown={(event) => { if (event.key === 'Escape') setComplete(false) }}><div className="flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-full bg-seal-tint text-seal"><Check aria-hidden="true" className="size-6" /></span><div><h3 className="text-xl font-semibold" id="submitted-evidence-heading">{t('Submitted evidence')}</h3><p className="mt-1 text-sm text-muted-foreground">{submittedReference || t('Record completed')} · {t('Evidence verified and secured')}</p></div></div><ul className="mt-5 grid max-h-[55vh] gap-4 overflow-y-auto sm:grid-cols-2" aria-label={t('Submitted evidence preview')}>{submittedItems.map((item) => <li className="overflow-hidden rounded-lg border bg-card" key={item.key}><EvidencePreview file={item.file} mediaType={item.mediaType} /><div className="flex items-center justify-between gap-2 p-3"><span className="truncate font-mono text-sm font-medium">{item.file.name}</span><Badge variant="success"><Check aria-hidden="true" className="size-3" /> {t('Verified')}</Badge></div>{submittedProvider === 'google_drive' && item.assetId && <div className="px-3 pb-3"><DriveFileActions assetId={item.assetId} /></div>}</li>)}</ul><Button className="mt-6 w-full sm:w-auto" type="button" onClick={() => { setActivityId(null); setAllowAdditionalFiles(false); setItems([]); setSubmittedItems([]); setSubmittedReference(''); setComplete(false); setMessage(''); explicitProvider.current = false; setProvider(providers?.google_drive.available ? 'google_drive' : providers?.s3.available ? 's3' : ''); formRef.current?.reset() }}>{t('Start another record')}</Button></div></div>}
+        {editingItem && <Suspense fallback={<div className="fixed inset-0 z-50 grid place-items-center bg-foreground/60" role="presentation"><p className="rounded-lg border bg-card px-4 py-3 text-sm" role="status">{t('Opening…')}</p></div>}><ImageEditor blob={editorSource(editingItem).blob} initialState={editingItem.editState} key={editingItem.key} name={editorSource(editingItem).name} onApply={applyEdit} onCancel={() => setEditingKey(null)} /></Suspense>}
+        {message && <p className={`m-5 rounded-lg border p-3 text-sm sm:m-7 ${message.kind === 'success' ? 'border-seal/30 bg-seal-tint text-seal' : 'border-seal-crimson/30 bg-seal-crimson-tint text-seal-crimson'}`} role={message.kind === 'success' ? 'status' : 'alert'}>{message.text}</p>}
       </CardContent>
     </Card>
   )
